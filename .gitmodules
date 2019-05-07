@@ -1,0 +1,12 @@
+[submodule "third-party/cJSON"]
+	path = third-party/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
+	ignore = dirty
+[submodule "third-party/curl"]
+	path = third-party/curl
+	url = https://github.com/curl/curl.git
+	ignore = dirty
+[submodule "third-party/libucw"]
+	path = third-party/libucw
+	url = git://git.ucw.cz/libucw.git
+	ignore = dirty
