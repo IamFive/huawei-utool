@@ -6,7 +6,11 @@
 	path = third-party/curl
 	url = https://github.com/curl/curl.git
 	ignore = dirty
-[submodule "third-party/libucw"]
-	path = third-party/libucw
-	url = git://git.ucw.cz/libucw.git
+[submodule "third-party/argparse"]
+	path = third-party/argparse
+	url = https://github.com/cofyc/argparse
+	ignore = dirty
+[submodule "third-party/zf_log"]
+	path = third-party/zf_log
+	url = https://github.com/wonder-mice/zf_log
 	ignore = dirty

@@ -1,25 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <cJSON.h>
-#include <curl/curl.h>
-#include <ucw/lib.h>
-#include <ucw/opt.h>
+#include <utool.h>
 
-
-static struct opt_section options = {
-        OPT_ITEMS {
-                // More options can be specified here
-                OPT_HELP("Configuration options:"),
-                OPT_CONF_OPTIONS,
-                OPT_END
-        }
-};
-
-int main(int argc, char **argv) {
-    printf("hello world");
-
-    opt_parse(&options, argv + 1);
-
+int
+main(int argc, const char **argv)
+{
+    char *result = NULL;
+    utool_main(argc, (void *) argv, &result);
+    printf("Result is -> \n%s\n", result);
+    free(result);
     return 0;
 }
