@@ -19,10 +19,17 @@ cmake ..
 make && make install
 ```
 
-after make install:
-- a utool-bin console script will be installed under `${workspace}/bin`
-- a utool lib so will be generated under `${workspace}/lib`
+- run console script
+```sh
+cd ${workspace}/build
+./utool-bin --help
+```
 
+
+after make install:
+> TODO, where to install? directly install to system path?
+- a utool-bin console script will be installed under `${workspace}/bin`
+- utool lib so files will be installed to `${CMAKE_INSTALL_PREFIX}/lib`
 
 
 ### reference

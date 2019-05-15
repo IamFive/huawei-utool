@@ -12,8 +12,9 @@ extern "C" {
 
 #include <cJSON.h>
 #include "typedefs.h"
+#include "constants.h"
 
-#define FREE_cJSON(json) if ((json) != NULL) { cJSON_Delete((json)); (json) = NULL; }
+#define FREE_CJSON(json) if ((json) != NULL) { cJSON_Delete((json)); (json) = NULL; }
 #define FREE_OBJ(obj) if ((obj) != NULL) { free((obj)); (obj) = NULL; }
 
 
@@ -25,7 +26,7 @@ extern "C" {
  * @param result
  * @return
  */
-int utool_copy_result(const char *state, cJSON *messages, char **result);
+int UtoolBuildOutputResult(const char *state, cJSON *messages, char **result);
 
 /**
  *
@@ -37,7 +38,7 @@ int utool_copy_result(const char *state, cJSON *messages, char **result);
  * @param result
  * @return
  */
-int utool_copy_string_result(const char *state, const char *messages, char **result);
+int UtoolBuildStringOutputResult(const char *state, const char *messages, char **result);
 
 /**
  *
@@ -47,8 +48,16 @@ int utool_copy_string_result(const char *state, const char *messages, char **res
  * @param count
  * @return
  */
-int utool_mapping_cJSON_items(cJSON *source, cJSON *target, const utool_OutputMapping *mapping, int count);
+int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mapping, int count);
 
+
+/**
+* get string error of UtoolCode
+*
+* @param code
+* @return
+*/
+const char *UtoolGetStringError(UtoolCode code);
 
 #ifdef __cplusplus
 }

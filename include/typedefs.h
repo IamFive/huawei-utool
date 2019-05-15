@@ -18,7 +18,7 @@ typedef enum _CommandOptionFlag
     ILLEGAL = 1,          /** invalid options */
     FEAT_HELP = 2,        /** for help feature */
     FEAT_VERSION = 3,     /** for version feature */
-} utool_CommandOptionFlag;
+} UtoolCommandOptionFlag;
 
 
 typedef struct _CommandOption
@@ -28,16 +28,16 @@ typedef struct _CommandOption
     char *username;
     char *password;
     int commandArgc;
-    utool_CommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
+    UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
     const char **commandArgv;
 
-} utool_CommandOption;
+} UtoolCommandOption;
 
 
 typedef enum _CommandType
 {
     GET = 1, SET = 2
-} utool_CommandType;
+} UtoolCommandType;
 
 /**
  * UTOOL Command meta
@@ -45,10 +45,10 @@ typedef enum _CommandType
 typedef struct _Command
 {
     char *name;
-    utool_CommandType type;
+    UtoolCommandType type;
 
-    int (*pFuncExecute)(utool_CommandOption *, char **);
-} utool_Command;
+    int (*pFuncExecute)(UtoolCommandOption *, char **);
+} UtoolCommand;
 
 
 /**
@@ -61,7 +61,7 @@ typedef struct _RedfishServer
     char *username;
     char *password;
     char *systemId;
-} utool_RedfishServer;
+} UtoolRedfishServer;
 
 
 /**
@@ -73,20 +73,20 @@ typedef struct _CurlResponse
     size_t size;
     int httpStatusCode;
     char *etag;
-} utool_CurlResponse;
+} UtoolCurlResponse;
 
 typedef struct _CurlHeader
 {
     const char *const name;
     const char *const value;
-} utool_CurlHeader;
+} UtoolCurlHeader;
 
 
 typedef struct _OutputMapping
 {
     const char *const sourceXpath;
     const char *const targetKeyValue;
-} utool_OutputMapping;
+} UtoolOutputMapping;
 
 
 #ifdef __cplusplus

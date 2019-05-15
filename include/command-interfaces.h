@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-int utool_get_product(utool_CommandOption *commandOption, char **result);
+int UtoolGetProduct(UtoolCommandOption *commandOption, char **result);
 
-int utool_get_fw(utool_CommandOption *commandOption, char **result);
+int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result);
 
 #ifdef __cplusplus
 }

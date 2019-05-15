@@ -14,28 +14,23 @@
  * @param messages
  * @return
  */
-static cJSON *utool_build_result(const char *const state, cJSON *messages)
+static cJSON *UtoolBuildOutputJson(const char *const state, cJSON *messages)
 {
     cJSON *response = cJSON_CreateObject();
-    if (response == NULL)
-    {
+    if (response == NULL) {
         goto failure;
     }
 
-    if (cJSON_AddStringToObject(response, RESULT_KEY_STATE, state) == NULL)
-    {
+    if (cJSON_AddStringToObject(response, RESULT_KEY_STATE, state) == NULL) {
         goto failure;
     }
 
-    if (cJSON_IsArray(messages))
-    {
+    if (cJSON_IsArray(messages)) {
         cJSON_AddItemToObject(response, RESULT_KEY_MESSAGES, messages);
     }
-    else
-    {
+    else {
         cJSON *_message = cJSON_AddArrayToObject(response, RESULT_KEY_MESSAGES);
-        if (_message == NULL)
-        {
+        if (_message == NULL) {
             goto failure;
         }
         cJSON_AddItemToArray(_message, messages);
@@ -44,8 +39,8 @@ static cJSON *utool_build_result(const char *const state, cJSON *messages)
     return response;
 
 failure:
-    FREE_cJSON(messages)
-    FREE_cJSON(response)
+    FREE_CJSON(messages)
+    FREE_CJSON(response)
     return NULL;
 }
 
@@ -60,22 +55,22 @@ failure:
  * @param result
  * @return
  */
-int utool_copy_result(const char *const state, cJSON *messages, char **result)
+int UtoolBuildOutputResult(const char *state, cJSON *messages, char **result)
 {
     int ret = UTOOLE_INTERNAL;
 
-    cJSON *jsonResult = utool_build_result(state, messages);
-    if (jsonResult == NULL) return ret;
+    cJSON *jsonResult = UtoolBuildOutputJson(state, messages);
+    if (jsonResult == NULL) { return ret; }
 
     char *pretty = cJSON_Print(jsonResult);
-    if (pretty == NULL) goto return_statement;
+    if (pretty == NULL) { goto return_statement; }
 
     *result = pretty;
     ret = OK;
     goto return_statement;
 
 return_statement:
-    FREE_cJSON(jsonResult)
+    FREE_CJSON(jsonResult)
     return ret;
 }
 
@@ -89,26 +84,28 @@ return_statement:
  * @param result
  * @return
  */
-int utool_copy_string_result(const char *state, const char *messages, char **result)
+int UtoolBuildStringOutputResult(const char *state, const char *messages, char **result)
 {
     int ret = UTOOLE_INTERNAL;
 
     cJSON *jsonString = cJSON_CreateString(messages);
-    if (jsonString == NULL) return ret;
+    if (jsonString == NULL) {
+        return ret;
+    }
 
-    cJSON *jsonResult = utool_build_result(state, jsonString);
-    if (jsonResult == NULL) return ret;
-
+    cJSON *jsonResult = UtoolBuildOutputJson(state, jsonString);
+    if (jsonResult == NULL) {
+        FREE_CJSON(jsonString)
+        return ret;
+    }
 
     char *pretty = cJSON_Print(jsonResult);
-    if (pretty != NULL)
-    {
+    if (pretty != NULL) {
         ret = OK;
         *result = pretty;
     }
 
-    FREE_cJSON(jsonString)
-    FREE_cJSON(jsonResult)
+    FREE_CJSON(jsonResult)
     return ret;
 }
 
@@ -119,22 +116,19 @@ int utool_copy_string_result(const char *state, const char *messages, char **res
  *
  * @param source
  * @param target
- * @param mappings
+ * @param mapping
  * @param count
  * @return
  */
-int utool_mapping_cJSON_items(cJSON *source, cJSON *target, const utool_OutputMapping *mappings, int count)
+int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings, int count)
 {
-    for (int idx = 0; idx < count; idx++)
-    {
-        const utool_OutputMapping *mapping = mappings + idx;
+    for (int idx = 0; idx < count; idx++) {
+        const UtoolOutputMapping *mapping = mappings + idx;
         const char *xpath = mapping->sourceXpath;
         cJSON *ref = cJSONUtils_GetPointer(source, xpath);
-        if (ref != NULL)
-        {
+        if (ref != NULL) {
             // TODO(Qianbiao.NG) we should add more case coverage later?
-            switch (ref->type)
-            {
+            switch (ref->type) {
                 case cJSON_NULL:
                     cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
                     break;
@@ -145,17 +139,14 @@ int utool_mapping_cJSON_items(cJSON *source, cJSON *target, const utool_OutputMa
                     cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateTrue());
                     break;
                 case cJSON_Number:
-                    if (ref->valueint != 0)
-                    {
+                    if (ref->valueint != 0) {
                         cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valueint));
                     }
-                    else
-                    {
+                    else {
                         cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valuedouble));
                     }
                     break;
-                case cJSON_String:
-                {
+                case cJSON_String: {
 //                    const char *value = ref->valuestring;
 //                    const size_t len = strlen(value) + 1;
 //                    char *copy = (char *) malloc(len);
@@ -167,11 +158,33 @@ int utool_mapping_cJSON_items(cJSON *source, cJSON *target, const utool_OutputMa
                     break;
             }
         }
-        else
-        {
+        else {
             cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
         }
     }
 
     return OK;
 }
+
+/**
+* get string error of UtoolCode
+*
+* @param code
+* @return
+*/
+const char *UtoolGetStringError(UtoolCode code)
+{
+    switch (code) {
+        case OK:
+            return "No error";
+        case UTOOLE_INTERNAL:
+            return "Internal error, please contact maintainer.";
+        case UTOOLE_PARSE_RESPONSE_JSON:
+            return "Internal error, failed to parse JSON content.";
+        case UTOOLE_UNKNOWN_RESPONSE_FORMAT:
+            return "Internal error, unexpect JSON format response by HUAWEI server API.";
+        default:
+            return "Unknown error";
+    }
+}
+

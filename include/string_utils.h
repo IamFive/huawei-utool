@@ -17,7 +17,7 @@ extern "C" {
 * @param target
 * @return
 */
-bool utool_str_starts_with(const char *source, const char *target);
+bool UtoolStringStartsWith(const char *source, const char *target);
 
 /**
  * check whether source string starts with target string while ignoring differences in case
@@ -26,7 +26,7 @@ bool utool_str_starts_with(const char *source, const char *target);
  * @param target
  * @return
  */
-bool utool_str_case_starts_with(const char *source, const char *target);
+bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *target);
 
 #ifdef __cplusplus
 }

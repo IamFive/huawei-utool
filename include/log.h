@@ -9,7 +9,12 @@
 extern "C" {
 #endif
 
-void utool_set_log_to_file(const char *log_file_path);
+
+/**
+ *
+ * @param log_file_path
+ */
+void UtoolSetLogFilePath(const char *log_file_path);
 
 #ifdef __cplusplus
 }
