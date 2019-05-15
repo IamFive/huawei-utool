@@ -8,39 +8,39 @@
 #include "zf_log.h"
 
 
-FILE *utool_g_log_file_fp = NULL;
+FILE *g_UtoolLogFileFP = NULL;
 
-static void file_output_callback(const zf_log_message *msg, void *arg)
+static void LogToFileOutputCallback(const zf_log_message *msg, void *arg)
 {
     (void) arg;
     *msg->p = '\n';
-    fwrite(msg->buf, msg->p - msg->buf + 1, 1, utool_g_log_file_fp);
-    fflush(utool_g_log_file_fp);
+    fwrite(msg->buf, msg->p - msg->buf + 1, 1, g_UtoolLogFileFP);
+    fflush(g_UtoolLogFileFP);
 }
 
-static void file_output_close(void)
+static void CloseLogFileOutput(void)
 {
     ZF_LOGI("Application exit, close log file now.");
-    fclose(utool_g_log_file_fp);
+    fclose(g_UtoolLogFileFP);
 }
 
-void utool_set_log_to_file(const char *const log_file_path)
+void UtoolSetLogFilePath(const char *const log_file_path)
 {
-    if (!utool_g_log_file_fp) {
-        utool_g_log_file_fp = fopen(log_file_path, "a");
-        if (!utool_g_log_file_fp) {
+    if (!g_UtoolLogFileFP) {
+        g_UtoolLogFileFP = fopen(log_file_path, "a");
+        if (!g_UtoolLogFileFP) {
             ZF_LOGW("Failed to open log file %s", log_file_path);
             return;
         }
-        atexit(file_output_close);
-        zf_log_set_output_v(ZF_LOG_PUT_STD, 0, file_output_callback);
+        atexit(CloseLogFileOutput);
+        zf_log_set_output_v(ZF_LOG_PUT_STD, 0, LogToFileOutputCallback);
         ZF_LOGI("Log to file %s initialize succeed.", log_file_path);
     }
 }
 
 //int main(int argc, char *argv[])
 //{
-//    utool_set_log_to_file("example.log");
+//    UtoolSetLogFilePath("example.log");
 //
 //    ZF_LOGI("Writing number of arguments to log file: %i", argc);
 //    ZF_LOGI_MEM(argv, argc * sizeof(*argv), "argv pointers:");

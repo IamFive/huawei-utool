@@ -22,9 +22,9 @@ static pthread_mutex_t mutex;
 /**
  * All support commands
  */
-static utool_Command commands[] = {
-        {.name = "getproduct", .pFuncExecute=utool_get_product, .type=GET},
-        {.name = "getfw", .pFuncExecute=utool_get_fw, .type=GET},
+static UtoolCommand commands[] = {
+        {.name = "getproduct", .pFuncExecute=UtoolGetProduct, .type=GET},
+        {.name = "getfw", .pFuncExecute=UtoolGetFirmware, .type=GET},
 };
 
 
@@ -44,15 +44,15 @@ static const char *const usage[] = {
  * @param argv
  * @return OK if succeed else failed
  */
-static int utool_parse_command_option(utool_CommandOption *commandOption, int argc, const char **argv, char **result)
+static int utool_parse_command_option(UtoolCommandOption *commandOption, int argc, const char **argv, char **result)
 {
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag),
                         "show this help message.",
-                        utool_get_help_option_cb, 0, OPT_NONEG),
+                        UtoolGetHelpOptionCallback, 0, OPT_NONEG),
             OPT_BOOLEAN('V', "version", &(commandOption->flag),
                         "show tool's version number.",
-                        utool_get_version_option_cb, 0, 0),
+                        UtoolGetVersionOptionCallback, 0, 0),
             OPT_GROUP  ("Server Authentication Options:"),
             OPT_STRING ('H', "Host", &(commandOption->host),
                         "domain name, IPv4 address, or [IPv6 address].",
@@ -74,8 +74,7 @@ static int utool_parse_command_option(utool_CommandOption *commandOption, int ar
     argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
     argc = argparse_parse(&argparse, argc, argv);
 
-    if (!commandOption->port)
-    {
+    if (!commandOption->port) {
         commandOption->port = HTTPS_PORT
     }
 
@@ -88,22 +87,20 @@ static int utool_parse_command_option(utool_CommandOption *commandOption, int ar
      *  - validating user input
      */
 
-    if (commandOption->flag == FEAT_VERSION)
-    {
+    if (commandOption->flag == FEAT_VERSION) {
         char buff[100] = {0};
         snprintf(buff, 100, "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
-        return utool_copy_result(STATE_SUCCESS, cJSON_CreateString(buff), result);
+        return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     }
-    else if (commandOption->flag == FEAT_HELP)
-    {
-        return utool_copy_result(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
+    else if (commandOption->flag == FEAT_HELP) {
+        return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
     }
-    else if (argc == 0)
-    {
+    else if (argc == 0) {
         ZF_LOGW("Option input error : sub-command is required.");
         commandOption->flag = ILLEGAL;
-        return utool_copy_result(STATE_FAILURE,
-                                 cJSON_CreateString("Error: positional option `sub-command` is required."), result);
+        return UtoolBuildOutputResult(STATE_FAILURE,
+                                      cJSON_CreateString("Error: positional option `sub-command` is required."),
+                                      result);
     }
 
     return OK;
@@ -117,24 +114,21 @@ static int utool_parse_command_option(utool_CommandOption *commandOption, int ar
  */
 static int initialize(char **result)
 {
-    if (!initialized)
-    {
+    if (!initialized) {
         // get mutex
         pthread_mutex_lock(&mutex);
         CURLcode flag = CURLE_OK;
-        if (!initialized)
-        {
+        if (!initialized) {
             // init log file
-            utool_set_log_to_file("utool.log.txt");
+            UtoolSetLogFilePath("utool.log.txt");
             ZF_LOGI("Initialize zf-log done.");
 
             ZF_LOGI("Start to global initialize CURL.");
             // init curl
             flag = curl_global_init(CURL_GLOBAL_ALL);
-            if (flag != CURLE_OK)
-            {
+            if (flag != CURLE_OK) {
                 ZF_LOGE("Failed to global initialize curl, reason: %s", curl_easy_strerror(flag));
-                utool_copy_result(STATE_FAILURE, cJSON_CreateString(curl_easy_strerror(flag)), result);
+                UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(curl_easy_strerror(flag)), result);
             }
             atexit(curl_global_cleanup);
 
@@ -147,19 +141,21 @@ static int initialize(char **result)
         // release mutex
         pthread_mutex_destroy(&mutex);
 
-        if (flag != CURLE_OK) return flag;
+        if (flag != CURLE_OK) { return flag; }
     }
 
     return CURLE_OK;
 }
 
 
-int utool_main(int argc, void *argv[], char **result)
+int utool_main(int argc, char *argv[], char **result)
 {
     int ret;
 
     ret = initialize(result);
-    if (ret != OK) return ret;
+    if (ret != OK) {
+        return ret;
+    }
 
     ZF_LOGI("Receive new command, start processing now.");
 
@@ -169,16 +165,14 @@ int utool_main(int argc, void *argv[], char **result)
     const char **convert = (const char **) argv;
 
     /** malloc and zero initialize a command option */
-    utool_CommandOption *commandOption = &(utool_CommandOption) {0};
-    if (!commandOption)
-    {
+    UtoolCommandOption *commandOption = &(UtoolCommandOption) {0};
+    if (!commandOption) {
         ZF_LOGW("Failed to malloc memory for Redfish Connection struct.");
         return UTOOLE_INTERNAL;
     }
 
     ret = utool_parse_command_option(commandOption, argc, convert, result);
-    if (ret != OK || commandOption->flag != EXECUTABLE)
-    {
+    if (ret != OK || commandOption->flag != EXECUTABLE) {
         goto return_statement;
     }
 
@@ -189,30 +183,33 @@ int utool_main(int argc, void *argv[], char **result)
     ZF_LOGI("Parsing sub-command from argv : %s", commandName);
     ZF_LOGI("Try to find the command handler for %s.", commandName);
 
-    utool_Command *command = NULL;
-    int commandCount = sizeof(commands) / sizeof(utool_Command);
-    for (int idx = 0; idx < commandCount; idx++)
-    {
-        utool_Command _command = commands[idx];
-        if (strncasecmp(commandName, _command.name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0)
-        {
-            command = &_command;
+    UtoolCommand *targetCommand = NULL;
+    int commandCount = sizeof(commands) / sizeof(UtoolCommand);
+    for (int idx = 0; idx < commandCount; idx++) {
+        UtoolCommand _command = commands[idx];
+        if (strncasecmp(commandName, _command.name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0) {
+            targetCommand = &_command;
             break;
         }
     }
 
-    if (command)
-    {
+    if (targetCommand) {
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
-        ret = command->pFuncExecute(commandOption, result);
-        // TODO if internal error happens, fullfil result
+        ret = targetCommand->pFuncExecute(commandOption, result);
+        if (ret != OK) {
+            char *errorString = UtoolGetStringError(ret);
+            // we can not use cJSON to build result here, because it may cause problems...
+            // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
+            char *buffer = malloc(MAX_OUTPUT_LEN);
+            snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, errorString);
+            *result = buffer;
+        }
         goto return_statement;
     }
-    else
-    {
+    else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
-        ret = utool_copy_result(STATE_FAILURE,
-                                cJSON_CreateString("Error: Not Support. Sub-command is not supported."), result);
+        ret = UtoolBuildOutputResult(STATE_FAILURE,
+                                     cJSON_CreateString("Error: Not Support. Sub-command is not supported."), result);
         goto return_statement;
     }
 

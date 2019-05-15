@@ -13,7 +13,7 @@ extern "C" {
 #define UTOOL_VERSION "1.0.2"
 
 
-int utool_main(int argc, void *argv[], char **result);
+int utool_main(int argc, char *argv[], char **result);
 
 
 #ifdef __cplusplus

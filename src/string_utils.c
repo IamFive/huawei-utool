@@ -10,10 +10,10 @@
  * check whether source string starts with prefix string
  *
  * @param source
- * @param prefix
+ * @param target
  * @return
  */
-bool utool_str_starts_with(const char *source, const char *prefix)
+bool UtoolStringStartsWith(const char *source, const char *prefix)
 {
     size_t len_source = strlen(source),
             len_prefix = strlen(prefix);
@@ -25,10 +25,10 @@ bool utool_str_starts_with(const char *source, const char *prefix)
  * check whether source string starts with prefix string while ignoring differences in case
  *
  * @param source
- * @param prefix
+ * @param target
  * @return
  */
-bool utool_str_case_starts_with(const char *source, const char *prefix)
+bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *prefix)
 {
     size_t len_source = strlen(source),
             len_prefix = strlen(prefix);

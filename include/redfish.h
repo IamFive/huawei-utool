@@ -26,7 +26,7 @@ static const char *const HTTP_DELETE = "DELETE";
  * @param server
  * @return
  */
-int utool_get_redfish_server(utool_CommandOption *option, utool_RedfishServer *server, char **result);
+int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result);
 
 /**
  * Make a new redfish request though CURL lib
@@ -38,12 +38,12 @@ int utool_get_redfish_server(utool_CommandOption *option, utool_RedfishServer *s
  * @param response a pointer passing response of the request
  * @return
  */
-int utool_curl_make_request(utool_RedfishServer *server,
-                            char *resourceURL,
-                            const char *httpMethod,
-                            const cJSON *payload,
-                            const utool_CurlHeader *headers,
-                            utool_CurlResponse *response);
+int UtoolMakeCurlRequest(UtoolRedfishServer *server,
+                         char *resourceURL,
+                         const char *httpMethod,
+                         const cJSON *payload,
+                         const UtoolCurlHeader *headers,
+                         UtoolCurlResponse *response);
 
 /**
  * resolve redfish failures response
@@ -52,7 +52,7 @@ int utool_curl_make_request(utool_RedfishServer *server,
  * @param result
  * @return
  */
-int utool_resolve_failure_response(utool_CurlResponse *response, char **result);
+int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result);
 
 
 /**
@@ -62,7 +62,7 @@ int utool_resolve_failure_response(utool_CurlResponse *response, char **result);
  * @param failures
  * @return
  */
-int utool_get_failures_from_response(utool_CurlResponse *response, cJSON *failures);
+int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures);
 
 /**
  * Free redfish server struct
@@ -71,15 +71,14 @@ int utool_get_failures_from_response(utool_CurlResponse *response, cJSON *failur
  * @param option
  * @return
  */
-static inline int utool_free_redfish_server(utool_RedfishServer *server)
+static inline int UtoolFreeRedfishServer(UtoolRedfishServer *server)
 {
-    if (server != NULL)
-    {
-        free(server->host);
-        free(server->baseUrl);
-        free(server->username);
-        free(server->password);
-        free(server->systemId);
+    if (server != NULL) {
+        FREE_OBJ(server->host)
+        FREE_OBJ(server->baseUrl)
+        FREE_OBJ(server->username)
+        FREE_OBJ(server->password)
+        FREE_OBJ(server->systemId)
     }
 }
 
@@ -90,36 +89,40 @@ static inline int utool_free_redfish_server(utool_RedfishServer *server)
  * @param option
  * @return
  */
-static inline int utool_free_curl_response(utool_CurlResponse *response)
+static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
 {
-    if (response != NULL)
-    {
+    if (response != NULL) {
         FREE_OBJ(response->content)
         FREE_OBJ(response->etag)
     }
 }
 
 /**
- * Free redfish server struct
+ * asset json object is not null
  *
  * @param self
  * @param option
  * @return
  */
-static inline int utool_asset_json_not_null(cJSON *json)
+static inline int UtoolAssetJsonNotNull(cJSON *json)
 {
-    if (json == NULL)
-    {
+    if (json == NULL) {
         ZF_LOGE("Failed to parse content into json");
         return UTOOLE_PARSE_RESPONSE_JSON;
     }
     return OK;
 }
 
-static inline int utool_asset_json_node_not_null(cJSON *json, char *xpath)
+/**
+ * asset json node object is not null
+ *
+ * @param json
+ * @param xpath
+ * @return
+ */
+static inline int UtoolAssetJsonNodeNotNull(cJSON *json, char *xpath)
 {
-    if (json == NULL)
-    {
+    if (json == NULL) {
         ZF_LOGE("Failed to get the node(%s) from json", xpath);
         return UTOOLE_UNKNOWN_RESPONSE_FORMAT;
     }

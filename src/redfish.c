@@ -20,9 +20,19 @@
  * @param response
  * @return
  */
-static int utool_curl_get_resp_callback(void *ptr, size_t size, size_t nmemb, utool_CurlResponse *response);
+static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response);
 
-static int utool_curl_get_header_callback(char *ptr, size_t size, size_t nitems, utool_CurlResponse *response);
+/**
+ * Common CURL write header function.
+ * Used as get CURL header callback.
+ *
+ * @param ptr
+ * @param size
+ * @param nmemb
+ * @param response
+ * @return
+ */
+static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
 
 
 /**
@@ -35,34 +45,30 @@ static int utool_curl_get_header_callback(char *ptr, size_t size, size_t nitems,
  * @param response response of the request
  * @return CURL perform
  */
-int utool_curl_make_request(utool_RedfishServer *server,
-                            char *resourceURL,
-                            const char *const httpMethod,
-                            const cJSON *payload,
-                            const utool_CurlHeader *headers,
-                            utool_CurlResponse *response)
+int UtoolMakeCurlRequest(UtoolRedfishServer *server,
+                         char *resourceURL,
+                         const char *httpMethod,
+                         const cJSON *payload,
+                         const UtoolCurlHeader *headers,
+                         UtoolCurlResponse *response)
 {
     int ret = UTOOLE_INTERNAL;
     struct curl_slist *curlHeaderList = NULL;
     CURL *curl = curl_easy_init();
-    if (curl)
-    {
+    if (curl) {
         // replace %s with redfish-system-id if neccessary
         char fullURL[MAX_URL_LEN] = {0};
         strncat(fullURL, server->baseUrl, strlen(server->baseUrl));
-        if (strstr(resourceURL, "/redfish/v1") == NULL)
-        {
+        if (strstr(resourceURL, "/redfish/v1") == NULL) {
             strncat(fullURL, "/redfish/v1", strlen("/redfish/v1"));
         }
 
-        if (strstr(resourceURL, "%s") != NULL)
-        {
+        if (strstr(resourceURL, "%s") != NULL) {
             char _resourceURL[MAX_URL_LEN] = {0};
             snprintf(_resourceURL, MAX_URL_LEN, resourceURL, server->systemId);
             strncat(fullURL, _resourceURL, strlen(_resourceURL));
         }
-        else
-        {
+        else {
             strncat(fullURL, resourceURL, strlen(resourceURL));
         }
 
@@ -87,13 +93,11 @@ int utool_curl_make_request(utool_RedfishServer *server,
         // setup headers
         curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
 
-        const utool_CurlHeader *ifMatchHeader = NULL;
-        for (int idx = 0;; idx++)
-        {
-            const utool_CurlHeader *header = headers + idx;
-            if (header == NULL) break;
-            if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0)
-            {
+        const UtoolCurlHeader *ifMatchHeader = NULL;
+        for (int idx = 0;; idx++) {
+            const UtoolCurlHeader *header = headers + idx;
+            if (header == NULL) { break; }
+            if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0) {
                 ifMatchHeader = header;
             }
             char buffer[MAX_URL_LEN];
@@ -103,37 +107,33 @@ int utool_curl_make_request(utool_RedfishServer *server,
 
         // if request method is PATCH, if-match header is required
         if (strncmp(HTTP_PATCH, httpMethod, strnlen(HTTP_PATCH, 10)) == 0 ||
-            strncmp(HTTP_PUT, httpMethod, strnlen(HTTP_PUT, 10)) == 0)
-        {
-            if (ifMatchHeader == NULL)
-            {
+            strncmp(HTTP_PUT, httpMethod, strnlen(HTTP_PUT, 10)) == 0) {
+            if (ifMatchHeader == NULL) {
                 // if if-match header is not present, try to load it through get request
                 ZF_LOGE("Try to load etag through get request");
-//                utool_CurlResponse *getIfMatchResponse = &(utool_CurlResponse) {0};
-                ret = utool_curl_make_request(server, resourceURL, HTTP_GET, NULL, headers, response);
-                if (ret != OK)
-                {
+//                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
+                ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
+                if (ret != OK) {
                     goto return_statement;
                 }
 
                 char ifMatch[MAX_HEADER_LEN];
                 snprintf(ifMatch, MAX_URL_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
                 curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
-                utool_free_curl_response(response);
+                UtoolFreeCurlResponse(response);
             }
         }
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
 
         // setup callback
-        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, utool_curl_get_header_callback);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, utool_curl_get_resp_callback);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, UtoolCurlGetHeaderCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, UtoolCurlGetRespCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, response);
 
         // setup payload
-        if (payload != NULL)
-        {
+        if (payload != NULL) {
             /** https://github.com/bagder/everything-curl/blob/master/libcurl-http-requests.md */
             char *payloadContent = cJSON_Print(payload);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
@@ -144,18 +144,15 @@ int utool_curl_make_request(utool_RedfishServer *server,
 
         // perform request
         ret = curl_easy_perform(curl);
-        if (ret == CURLE_OK)
-        {
+        if (ret == CURLE_OK) {
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
         }
-        else
-        {
+        else {
             const char *error = curl_easy_strerror((CURLcode) ret);
             ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
         }
     }
-    else
-    {
+    else {
         ZF_LOGE("Failed to init curl, aboard request.");
         ret = UTOOLE_INTERNAL;
     }
@@ -176,35 +173,31 @@ return_statement:
  * @param result
  * @return
  */
-int utool_resolve_failure_response(utool_CurlResponse *response, char **result)
+int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
 {
     int code = response->httpStatusCode;
 
     // handle standard internet errors
-    if (403 == code)
-    {
-        return utool_copy_string_result(STATE_FAILURE, FAIL_NO_PRIVILEGE, result);
+    if (403 == code) {
+        return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NO_PRIVILEGE, result);
     }
-    else if (412 == code)
-    {
-        return utool_copy_string_result(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, result);
+    else if (412 == code) {
+        return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, result);
     }
-    else if (code == 500)
-    {
-        return utool_copy_string_result(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, result);
+    else if (code == 500) {
+        return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, result);
     }
-    else if (code == 501)
-    {
-        return utool_copy_string_result(STATE_FAILURE, FAIL_NOT_SUPPORT, result);
+    else if (code == 501) {
+        return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NOT_SUPPORT, result);
     }
 
     // if status code not in the list above, read detail from response content
     ZF_LOGE("Failed to execute command, error response -> %s", response->content);
     cJSON *failures = cJSON_CreateArray();
-    int ret = utool_get_failures_from_response(response, failures);
-    if (ret != OK) return ret;
+    int ret = UtoolGetFailuresFromResponse(response, failures);
+    if (ret != OK) { return ret; }
 
-    return utool_copy_result(STATE_FAILURE, failures, result);
+    return UtoolBuildOutputResult(STATE_FAILURE, failures, result);
 }
 
 /**
@@ -214,42 +207,37 @@ int utool_resolve_failure_response(utool_CurlResponse *response, char **result)
  * @param failures
  * @return
  */
-int utool_get_failures_from_response(utool_CurlResponse *response, cJSON *failures)
+int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
 {
     cJSON *json = cJSON_Parse(response->content);
-    int ret = utool_asset_json_not_null(json);
-    if (ret != OK) goto done;
+    int ret = UtoolAssetJsonNotNull(json);
+    if (ret != OK) {
+        goto done;
+    }
 
     cJSON *extendedInfoArray = cJSONUtils_GetPointer(json, "/error/@Message.ExtendedInfo");
-    if (extendedInfoArray == NULL)
-    {
+    if (extendedInfoArray == NULL) {
         extendedInfoArray = cJSONUtils_GetPointer(json, "/@Message.ExtendedInfo");
     }
 
-    if (extendedInfoArray != NULL && cJSON_IsArray(extendedInfoArray))
-    {
+    if (extendedInfoArray != NULL && cJSON_IsArray(extendedInfoArray)) {
         int count = cJSON_GetArraySize(extendedInfoArray);
-        if (count == 1)
-        {
+        if (count == 1) {
             cJSON *extendInfo = cJSON_GetArrayItem(extendedInfoArray, 0);
             cJSON *severity = cJSON_GetObjectItem(extendInfo, "Severity");
-            if (severity != NULL && strncmp(SEVERITY_OK, severity->valuestring, strlen(SEVERITY_OK)) == 0)
-            {
+            if (severity != NULL && strncmp(SEVERITY_OK, severity->valuestring, strlen(SEVERITY_OK)) == 0) {
                 goto done;
             }
         }
 
-        if (count > 0)
-        {
+        if (count > 0) {
             int idx = 0;
-            for (; idx < count; idx++)
-            {
+            for (; idx < count; idx++) {
                 cJSON *extendInfo = cJSON_GetArrayItem(extendedInfoArray, idx);
                 cJSON *severity = cJSON_GetObjectItem(extendInfo, "Severity");
                 cJSON *resolution = cJSON_GetObjectItem(extendInfo, "Resolution");
                 cJSON *message = cJSON_GetObjectItem(extendInfo, "Message");
-                if (severity == NULL || resolution == NULL || message == NULL)
-                {
+                if (severity == NULL || resolution == NULL || message == NULL) {
                     ret = UTOOLE_UNKNOWN_RESPONSE_FORMAT;
                     goto done;
                 }
@@ -259,20 +247,17 @@ int utool_get_failures_from_response(utool_CurlResponse *response, cJSON *failur
                          message->valuestring, resolution->valuestring);
 
                 cJSON *failure = cJSON_CreateString(buffer);
-                if (failure != NULL)
-                {
+                if (failure != NULL) {
                     cJSON_AddItemToArray(failures, failure);
                 }
-                else
-                {
-                    FREE_cJSON(failures);
+                else {
+                    FREE_CJSON(failures);
                     ret = UTOOLE_INTERNAL;
                 }
             }
         }
     }
-    else
-    {
+    else {
         ret = UTOOLE_UNKNOWN_RESPONSE_FORMAT;
     }
 
@@ -280,16 +265,15 @@ int utool_get_failures_from_response(utool_CurlResponse *response, cJSON *failur
     goto done;
 
 done:
-    FREE_cJSON(json);
+    FREE_CJSON(json);
     return ret;
 }
 
 
-int utool_get_redfish_server(utool_CommandOption *option, utool_RedfishServer *server, char **result)
+int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result)
 {
     char *baseUrl = malloc(MAX_URL_LEN);
-    if (baseUrl == NULL)
-    {
+    if (baseUrl == NULL) {
         free(server);
         return UTOOLE_INTERNAL;
     }
@@ -304,51 +288,48 @@ int utool_get_redfish_server(utool_CommandOption *option, utool_RedfishServer *s
     strncpy(server->password, option->password, strlen(option->password) + 1);
 
     char resourceUrl[MAX_URL_LEN] = "/Systems";
-    utool_CurlResponse *response = &(utool_CurlResponse) {0};
-    int ret = utool_curl_make_request(server, resourceUrl, HTTP_GET, NULL, NULL, response);
-    if (ret != CURLE_OK) goto return_statement;
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+    int ret = UtoolMakeCurlRequest(server, resourceUrl, HTTP_GET, NULL, NULL, response);
+    if (ret != CURLE_OK) { goto return_statement; }
 
     cJSON *json = NULL;
     // parse response content and detect redfish-system-id
-    if (response->httpStatusCode >= 200 && response->httpStatusCode < 300)
-    {
+    if (response->httpStatusCode >= 200 && response->httpStatusCode < 300) {
         json = cJSON_Parse(response->content);
-        ret = utool_asset_json_not_null(json);
-        if (ret != OK) goto return_statement;
+        ret = UtoolAssetJsonNotNull(json);
+        if (ret != OK) { goto return_statement; }
 
         cJSON *node = cJSONUtils_GetPointer(json, "/Members/0/@odata.id");
-        ret = utool_asset_json_node_not_null(node, "/Members/0/@odata.id");
-        if (ret != OK) goto return_statement;
+        ret = UtoolAssetJsonNodeNotNull(node, "/Members/0/@odata.id");
+        if (ret != OK) { goto return_statement; }
 
         char *pSystemPath = node->valuestring;
         char *pLastSlash = strrchr(pSystemPath, '/');
         char *pSystemId = pLastSlash ? pLastSlash + 1 : pSystemPath;
         ZF_LOGI("Get redfish system id succeed, system id is: %s", pSystemId);
         server->systemId = (char *) malloc(strlen(pSystemId) + 1);
-        if (server->systemId == NULL)
-        {
+        if (server->systemId == NULL) {
             ret = UTOOLE_INTERNAL;
             goto return_statement;
         }
 
         strncpy(server->systemId, pSystemId, strlen(pSystemId) + 1);
     }
-    else
-    {
+    else {
         ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror(ret));
-        ret = utool_resolve_failure_response(response, result);
+        ret = UtoolResolveFailureResponse(response, result);
     }
 
     goto return_statement;
 
 return_statement:
-    FREE_cJSON(json);
-    utool_free_curl_response(response);
+    FREE_CJSON(json)
+    UtoolFreeCurlResponse(response);
     return ret;
 }
 
 
-static int utool_curl_get_resp_callback(void *buffer, size_t size, size_t nmemb, utool_CurlResponse *response)
+static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
 {
     // get response content
     unsigned long fullSize = size * nmemb;
@@ -368,10 +349,9 @@ static int utool_curl_get_resp_callback(void *buffer, size_t size, size_t nmemb,
 }
 
 
-static int utool_curl_get_header_callback(char *buffer, size_t size, size_t nitems, utool_CurlResponse *response)
+static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
 {
-    if (utool_str_case_starts_with((const char *) buffer, (const char *) HEADER_ETAG))
-    {
+    if (UtoolStringIgnoreCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
         // get response content
         unsigned long fullSize = size * nitems;
         char content[fullSize - 1];
