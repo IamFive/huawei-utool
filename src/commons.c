@@ -4,6 +4,17 @@
 #include <cJSON_Utils.h>
 #include <constants.h>
 #include <typedefs.h>
+#include <command-interfaces.h>
+
+/**
+ * All support commands
+ */
+UtoolCommand commands[] = {
+        {.name = "getcapabilities", .pFuncExecute=UtoolGetCapabilities, .type=GET},
+        {.name = "getproduct", .pFuncExecute=UtoolGetProduct, .type=GET},
+        {.name = "getfw", .pFuncExecute=UtoolGetFirmware, .type=GET},
+        NULL,
+};
 
 
 /**
@@ -174,6 +185,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 */
 const char *UtoolGetStringError(UtoolCode code)
 {
+    // TODO, we need to compile using gcc to make sure string literals will be storaged at RO memory zone.
     switch (code) {
         case OK:
             return "No error";

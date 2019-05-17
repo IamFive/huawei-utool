@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+int UtoolGetCapabilities(UtoolCommandOption *commandOption, char **result);
+
 int UtoolGetProduct(UtoolCommandOption *commandOption, char **result);
 
 int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result);
