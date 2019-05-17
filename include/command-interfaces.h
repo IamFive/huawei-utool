@@ -9,11 +9,13 @@
 extern "C" {
 #endif
 
-int UtoolGetCapabilities(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result);
 
-int UtoolGetProduct(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result);
 
-int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
 #ifdef __cplusplus
 }

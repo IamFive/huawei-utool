@@ -37,7 +37,9 @@ extern "C" {
 #define STATE_FAILURE "Failure"
 
 #define OUTPUT_JSON "{\"State\": \"%s\", \"Message\": [\"%s\"]}"
-#define OUTPUT_DEFAULT_JSON "{\"State\": \"Failure\", \"Message\": [\"Internal error, please contact maintainer.\"]}"
+#define OUTPUT_SUCCESS_JSON "{\"State\": \"Success\", \"Message\": [\"Success: successfully completed request\"]}"
+
+//Success: successfully completed request
 /** //UTOOL response json constants */
 
 
@@ -78,6 +80,7 @@ typedef enum _Code
     UTOOLE_LOAD_SYSTEM_ID = 131,        /** failed to load redfish system id */
     UTOOLE_PARSE_RESPONSE_JSON = 132,   /** failed to parse json text */
     UTOOLE_UNKNOWN_RESPONSE_FORMAT = 133,   /** unexpect content returned by redfish */
+    UTOOLE_CREATE_JSON_NULL = 134,           /** failed to create json object */
 } UtoolCode;
 
 #ifdef __cplusplus

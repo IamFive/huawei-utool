@@ -56,6 +56,13 @@ int UtoolBuildStringOutputResult(const char *state, const char *messages, char *
  */
 int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mapping, int count);
 
+/**
+* build default success output result
+*
+* @param result
+*/
+void UtoolBuildDefaultSuccessResult(char **result);
+
 
 /**
 * get string error of UtoolCode

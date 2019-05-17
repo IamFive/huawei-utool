@@ -26,7 +26,7 @@ static const char *const usage[] = {
  * @param option
  * @return
  */
-int UtoolGetCapabilities(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 
@@ -80,10 +80,8 @@ int UtoolGetCapabilities(UtoolCommandOption *commandOption, char **result)
         }
     }
 
-    UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    ret = OK;
+    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
     goto done;
-
 
 failure:
     FREE_CJSON(output)

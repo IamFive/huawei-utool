@@ -14,8 +14,6 @@
 #include "argparse.h"
 #include "redfish.h"
 
-#define COMMAND_NAME "getproduct"
-
 static const char *const usage[] = {
         "utool getproduct",
         NULL,
@@ -39,7 +37,7 @@ static const UtoolOutputMapping getProductMappings[] = {
  * @param option
  * @return
  */
-int UtoolGetProduct(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
     cJSON *json = NULL;
