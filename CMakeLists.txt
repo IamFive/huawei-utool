@@ -19,6 +19,7 @@ set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
 set(LIBCURL_PATH third-party/curl)
+set(LIBZFLOG_PATH third-party/zf_log)
 #set(LIBUCW_PATH third-party/libucw)
 
 include_directories(
@@ -26,6 +27,7 @@ include_directories(
         ${CJSON_PATH}
         ${LIBARGPARSE_PATH}
         ${LIBCURL_PATH}/include
+        ${LIBZFLOG_PATH}/zf_log
         #        ${LIBUCW_PATH}/run/include
 )
 
@@ -33,6 +35,7 @@ link_directories(
         ${CJSON_PATH}/build
         ${LIBARGPARSE_PATH}
         ${LIBCURL_PATH}/lib/.libs
+        ${LIBZFLOG_PATH}/zf_log/build/zf_log
         #        ${LIBUCW_PATH}/run/lib
 )
 
@@ -42,6 +45,7 @@ link_libraries(
         cjson
         cjson_utils
         curl
+        zf_log
         #        ucw-6.5
 )
 

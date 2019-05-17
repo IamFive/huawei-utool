@@ -197,13 +197,16 @@ int utool_main(int argc, char *argv[], char **result)
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
         ret = targetCommand->pFuncExecute(commandOption, result);
         if (ret != OK) {
-            char *errorString = UtoolGetStringError(ret);
+            const char *errorString = (ret > OK && ret < CURL_LAST) ?
+                                      curl_easy_strerror(ret) : UtoolGetStringError(ret);
             // we can not use cJSON to build result here, because it may cause problems...
             // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
             char *buffer = malloc(MAX_OUTPUT_LEN);
             snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, errorString);
             *result = buffer;
         }
+
+        // if ret is ok, it means everything has been processed by command handler
         goto return_statement;
     }
     else {
