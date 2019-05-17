@@ -19,14 +19,6 @@
 static bool initialized = false;
 static pthread_mutex_t mutex;
 
-/**
- * All support commands
- */
-static UtoolCommand commands[] = {
-        {.name = "getproduct", .pFuncExecute=UtoolGetProduct, .type=GET},
-        {.name = "getfw", .pFuncExecute=UtoolGetFirmware, .type=GET},
-};
-
 
 /**
  * argparse usage description
@@ -184,11 +176,15 @@ int utool_main(int argc, char *argv[], char **result)
     ZF_LOGI("Try to find the command handler for %s.", commandName);
 
     UtoolCommand *targetCommand = NULL;
-    int commandCount = sizeof(commands) / sizeof(UtoolCommand);
-    for (int idx = 0; idx < commandCount; idx++) {
-        UtoolCommand _command = commands[idx];
-        if (strncasecmp(commandName, _command.name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0) {
-            targetCommand = &_command;
+    for (int idx = 0;; idx++) {
+        UtoolCommand *_command = commands + idx;
+        if (_command->name != NULL) {
+            if (strncasecmp(commandName, _command->name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0) {
+                targetCommand = _command;
+                break;
+            }
+        }
+        else {
             break;
         }
     }
@@ -211,8 +207,9 @@ int utool_main(int argc, char *argv[], char **result)
     }
     else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
-        ret = UtoolBuildOutputResult(STATE_FAILURE,
-                                     cJSON_CreateString("Error: Not Support. Sub-command is not supported."), result);
+        char buffer[MAX_FAILURE_MSG_LEN];
+        snprintf(buffer, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.", commandName);
+        ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
         goto return_statement;
     }
 

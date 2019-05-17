@@ -49,25 +49,6 @@ int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result)
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *memberResp = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *firmwareResp = &(UtoolCurlResponse) {0};
-    cJSON *firmwareJson = NULL;
-    cJSON *firmwareMembersJson = NULL;
-
-    // initialize output objects
-    cJSON *firmware = NULL;
-    cJSON *firmwares = cJSON_CreateArray();
-    ret = UtoolAssetJsonNotNull(firmwares);
-    if (ret != OK) {
-        goto done;
-    }
-
-    cJSON *output = cJSON_CreateObject();
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) {
-        goto done;
-    }
-
-    cJSON_AddItemToObject(output, "Firmware", firmwares);
-
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
@@ -93,31 +74,53 @@ int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result)
         goto done;
     }
 
+    // initialize output objects
+    cJSON *firmwareJson = NULL, *firmwareMembersJson = NULL;
+    cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
+
+    output = cJSON_CreateObject();
+    ret = UtoolAssetJsonNotNull(output);
+    if (ret != OK) {
+        goto failure;
+    }
+
+    firmwares = cJSON_AddArrayToObject(output, "Firmware");
+    ret = UtoolAssetJsonNotNull(output);
+    if (ret != OK) {
+        goto failure;
+    }
+
     // process response
     firmwareMembersJson = cJSON_Parse(memberResp->content);
     ret = UtoolAssetJsonNotNull(firmwareMembersJson);
     if (ret != OK) {
-        goto done;
+        goto failure;
     }
 
     int count = sizeof(getFwMappings) / sizeof(UtoolOutputMapping);
     cJSON *members = cJSON_GetObjectItem(firmwareMembersJson, "Members");
     int memberCount = cJSON_GetArraySize(members);
     for (int idx = 0; idx < memberCount; idx++) {
-        firmware = cJSON_CreateObject();
-        ret = UtoolAssetJsonNotNull(firmware);
-        if (ret != OK) { goto failure; }
-
         cJSON *member = cJSON_GetArrayItem(members, idx);
         cJSON *odataIdNode = cJSON_GetObjectItem(member, "@odata.id");
         char *url = odataIdNode->valuestring;
 
         ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, firmwareResp);
-        if (ret != OK) { goto failure; }
+        if (ret != OK) {
+            goto failure;
+        }
 
         firmwareJson = cJSON_Parse(firmwareResp->content);
         ret = UtoolAssetJsonNotNull(firmwareJson);
-        if (ret != OK) { goto failure; }
+        if (ret != OK) {
+            goto failure;
+        }
+
+        firmware = cJSON_CreateObject();
+        ret = UtoolAssetJsonNotNull(firmware);
+        if (ret != OK) {
+            goto failure;
+        }
 
         // create firmware item and add it to array
         UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings, count);

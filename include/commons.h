@@ -19,6 +19,12 @@ extern "C" {
 
 
 /**
+*   All command metadata define
+*/
+extern UtoolCommand commands[];
+
+
+/**
  * build new json result and assign to (char **) result
  *
  * @param state
@@ -58,6 +64,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 * @return
 */
 const char *UtoolGetStringError(UtoolCode code);
+
 
 #ifdef __cplusplus
 }
