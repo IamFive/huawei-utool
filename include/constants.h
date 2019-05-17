@@ -74,13 +74,16 @@ extern "C" {
 
 typedef enum _Code
 {
-    OK = 0,
+    UTOOLE_OK = 0,
     UTOOLE_OPTION_ERROR = 120,          /** user input illegal options */
     UTOOLE_INTERNAL = 130,              /** tool internal errors like failed to malloc memory, failed to init curl */
     UTOOLE_LOAD_SYSTEM_ID = 131,        /** failed to load redfish system id */
-    UTOOLE_PARSE_RESPONSE_JSON = 132,   /** failed to parse json text */
-    UTOOLE_UNKNOWN_RESPONSE_FORMAT = 133,   /** unexpect content returned by redfish */
+    UTOOLE_PARSE_JSON_FAILED = 132,       /** failed to parse json text */
+    UTOOLE_UNKNOWN_JSON_FORMAT = 133,       /** unexpect content returned by redfish */
     UTOOLE_CREATE_JSON_NULL = 134,           /** failed to create json object */
+    UTOOLE_PRINT_JSON_FAILED = 135,         /** failed to print json object */
+    UTOOLE_CURL_INIT_FAILED = 140,         /** failed to init curl */
+
 } UtoolCode;
 
 #ifdef __cplusplus

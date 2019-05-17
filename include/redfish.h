@@ -107,10 +107,10 @@ static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
 static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
 {
     if (json == NULL) {
-        ZF_LOGE("Failed to create json object");
+        ZF_LOGE("Failed to create JSON object");
         return UTOOLE_CREATE_JSON_NULL;
     }
-    return OK;
+    return UTOOLE_OK;
 }
 
 /**
@@ -120,14 +120,15 @@ static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
  * @param option
  * @return
  */
-static inline int UtoolAssetJsonNotNull(cJSON *json)
+static inline int UtoolAssetParseJsonNotNull(cJSON *json)
 {
     if (json == NULL) {
-        ZF_LOGE("Failed to create json object");
-        return UTOOLE_PARSE_RESPONSE_JSON;
+        ZF_LOGE("Failed to parse JSON content into JSON object.");
+        return UTOOLE_PARSE_JSON_FAILED;
     }
-    return OK;
+    return UTOOLE_OK;
 }
+
 
 /**
  * asset json node object is not null
@@ -140,9 +141,25 @@ static inline int UtoolAssetJsonNodeNotNull(cJSON *json, char *xpath)
 {
     if (json == NULL) {
         ZF_LOGE("Failed to get the node(%s) from json", xpath);
-        return UTOOLE_UNKNOWN_RESPONSE_FORMAT;
+        return UTOOLE_UNKNOWN_JSON_FORMAT;
     }
-    return OK;
+    return UTOOLE_OK;
+}
+
+/**
+ * asset print JSON object to string is not null
+ *
+ * @param json
+ * @param xpath
+ * @return
+ */
+static inline int UtoolAssetPrintJsonNotNull(char *content)
+{
+    if (content == NULL) {
+        ZF_LOGE("Failed to print JSON object to string");
+        return UTOOLE_PRINT_JSON_FAILED;
+    }
+    return UTOOLE_OK;
 }
 
 

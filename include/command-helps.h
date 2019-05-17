@@ -106,7 +106,7 @@ static int UtoolValidateConnectOptions(UtoolCommandOption *commandOption, char *
                                       result);
     }
 
-    return OK;
+    return UTOOLE_OK;
 }
 
 static int
@@ -126,7 +126,7 @@ UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct ar
         return UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(TOO_MANY_ARGUMENTS), result);
     }
 
-    return OK;
+    return UTOOLE_OK;
 }
 
 

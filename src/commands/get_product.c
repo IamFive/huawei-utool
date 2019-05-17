@@ -63,24 +63,28 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
 
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != OK || server->systemId == NULL) {
+    if (ret != UTOOLE_OK || server->systemId == NULL) {
         goto done;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, response);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto done;
     }
 
     // process response
     output = cJSON_CreateObject();
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) { goto failure; }
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
 
     if (response->httpStatusCode < 300) {
         json = cJSON_Parse(response->content);
-        ret = UtoolAssetJsonNotNull(json);
-        if (ret != OK) { goto failure; }
+        ret = UtoolAssetParseJsonNotNull(json);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
 
         // create output json object
         int count = sizeof(getProductMappings) / sizeof(UtoolOutputMapping);
