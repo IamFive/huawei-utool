@@ -21,6 +21,18 @@ static pthread_mutex_t mutex;
 
 
 /**
+ * All support commands
+ */
+UtoolCommand commands[] = {
+        {.name = "getcapabilities", .pFuncExecute=UtoolCmdGetCapabilities, .type=GET},
+        {.name = "getproduct", .pFuncExecute=UtoolCmdGetProduct, .type=GET},
+        {.name = "getfw", .pFuncExecute=UtoolCmdGetFirmware, .type=GET},
+        {.name = "adduser", .pFuncExecute=UtoolCmdAddUser, .type=SET},
+        NULL,
+};
+
+
+/**
  * argparse usage description
  */
 static const char *const usage[] = {

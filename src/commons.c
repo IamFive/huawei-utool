@@ -7,17 +7,6 @@
 #include <command-interfaces.h>
 
 /**
- * All support commands
- */
-UtoolCommand commands[] = {
-        {.name = "getcapabilities", .pFuncExecute=UtoolGetCapabilities, .type=GET},
-        {.name = "getproduct", .pFuncExecute=UtoolGetProduct, .type=GET},
-        {.name = "getfw", .pFuncExecute=UtoolGetFirmware, .type=GET},
-        NULL,
-};
-
-
-/**
  *
  * build output result JSON
  *
@@ -69,6 +58,9 @@ failure:
 int UtoolBuildOutputResult(const char *state, cJSON *messages, char **result)
 {
     int ret = UTOOLE_INTERNAL;
+    if (messages == NULL) {
+        return ret;
+    }
 
     cJSON *jsonResult = UtoolBuildOutputJson(state, messages);
     if (jsonResult == NULL) { return ret; }
@@ -118,6 +110,11 @@ int UtoolBuildStringOutputResult(const char *state, const char *messages, char *
 
     FREE_CJSON(jsonResult)
     return ret;
+}
+
+void UtoolBuildDefaultSuccessResult(char **result)
+{
+    *result = strndup(OUTPUT_SUCCESS_JSON, sizeof(OUTPUT_SUCCESS_JSON));
 }
 
 
@@ -195,6 +192,8 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Internal error, failed to parse JSON content.";
         case UTOOLE_UNKNOWN_RESPONSE_FORMAT:
             return "Internal error, unexpect JSON format response by HUAWEI server API.";
+        case UTOOLE_CREATE_JSON_NULL:
+            return "Internal error, failed to create a JSON object.";
         default:
             return "Unknown error";
     }

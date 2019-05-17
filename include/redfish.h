@@ -104,10 +104,26 @@ static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
  * @param option
  * @return
  */
+static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
+{
+    if (json == NULL) {
+        ZF_LOGE("Failed to create json object");
+        return UTOOLE_CREATE_JSON_NULL;
+    }
+    return OK;
+}
+
+/**
+ * asset json object is not null
+ *
+ * @param self
+ * @param option
+ * @return
+ */
 static inline int UtoolAssetJsonNotNull(cJSON *json)
 {
     if (json == NULL) {
-        ZF_LOGE("Failed to parse content into json");
+        ZF_LOGE("Failed to create json object");
         return UTOOLE_PARSE_RESPONSE_JSON;
     }
     return OK;

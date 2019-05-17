@@ -53,6 +53,8 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
                          UtoolCurlResponse *response)
 {
     int ret = UTOOLE_INTERNAL;
+
+    char *payloadContent = NULL;
     struct curl_slist *curlHeaderList = NULL;
     CURL *curl = curl_easy_init();
     if (curl) {
@@ -132,15 +134,13 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, response);
 
-        // setup payload
+        // setup payload, payload should be freed by caller
         if (payload != NULL) {
             /** https://github.com/bagder/everything-curl/blob/master/libcurl-http-requests.md */
-            char *payloadContent = cJSON_Print(payload);
+            payloadContent = cJSON_Print(payload);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payloadContent));
-            // TODO is free required here?
         }
-
 
         // perform request
         ret = curl_easy_perform(curl);
@@ -160,6 +160,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
     goto return_statement;
 
 return_statement:
+    FREE_OBJ(payloadContent)
     curl_slist_free_all(curlHeaderList);
     curl_easy_cleanup(curl);
     return ret;
@@ -274,7 +275,6 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 {
     char *baseUrl = malloc(MAX_URL_LEN);
     if (baseUrl == NULL) {
-        free(server);
         return UTOOLE_INTERNAL;
     }
     snprintf(baseUrl, MAX_URL_LEN, "https://%s:%d", option->host, option->port);

@@ -15,3 +15,6 @@ Things to do
 - SupportActivateType 
 - Type
 
+### adduser
+- privilege
+- -n -> -u

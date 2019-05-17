@@ -14,8 +14,6 @@
 #include "argparse.h"
 #include "redfish.h"
 
-#define COMMAND_NAME "getfw"
-
 static const char *const usage[] = {
         "utool getfw",
         NULL,
@@ -37,7 +35,7 @@ static const UtoolOutputMapping getFwMappings[] = {
  * @param result
  * @return
  */
-int UtoolGetFirmware(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 
