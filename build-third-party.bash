@@ -28,6 +28,14 @@ thirdparty::argparse() {
   make
 }
 
+thirdparty::zflog() {
+  echo "Build zf log..."
+  cd ${ProjectRoot}
+  cd third-party/zf_log
+  rm -rf build && mkdir -p build && cd build
+  cmake .. && make
+}
+
 #thirdparty::libucw() {
 #  echo "Build libUCW..."
 #  cd ${ProjectRoot}
@@ -50,6 +58,7 @@ main() {
   thirdparty::curl
 #  thirdparty::libucw
   thirdparty::cJSON
+  thirdparty::zflog
   thirdparty::argparse
 }
 
