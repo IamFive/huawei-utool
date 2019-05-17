@@ -115,7 +115,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
                 ZF_LOGE("Try to load etag through get request");
 //                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
                 ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
-                if (ret != OK) {
+                if (ret != UTOOLE_OK) {
                     goto return_statement;
                 }
 
@@ -138,6 +138,10 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (payload != NULL) {
             /** https://github.com/bagder/everything-curl/blob/master/libcurl-http-requests.md */
             payloadContent = cJSON_Print(payload);
+            ret = UtoolAssetPrintJsonNotNull(payloadContent);
+            if (ret != UTOOLE_OK) {
+                goto return_statement;
+            }
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payloadContent));
         }
@@ -154,7 +158,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
     }
     else {
         ZF_LOGE("Failed to init curl, aboard request.");
-        ret = UTOOLE_INTERNAL;
+        ret = UTOOLE_CURL_INIT_FAILED;
     }
 
     goto return_statement;
@@ -196,7 +200,7 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     ZF_LOGE("Failed to execute command, error response -> %s", response->content);
     cJSON *failures = cJSON_CreateArray();
     int ret = UtoolGetFailuresFromResponse(response, failures);
-    if (ret != OK) { return ret; }
+    if (ret != UTOOLE_OK) { return ret; }
 
     return UtoolBuildOutputResult(STATE_FAILURE, failures, result);
 }
@@ -211,8 +215,8 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
 int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
 {
     cJSON *json = cJSON_Parse(response->content);
-    int ret = UtoolAssetJsonNotNull(json);
-    if (ret != OK) {
+    int ret = UtoolAssetParseJsonNotNull(json);
+    if (ret != UTOOLE_OK) {
         goto done;
     }
 
@@ -239,7 +243,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
                 cJSON *resolution = cJSON_GetObjectItem(extendInfo, "Resolution");
                 cJSON *message = cJSON_GetObjectItem(extendInfo, "Message");
                 if (severity == NULL || resolution == NULL || message == NULL) {
-                    ret = UTOOLE_UNKNOWN_RESPONSE_FORMAT;
+                    ret = UTOOLE_UNKNOWN_JSON_FORMAT;
                     goto done;
                 }
 
@@ -259,7 +263,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
         }
     }
     else {
-        ret = UTOOLE_UNKNOWN_RESPONSE_FORMAT;
+        ret = UTOOLE_UNKNOWN_JSON_FORMAT;
     }
 
 
@@ -290,18 +294,24 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
     char resourceUrl[MAX_URL_LEN] = "/Systems";
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
     int ret = UtoolMakeCurlRequest(server, resourceUrl, HTTP_GET, NULL, NULL, response);
-    if (ret != CURLE_OK) { goto return_statement; }
+    if (ret != CURLE_OK) {
+        goto return_statement;
+    }
 
     cJSON *json = NULL;
     // parse response content and detect redfish-system-id
     if (response->httpStatusCode >= 200 && response->httpStatusCode < 300) {
         json = cJSON_Parse(response->content);
-        ret = UtoolAssetJsonNotNull(json);
-        if (ret != OK) { goto return_statement; }
+        ret = UtoolAssetParseJsonNotNull(json);
+        if (ret != UTOOLE_OK) {
+            goto return_statement;
+        }
 
         cJSON *node = cJSONUtils_GetPointer(json, "/Members/0/@odata.id");
         ret = UtoolAssetJsonNodeNotNull(node, "/Members/0/@odata.id");
-        if (ret != OK) { goto return_statement; }
+        if (ret != UTOOLE_OK) {
+            goto return_statement;
+        }
 
         char *pSystemPath = node->valuestring;
         char *pLastSlash = strrchr(pSystemPath, '/');

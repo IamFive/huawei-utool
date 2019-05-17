@@ -53,7 +53,7 @@ static cJSON *BuildPayload(UtoolAddUserOption *addUserOption);
  */
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
 {
-    int ret = OK;
+    int ret = UTOOLE_OK;
     cJSON *payload = NULL;
 
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -92,18 +92,18 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
     // build payload
     payload = BuildPayload(addUserOption);
     ret = UtoolAssetCreatedJsonNotNull(payload);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     // get redfish system id
     ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != OK || server->systemId == NULL) {
+    if (ret != UTOOLE_OK || server->systemId == NULL) {
         goto failure;
     }
 
     ret = UtoolMakeCurlRequest(server, "/AccountService/Accounts", HTTP_POST, payload, NULL, response);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
@@ -135,7 +135,7 @@ done:
 */
 static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **result)
 {
-    int ret = OK;
+    int ret = UTOOLE_OK;
     if (addUserOption->username == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_USERNAME_REQUIRED), result);
         goto failure;
@@ -166,7 +166,7 @@ static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **resu
         goto failure;
     }
 
-//if (ret == OK && privileges == NULL) {
+//if (ret == UTOOLE_OK && privileges == NULL) {
 //    ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PRIVILEGE_REQUIRED), result);
 //}
     goto done;
@@ -185,25 +185,25 @@ static cJSON *BuildPayload(UtoolAddUserOption *addUserOption)
 
     cJSON *payload = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(payload);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     cJSON *username = cJSON_AddStringToObject(payload, "UserName", addUserOption->username);
     ret = UtoolAssetCreatedJsonNotNull(username);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     cJSON *password = cJSON_AddStringToObject(payload, "Password", addUserOption->password);
     ret = UtoolAssetCreatedJsonNotNull(password);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", addUserOption->roleId);
     ret = UtoolAssetCreatedJsonNotNull(roleId);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 

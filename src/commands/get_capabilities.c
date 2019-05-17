@@ -41,22 +41,23 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
     }
 
     cJSON *output, *getCommandList, *setCommandList;
+
     output = cJSON_CreateObject();
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) {
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     getCommandList = cJSON_AddArrayToObject(output, "GetCommandList");
     setCommandList = cJSON_AddArrayToObject(output, "SetCommandList");
 
-    ret = UtoolAssetJsonNotNull(setCommandList);
-    if (ret != OK) {
+    ret = UtoolAssetCreatedJsonNotNull(setCommandList);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) {
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 

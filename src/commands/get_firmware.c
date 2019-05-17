@@ -59,12 +59,12 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != OK || server->systemId == NULL) {
+    if (ret != UTOOLE_OK || server->systemId == NULL) {
         goto done;
     }
 
     ret = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         goto done;
     }
     if (memberResp->httpStatusCode >= 400) {
@@ -77,21 +77,21 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
     cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
 
     output = cJSON_CreateObject();
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) {
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     firmwares = cJSON_AddArrayToObject(output, "Firmware");
-    ret = UtoolAssetJsonNotNull(output);
-    if (ret != OK) {
+    ret = UtoolAssetCreatedJsonNotNull(firmwares);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     // process response
     firmwareMembersJson = cJSON_Parse(memberResp->content);
-    ret = UtoolAssetJsonNotNull(firmwareMembersJson);
-    if (ret != OK) {
+    ret = UtoolAssetParseJsonNotNull(firmwareMembersJson);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
@@ -104,19 +104,19 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
         char *url = odataIdNode->valuestring;
 
         ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, firmwareResp);
-        if (ret != OK) {
+        if (ret != UTOOLE_OK) {
             goto failure;
         }
 
         firmwareJson = cJSON_Parse(firmwareResp->content);
-        ret = UtoolAssetJsonNotNull(firmwareJson);
-        if (ret != OK) {
+        ret = UtoolAssetParseJsonNotNull(firmwareJson);
+        if (ret != UTOOLE_OK) {
             goto failure;
         }
 
         firmware = cJSON_CreateObject();
-        ret = UtoolAssetJsonNotNull(firmware);
-        if (ret != OK) {
+        ret = UtoolAssetCreatedJsonNotNull(firmware);
+        if (ret != UTOOLE_OK) {
             goto failure;
         }
 

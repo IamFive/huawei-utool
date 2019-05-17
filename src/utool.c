@@ -107,7 +107,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
                                       result);
     }
 
-    return OK;
+    return UTOOLE_OK;
 }
 
 /**
@@ -157,7 +157,7 @@ int utool_main(int argc, char *argv[], char **result)
     int ret;
 
     ret = initialize(result);
-    if (ret != OK) {
+    if (ret != UTOOLE_OK) {
         return ret;
     }
 
@@ -176,7 +176,7 @@ int utool_main(int argc, char *argv[], char **result)
     }
 
     ret = utool_parse_command_option(commandOption, argc, convert, result);
-    if (ret != OK || commandOption->flag != EXECUTABLE) {
+    if (ret != UTOOLE_OK || commandOption->flag != EXECUTABLE) {
         goto return_statement;
     }
 
@@ -204,8 +204,8 @@ int utool_main(int argc, char *argv[], char **result)
     if (targetCommand) {
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
         ret = targetCommand->pFuncExecute(commandOption, result);
-        if (ret != OK) {
-            const char *errorString = (ret > OK && ret < CURL_LAST) ?
+        if (ret != UTOOLE_OK) {
+            const char *errorString = (ret > UTOOLE_OK && ret < CURL_LAST) ?
                                       curl_easy_strerror(ret) : UtoolGetStringError(ret);
             // we can not use cJSON to build result here, because it may cause problems...
             // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);

@@ -57,19 +57,23 @@ failure:
  */
 int UtoolBuildOutputResult(const char *state, cJSON *messages, char **result)
 {
-    int ret = UTOOLE_INTERNAL;
+    int ret = UTOOLE_CREATE_JSON_NULL;
     if (messages == NULL) {
         return ret;
     }
 
     cJSON *jsonResult = UtoolBuildOutputJson(state, messages);
-    if (jsonResult == NULL) { return ret; }
+    if (jsonResult == NULL) {
+        return ret;
+    }
 
     char *pretty = cJSON_Print(jsonResult);
-    if (pretty == NULL) { goto return_statement; }
+    if (pretty == NULL) {
+        goto return_statement;
+    }
 
     *result = pretty;
-    ret = OK;
+    ret = UTOOLE_OK;
     goto return_statement;
 
 return_statement:
@@ -89,7 +93,7 @@ return_statement:
  */
 int UtoolBuildStringOutputResult(const char *state, const char *messages, char **result)
 {
-    int ret = UTOOLE_INTERNAL;
+    int ret = UTOOLE_CREATE_JSON_NULL;
 
     cJSON *jsonString = cJSON_CreateString(messages);
     if (jsonString == NULL) {
@@ -104,7 +108,7 @@ int UtoolBuildStringOutputResult(const char *state, const char *messages, char *
 
     char *pretty = cJSON_Print(jsonResult);
     if (pretty != NULL) {
-        ret = OK;
+        ret = UTOOLE_OK;
         *result = pretty;
     }
 
@@ -171,7 +175,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
         }
     }
 
-    return OK;
+    return UTOOLE_OK;
 }
 
 /**
@@ -184,16 +188,20 @@ const char *UtoolGetStringError(UtoolCode code)
 {
     // TODO, we need to compile using gcc to make sure string literals will be storaged at RO memory zone.
     switch (code) {
-        case OK:
+        case UTOOLE_OK:
             return "No error";
         case UTOOLE_INTERNAL:
             return "Internal error, please contact maintainer.";
-        case UTOOLE_PARSE_RESPONSE_JSON:
+        case UTOOLE_PARSE_JSON_FAILED:
             return "Internal error, failed to parse JSON content.";
-        case UTOOLE_UNKNOWN_RESPONSE_FORMAT:
+        case UTOOLE_UNKNOWN_JSON_FORMAT:
             return "Internal error, unexpect JSON format response by HUAWEI server API.";
         case UTOOLE_CREATE_JSON_NULL:
             return "Internal error, failed to create a JSON object.";
+        case UTOOLE_PRINT_JSON_FAILED:
+            return "Internal error, failed to print JSON object.";
+        case UTOOLE_CURL_INIT_FAILED:
+            return "Internal error, failed to init curl.";
         default:
             return "Unknown error";
     }
