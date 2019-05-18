@@ -132,10 +132,15 @@ void UtoolBuildDefaultSuccessResult(char **result)
  * @param count
  * @return
  */
-int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings, int count)
+int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings)
 {
-    for (int idx = 0; idx < count; idx++) {
-        const UtoolOutputMapping *mapping = mappings + idx;
+    int idx = 0;
+    while (1) {
+        const UtoolOutputMapping *mapping = mappings + (idx++);
+        if (mapping->sourceXpath == NULL || mapping->targetKeyValue == NULL) {
+            break;
+        }
+
         const char *xpath = mapping->sourceXpath;
         cJSON *ref = cJSONUtils_GetPointer(source, xpath);
         if (ref != NULL) {

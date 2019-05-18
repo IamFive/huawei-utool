@@ -15,6 +15,16 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
 #ifdef __cplusplus

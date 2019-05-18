@@ -28,6 +28,7 @@ static const UtoolOutputMapping getProductMappings[] = {
         {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
         {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
+        NULL
 };
 
 /**
@@ -87,8 +88,7 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
         }
 
         // create output json object
-        int count = sizeof(getProductMappings) / sizeof(UtoolOutputMapping);
-        UtoolMappingCJSONItems(json, output, getProductMappings, count);
+        UtoolMappingCJSONItems(json, output, getProductMappings);
 
         // output to result
         ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);

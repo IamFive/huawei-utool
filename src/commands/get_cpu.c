@@ -15,7 +15,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getfw",
+        "utool getcpu",
         NULL,
 };
 
@@ -24,9 +24,9 @@ static const UtoolOutputMapping getFwMappings[] = {
         {.sourceXpath = "/SoftwareId", .targetKeyValue="Type"},
         {.sourceXpath = "/Version", .targetKeyValue="Version"},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
-//        {.sourceXpath = "", .targetKeyValue="SupportActivateType"},
-        NULL
 };
+
+//gettemp
 
 
 /**
@@ -36,7 +36,7 @@ static const UtoolOutputMapping getFwMappings[] = {
  * @param result
  * @return
  */
-int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 

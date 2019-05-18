@@ -51,10 +51,9 @@ int UtoolBuildStringOutputResult(const char *state, const char *messages, char *
  * @param source
  * @param target
  * @param mapping
- * @param count
  * @return
  */
-int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mapping, int count);
+int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings);
 
 /**
 * build default success output result
