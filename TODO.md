@@ -18,3 +18,11 @@ Things to do
 ### adduser
 - privilege
 - -n -> -u
+
+### getip
+all
+
+### getpsu
+//summary ??
+"OverallHealth": "Warning",
+"Maximum": "2",

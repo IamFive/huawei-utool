@@ -14,29 +14,32 @@
 #include "argparse.h"
 #include "redfish.h"
 
+//get BMC IP and VLAN information
+
 static const char *const usage[] = {
-        "utool getfw",
+        "utool getip",
         NULL,
 };
 
 static const UtoolOutputMapping getFwMappings[] = {
-        {.sourceXpath = "/Name", .targetKeyValue="Name"},
-        {.sourceXpath = "/SoftwareId", .targetKeyValue="Type"},
-        {.sourceXpath = "/Version", .targetKeyValue="Version"},
-        {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
-//        {.sourceXpath = "", .targetKeyValue="SupportActivateType"},
-        NULL
+        {.sourceXpath = "/Oem/Huawei/IPVersion", .targetKeyValue="IPVersion"},
+        {.sourceXpath = "/PermanentMACAddress", .targetKeyValue="PermanentMACAddress"},
+        {.sourceXpath = "/IPv4Addresses", .targetKeyValue="IPv4"},
+        {.sourceXpath = "/IPv6Addresses", .targetKeyValue="IPv6"},
+        {.sourceXpath = "/VLAN", .targetKeyValue="VLAN"},
 };
 
 
 /**
- * command handler of `getfw`
+ * command handler of `getip`
+ *
+ * Get BMC IP and VLAN information
  *
  * @param commandOption
  * @param result
  * @return
  */
-int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 

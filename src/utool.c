@@ -27,6 +27,12 @@ UtoolCommand commands[] = {
         {.name = "getcapabilities", .pFuncExecute=UtoolCmdGetCapabilities, .type=GET},
         {.name = "getproduct", .pFuncExecute=UtoolCmdGetProduct, .type=GET},
         {.name = "getfw", .pFuncExecute=UtoolCmdGetFirmware, .type=GET},
+        {.name = "getip", .pFuncExecute=UtoolCmdGetBmcIP, .type=GET},
+        {.name = "getcpu", .pFuncExecute=UtoolCmdGetProcessor, .type=GET},
+        {.name = "gettemp", .pFuncExecute=UtoolCmdGetTemperature, .type=GET},
+        {.name = "getvolt", .pFuncExecute=UtoolCmdGetVoltage, .type=GET},
+        {.name = "getpsu", .pFuncExecute=UtoolCmdGetPowerSupply, .type=GET},
+
         {.name = "adduser", .pFuncExecute=UtoolCmdAddUser, .type=SET},
         NULL,
 };
