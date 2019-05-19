@@ -31,6 +31,8 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_COMMAND_INTERFACES_H

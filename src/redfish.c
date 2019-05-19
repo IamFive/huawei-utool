@@ -98,7 +98,9 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         const UtoolCurlHeader *ifMatchHeader = NULL;
         for (int idx = 0;; idx++) {
             const UtoolCurlHeader *header = headers + idx;
-            if (header == NULL) { break; }
+            if (header == NULL || header->name == NULL) {
+                break;
+            }
             if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0) {
                 ifMatchHeader = header;
             }
