@@ -33,3 +33,10 @@ all
 - RatedSpeedRPM
 - SpeedRPM
 - LowerThresholdRPM
+
+### getpdisk
+- Location
+- Volumes
+- SASAddress
+- SpareforLogicalDrives
+- CapacityGiB

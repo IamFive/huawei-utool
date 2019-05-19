@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include "cJSON.h"
 
 /**
  * Redfish Server basic properties
@@ -86,6 +87,8 @@ typedef struct _OutputMapping
 {
     const char *const sourceXpath;
     const char *const targetKeyValue;
+
+    int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;
 
 

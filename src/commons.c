@@ -134,9 +134,9 @@ void UtoolBuildDefaultSuccessResult(char **result)
  */
 int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings)
 {
-    int idx = 0;
-    while (1) {
-        const UtoolOutputMapping *mapping = mappings + (idx++);
+    int ret;
+    for (int idx = 0;; idx++) {
+        const UtoolOutputMapping *mapping = mappings + idx;
         if (mapping->sourceXpath == NULL || mapping->targetKeyValue == NULL) {
             break;
         }
@@ -144,7 +144,23 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
         const char *xpath = mapping->sourceXpath;
         cJSON *ref = cJSONUtils_GetPointer(source, xpath);
         if (ref != NULL) {
-            // TODO(Qianbiao.NG) we should add more case coverage later?
+            cJSON *cloned = cJSON_Duplicate(ref, 1);
+            ret = UtoolAssetCreatedJsonNotNull(cloned);
+            if (ret != UTOOLE_OK) {
+                return ret;
+            }
+
+            if (mapping->handle == NULL) {
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
+                continue;
+            }
+
+            ret = mapping->handle(target, mapping->targetKeyValue, cloned);
+            if (ret != UTOOLE_OK) {
+                return ret;
+            }
+
+            /** TODO(Qianbiao.NG) we should add more case coverage later?
             switch (ref->type) {
                 case cJSON_NULL:
                     cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
@@ -164,16 +180,19 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
                     }
                     break;
                 case cJSON_String: {
-//                    const char *value = ref->valuestring;
-//                    const size_t len = strlen(value) + 1;
-//                    char *copy = (char *) malloc(len);
-//                    strncpy(copy, value, len);
                     cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateString(ref->valuestring));
                     break;
                 }
+                    //case cJSON_Array: {
+                    //    cJSON *cloned = cJSON_Duplicate(ref, 1);
+                    //    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
+                    //    break;
+                    //}
                 default:
                     break;
             }
+            */
+
         }
         else {
             cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());

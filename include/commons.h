@@ -13,6 +13,7 @@ extern "C" {
 #include <cJSON.h>
 #include "typedefs.h"
 #include "constants.h"
+#include "zf_log.h"
 
 #define FREE_CJSON(json) if ((json) != NULL) { cJSON_Delete((json)); (json) = NULL; }
 #define FREE_OBJ(obj) if ((obj) != NULL) { free((obj)); (obj) = NULL; }
@@ -22,6 +23,104 @@ extern "C" {
 *   All command metadata define
 */
 extern UtoolCommand commands[];
+
+/**
+ * Free redfish server struct
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+static inline int UtoolFreeRedfishServer(UtoolRedfishServer *server)
+{
+    if (server != NULL) {
+        FREE_OBJ(server->host)
+        FREE_OBJ(server->baseUrl)
+        FREE_OBJ(server->username)
+        FREE_OBJ(server->password)
+        FREE_OBJ(server->systemId)
+    }
+}
+
+/**
+ * Free redfish server struct
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
+{
+    if (response != NULL) {
+        FREE_OBJ(response->content)
+        FREE_OBJ(response->etag)
+    }
+}
+
+/**
+ * asset json object is not null
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
+{
+    if (json == NULL) {
+        ZF_LOGE("Failed to create JSON object");
+        return UTOOLE_CREATE_JSON_NULL;
+    }
+    return UTOOLE_OK;
+}
+
+/**
+ * asset json object is not null
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+static inline int UtoolAssetParseJsonNotNull(cJSON *json)
+{
+    if (json == NULL) {
+        ZF_LOGE("Failed to parse JSON content into JSON object.");
+        return UTOOLE_PARSE_JSON_FAILED;
+    }
+    return UTOOLE_OK;
+}
+
+
+/**
+ * asset json node object is not null
+ *
+ * @param json
+ * @param xpath
+ * @return
+ */
+static inline int UtoolAssetJsonNodeNotNull(cJSON *json, char *xpath)
+{
+    if (json == NULL) {
+        ZF_LOGE("Failed to get the node(%s) from json", xpath);
+        return UTOOLE_UNKNOWN_JSON_FORMAT;
+    }
+    return UTOOLE_OK;
+}
+
+/**
+ * asset print JSON object to string is not null
+ *
+ * @param json
+ * @param xpath
+ * @return
+ */
+static inline int UtoolAssetPrintJsonNotNull(char *content)
+{
+    if (content == NULL) {
+        ZF_LOGE("Failed to print JSON object to string");
+        return UTOOLE_PRINT_JSON_FAILED;
+    }
+    return UTOOLE_OK;
+}
 
 
 /**
