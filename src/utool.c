@@ -32,7 +32,7 @@ UtoolCommand commands[] = {
         {.name = "gettemp", .pFuncExecute=UtoolCmdGetTemperature, .type=GET},
         {.name = "getvolt", .pFuncExecute=UtoolCmdGetVoltage, .type=GET},
         {.name = "getpsu", .pFuncExecute=UtoolCmdGetPowerSupply, .type=GET},
-
+        {.name = "getfan", .pFuncExecute=UtoolCmdGetFan, .type=GET},
         {.name = "adduser", .pFuncExecute=UtoolCmdAddUser, .type=SET},
         NULL,
 };
