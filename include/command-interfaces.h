@@ -25,6 +25,8 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
 #ifdef __cplusplus

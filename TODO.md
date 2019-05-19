@@ -26,3 +26,10 @@ all
 //summary ??
 "OverallHealth": "Warning",
 "Maximum": "2",
+
+
+### getfan
+- Model
+- RatedSpeedRPM
+- SpeedRPM
+- LowerThresholdRPM
