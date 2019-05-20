@@ -36,6 +36,7 @@ UtoolCommand commands[] = {
         {.name = "getpdisk", .pFuncExecute=UtoolCmdGetPhysicalDisks, .type=GET},
         {.name = "adduser", .pFuncExecute=UtoolCmdAddUser, .type=SET},
         {.name = "setpwd", .pFuncExecute=UtoolCmdSetPassword, .type=SET},
+        {.name = "deluser", .pFuncExecute=UtoolCmdDeleteUser, .type=SET},
         NULL,
 };
 
