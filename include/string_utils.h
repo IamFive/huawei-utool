@@ -28,6 +28,15 @@ bool UtoolStringStartsWith(const char *source, const char *target);
  */
 bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *target);
 
+/**
+* check whether source string ends with suffix string
+*
+* @param source
+* @param suffix
+* @return
+*/
+bool UtoolStringEndsWith(const char *source, const char *suffix);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

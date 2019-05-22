@@ -13,6 +13,8 @@ Things to do
 - TotalPowerWatts
 PowerControl.PowerConsumedWatts
 
+似乎搞错了？最新需求提到的，似乎是所有输入之和。
+
 ### getfw
 - SupportActivateType  -- ["automatic"]
 - Type          -- 通过name匹配
