@@ -37,10 +37,49 @@ static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
 }
 
 
+static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (node == NULL) { // should not happen
+        return UTOOLE_OK;
+    }
+
+    if (!cJSON_IsString(node) || node->valuestring == NULL) {
+        return UTOOLE_UNKNOWN_JSON_FORMAT;
+    }
+
+    int idx = 1;
+    char *delim = "/";
+
+    char *raid;
+    char *volume;
+    char *split;
+
+    /** /redfish/v1/Systems/1/Storages/RAIDStorage0/Volumes/LogicalDrive0 */
+    strtok(node->valuestring, delim);
+    while (idx <= 7) {
+        split = strtok(NULL, delim);
+        if (idx == 5) {
+            raid = split;
+        }
+        if (idx == 7) {
+            volume = split;
+        }
+
+        idx++;
+    }
+
+    char value[64];
+    snprintf(value, 64, "%s-%s", raid, volume);
+    FREE_CJSON(node)
+
+    cJSON *newNode = cJSON_AddStringToObject(target, key, value);
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
 static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
-        //{.sourceXpath = "Location", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/FailurePredicted", .targetKeyValue="FailurePredicted"},
@@ -64,7 +103,7 @@ static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Oem/Huawei/RebuildProgress", .targetKeyValue="RebuildProgress"},
 
         {.sourceXpath = "/Oem/Huawei/SpareforLogicalDrives", .targetKeyValue="SpareforLogicalDrives"},
-        {.sourceXpath = "/Links/Volumes", .targetKeyValue="Volumes"},
+        {.sourceXpath = "/Links/Volumes/0/@odata.id", .targetKeyValue="Volumes", .handle=VolumesHandler},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL

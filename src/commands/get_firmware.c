@@ -29,9 +29,9 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
     // UtoolStringEndsWith(node->valuestring, "BMC");
     // we will try to parse Type from Software-Id
     char *type = strtok(node->valuestring, "-");
-    cJSON_AddStringToObject(target, key, type);
-    cJSON_Delete(node);
-    return UTOOLE_OK;
+    FREE_CJSON(node)
+    cJSON *newNode = cJSON_AddStringToObject(target, key, type);
+    return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
 
