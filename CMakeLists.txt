@@ -35,7 +35,7 @@ link_directories(
         ${CJSON_PATH}/build
         ${LIBARGPARSE_PATH}
         ${LIBCURL_PATH}/lib/.libs
-        ${LIBZFLOG_PATH}/zf_log/build/zf_log
+        ${LIBZFLOG_PATH}/build/zf_log
         #        ${LIBUCW_PATH}/run/lib
 )
 
