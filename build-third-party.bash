@@ -32,6 +32,7 @@ thirdparty::zflog() {
   echo "Build zf log..."
   cd ${ProjectRoot}
   cd third-party/zf_log
+#  export CFLAGS="-DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64"
   rm -rf build && mkdir -p build && cd build
   cmake .. && make
 }
