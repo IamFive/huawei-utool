@@ -37,6 +37,12 @@ UtoolCommand commands[] = {
         {.name = "adduser", .pFuncExecute=UtoolCmdAddUser, .type=SET},
         {.name = "setpwd", .pFuncExecute=UtoolCmdSetPassword, .type=SET},
         {.name = "deluser", .pFuncExecute=UtoolCmdDeleteUser, .type=SET},
+        {.name = "fwupdate", .pFuncExecute=UtoolCmdUpdateOutbandFirmware, .type=SET},
+
+
+        // Test purpose start
+        {.name = "upload", .pFuncExecute=UtoolCmdUploadFileToBMC, .type=SET},
+        {.name = "download", .pFuncExecute=UtoolCmdDownloadBMCFile, .type=SET},
         NULL,
 };
 
@@ -154,7 +160,9 @@ static int initialize(char **result)
         // release mutex
         pthread_mutex_destroy(&mutex);
 
-        if (flag != CURLE_OK) { return flag; }
+        if (flag != CURLE_OK) {
+            return flag;
+        }
     }
 
     return CURLE_OK;

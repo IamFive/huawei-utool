@@ -35,6 +35,14 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result);
+
+
+/** Test purpose **/
+int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **result);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_COMMAND_INTERFACES_H
