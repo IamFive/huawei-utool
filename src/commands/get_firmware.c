@@ -19,12 +19,28 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (node == NULL) { // should not happen
+        return UTOOLE_OK;
+    }
+
+    // it seems firmware name is not solid enough to parse Type
+    // UtoolStringEndsWith(node->valuestring, "BMC");
+    // we will try to parse Type from Software-Id
+    char *type = strtok(node->valuestring, "-");
+    cJSON_AddStringToObject(target, key, type);
+    cJSON_Delete(node);
+    return UTOOLE_OK;
+}
+
+
 static const UtoolOutputMapping getFwMappings[] = {
         {.sourceXpath = "/Name", .targetKeyValue="Name"},
-        {.sourceXpath = "/SoftwareId", .targetKeyValue="Type"},
+        {.sourceXpath = "/SoftwareId", .targetKeyValue="Type", .handle=FirmwareTypeHandler},
         {.sourceXpath = "/Version", .targetKeyValue="Version"},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
-//        {.sourceXpath = "", .targetKeyValue="SupportActivateType"},
+        //{.sourceXpath = "", .targetKeyValue="SupportActivateType"},
         NULL
 };
 
@@ -119,6 +135,13 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
         if (ret != UTOOLE_OK) {
             goto failure;
         }
+
+        cJSON_AddRawToObject(firmware, "SupportActivateType", "[\"automatic\"]");
+        //cJSON *supportActivateTypes = cJSON_AddArrayToObject(firmware, "SupportActivateType");
+        //ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
+        //if (ret != UTOOLE_OK) {
+        //    goto failure;
+        //}
 
         // create firmware item and add it to array
         UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);

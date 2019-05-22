@@ -15,9 +15,9 @@
  */
 bool UtoolStringStartsWith(const char *source, const char *prefix)
 {
-    size_t len_source = strlen(source),
-            len_prefix = strlen(prefix);
-    return len_source < len_prefix ? false : strncmp(prefix, source, len_prefix) == 0;
+    size_t lenSource = strlen(source),
+            lenPrefix = strlen(prefix);
+    return lenSource < lenPrefix ? false : strncmp(prefix, source, lenPrefix) == 0;
 }
 
 
@@ -30,8 +30,28 @@ bool UtoolStringStartsWith(const char *source, const char *prefix)
  */
 bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *prefix)
 {
-    size_t len_source = strlen(source),
-            len_prefix = strlen(prefix);
-    return len_source < len_prefix ? false : strncasecmp(prefix, source, len_prefix) == 0;
+    size_t lenSource = strlen(source),
+            lenPrefix = strlen(prefix);
+    return lenSource < lenPrefix ? false : strncasecmp(prefix, source, lenPrefix) == 0;
+}
+
+/**
+* check whether source string ends with suffix string
+*
+* @param source
+* @param suffix
+* @return
+*/
+bool UtoolStringEndsWith(const char *source, const char *suffix)
+{
+    if (!source || !suffix) {
+        return 0;
+    }
+    size_t lenSource = strlen(source);
+    size_t lenSuffix = strlen(suffix);
+    if (lenSuffix > lenSource) {
+        return 0;
+    }
+    return strncmp(source + lenSource - lenSuffix, suffix, lenSuffix) == 0;
 }
 
