@@ -28,8 +28,29 @@ static const char *const HTTP_DELETE = "DELETE";
  */
 int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result);
 
+
 /**
- * Make a new redfish request though CURL lib
+* Upload file to BMC temp storage through CURL lib
+* @param server
+* @param uploadFilePath
+* @param response
+* @return
+*/
+int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response);
+
+/**
+* download file from BMC temp storage to a local file through CURL lib
+* @param server
+* @param bmcFileUri
+* @param localFileUri
+* @param response
+* @return
+*/
+int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
+                             UtoolCurlResponse *response);
+
+/**
+ * Make a new redfish request through CURL lib
  *
  * @param server
  * @param resourceURL

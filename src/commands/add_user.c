@@ -45,7 +45,6 @@ static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **resu
 static cJSON *BuildPayload(UtoolAddUserOption *addUserOption);
 
 /**
- * argparse get capabilities action callback
  *
  * @param self
  * @param option

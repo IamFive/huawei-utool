@@ -6,37 +6,36 @@ Things to do
     - curl global init
 - [x] CURL make request (post/patch/etc)
 - [x] cJSON output build mapping strategy
+- [] atexit clean up resources when program exit
 
 
 ### getproduct
 - TotalPowerWatts
+PowerControl.PowerConsumedWatts
 
 ### getfw
-- SupportActivateType 
-- Type
+- SupportActivateType  -- ["automatic"]
+- Type          -- 通过name匹配
 
 ### adduser
-- privilege
-- -n -> -u
+- privilege  // 不支持暂时
 
 ### getip
-all
-
-### getpsu
-//summary ??
-"OverallHealth": "Warning",
-"Maximum": "2",
-
+all  -- 待确认
 
 ### getfan
-- Model
-- RatedSpeedRPM
-- SpeedRPM
-- LowerThresholdRPM
+- Model                     null    
+- RatedSpeedRPM             MaxReadingRange
+- SpeedRPM                  Reading
+- LowerThresholdRPM         MinReadingRange
 
 ### getpdisk
-- Location
-- Volumes
-- SASAddress
-- SpareforLogicalDrives
-- CapacityGiB
+- Location  Oem/Huawei/Position
+- Volumes       提取
+- SASAddress    返回数组
+- SpareforLogicalDrives 原样返回
+- CapacityGiB   557.861328125,
+
+### fwupdate
+- 异步方式实现
+

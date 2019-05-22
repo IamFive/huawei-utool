@@ -2,6 +2,8 @@
 #include <constants.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <curl/curl.h>
 #include <cJSON_Utils.h>
 #include "commons.h"
@@ -34,6 +36,144 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
  */
 static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
 
+/**
+* Setup a new Curl Request with common basic config for redfish API.
+*
+* @param server
+* @param resourceURL
+* @param httpMethod
+* @return
+*/
+static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
+                                   const char *resourceURL,
+                                   const char *httpMethod,
+                                   UtoolCurlResponse *response);
+
+/**
+* Upload a file to BMC Temp storage
+*
+* @param server
+* @param uploadFilePath upload file path
+* @param response
+* @return
+*/
+int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response)
+{
+    int ret;
+    struct stat file_info;
+
+    FILE *uploadFileFp = fopen(uploadFilePath, "rb"); /* open file to upload */
+    if (!uploadFileFp) {
+        return UTOOLE_ILLEGAL_UPLOAD_FILE_PATH;
+    } /* can't continue */
+
+    ///* get the file size */
+    if (fstat(fileno(uploadFileFp), &file_info) != 0) {
+        ret = UTOOLE_ILLEGAL_UPLOAD_FILE_SIZE;
+        goto return_statement;
+    } /* can't continue */
+
+
+    curl_mime *form = NULL;
+    curl_mimepart *field = NULL;
+    CURL *curl = UtoolSetupCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_POST, response);
+    if (!curl) {
+        ret = UTOOLE_CURL_INIT_FAILED;
+        goto return_statement;
+    }
+
+    ZF_LOGI("Upload file to BMC now");
+
+    /* Create the form */
+    form = curl_mime_init(curl);
+
+    /* Fill in the file upload field */
+    field = curl_mime_addpart(form);
+    curl_mime_name(field, "imgfile");
+    curl_mime_filedata(field, uploadFilePath);
+
+    // setup mime post form
+    curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+
+    /* Perform the request, res will get the return code */
+    ret = curl_easy_perform(curl);
+    if (ret == CURLE_OK) { /* Check for errors */
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+    }
+    else {
+        const char *error = curl_easy_strerror((CURLcode) ret);
+        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
+    }
+
+    goto return_statement;
+
+return_statement:
+    if (uploadFileFp) {         /* close FP */
+        fclose(uploadFileFp);
+    }
+    curl_easy_cleanup(curl);    /* cleanup the curl */
+    curl_mime_free(form);       /* cleanup the form */
+    return ret;
+}
+
+
+static char *DOWNLOAD_BMC_FILE_PAYLOAD = "{ \"TransferProtocol\" : \"HTTPS\", \"Path\" : \"%s\" }";
+
+static size_t WriteStreamToFP(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    size_t written = fwrite(ptr, size, nmemb, stream);
+    return written;
+}
+
+int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
+                             UtoolCurlResponse *response)
+{
+    FILE *outputFileFP = fopen(localFileUri, "wb");
+    if (!outputFileFP) {
+        return UTOOLE_ILLEGAL_UPLOAD_FILE_PATH;
+    }
+
+    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
+    CURL *curl = UtoolSetupCurlRequest(server, url, HTTP_POST, response);
+    if (!curl) {
+        return UTOOLE_CURL_INIT_FAILED;
+    }
+
+    // setup content type
+    struct curl_slist *curlHeaderList = NULL;
+    curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
+
+    // setup payload, payload should be freed by caller
+    char payload[MAX_PAYLOAD_LEN];
+    snprintf(payload, MAX_PAYLOAD_LEN, DOWNLOAD_BMC_FILE_PAYLOAD, bmcFileUri);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
+
+    /* write data to file  */
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteStreamToFP);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, outputFileFP);
+
+    // perform request
+    int ret = curl_easy_perform(curl);
+    if (ret == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+    }
+    else {
+        const char *error = curl_easy_strerror((CURLcode) ret);
+        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
+    }
+
+    goto return_statement;
+
+return_statement:
+    if (outputFileFP) {
+        fclose(outputFileFP);
+    }
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(curlHeaderList);
+    return ret;
+}
 
 /**
  * make new request to redfish APIs
@@ -56,9 +196,87 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
 
     char *payloadContent = NULL;
     struct curl_slist *curlHeaderList = NULL;
+
+    CURL *curl = UtoolSetupCurlRequest(server, resourceURL, httpMethod, response);
+    if (!curl) {
+        return UTOOLE_CURL_INIT_FAILED;
+    }
+
+    // setup headers
+    curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
+
+    const UtoolCurlHeader *ifMatchHeader = NULL;
+    for (int idx = 0;; idx++) {
+        const UtoolCurlHeader *header = headers + idx;
+        if (header == NULL || header->name == NULL) {
+            break;
+        }
+        if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0) {
+            ifMatchHeader = header;
+        }
+        char buffer[MAX_URL_LEN];
+        snprintf(buffer, MAX_URL_LEN, "%s: %s", header->name, header->value);
+        curlHeaderList = curl_slist_append(curlHeaderList, buffer);
+    }
+
+    // if request method is PATCH, if-match header is required
+    if (strncmp(HTTP_PATCH, httpMethod, strnlen(HTTP_PATCH, 10)) == 0 ||
+        strncmp(HTTP_PUT, httpMethod, strnlen(HTTP_PUT, 10)) == 0) {
+        if (ifMatchHeader == NULL) {
+            // if if-match header is not present, try to load it through get request
+            ZF_LOGE("Try to load etag through get request");
+//                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
+            ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
+            if (ret != UTOOLE_OK) {
+                goto return_statement;
+            }
+
+            char ifMatch[MAX_HEADER_LEN];
+            snprintf(ifMatch, MAX_URL_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
+            curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
+            UtoolFreeCurlResponse(response);
+        }
+    }
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
+
+    // setup payload, payload should be freed by caller
+    if (payload != NULL) {
+        /** https://github.com/bagder/everything-curl/blob/master/libcurl-http-requests.md */
+        payloadContent = cJSON_Print(payload);
+        ret = UtoolAssetPrintJsonNotNull(payloadContent);
+        if (ret != UTOOLE_OK) {
+            goto return_statement;
+        }
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payloadContent));
+    }
+
+    // perform request
+    ret = curl_easy_perform(curl);
+    if (ret == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+    }
+    else {
+        const char *error = curl_easy_strerror((CURLcode) ret);
+        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
+    }
+
+    goto return_statement;
+
+return_statement:
+    FREE_OBJ(payloadContent)
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(curlHeaderList);
+    return ret;
+}
+
+static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char *resourceURL,
+                                   const char *httpMethod, UtoolCurlResponse *response)
+{
     CURL *curl = curl_easy_init();
     if (curl) {
-        // replace %s with redfish-system-id if neccessary
+        // replace %s with redfish-system-id if necessary
         char fullURL[MAX_URL_LEN] = {0};
         strncat(fullURL, server->baseUrl, strlen(server->baseUrl));
         if (strstr(resourceURL, "/redfish/v1") == NULL) {
@@ -92,84 +310,17 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         curl_easy_setopt(curl, CURLOPT_USERNAME, server->username);
         curl_easy_setopt(curl, CURLOPT_PASSWORD, server->password);
 
-        // setup headers
-        curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
-
-        const UtoolCurlHeader *ifMatchHeader = NULL;
-        for (int idx = 0;; idx++) {
-            const UtoolCurlHeader *header = headers + idx;
-            if (header == NULL || header->name == NULL) {
-                break;
-            }
-            if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0) {
-                ifMatchHeader = header;
-            }
-            char buffer[MAX_URL_LEN];
-            snprintf(buffer, MAX_URL_LEN, "%s: %s", header->name, header->value);
-            curlHeaderList = curl_slist_append(curlHeaderList, buffer);
-        }
-
-        // if request method is PATCH, if-match header is required
-        if (strncmp(HTTP_PATCH, httpMethod, strnlen(HTTP_PATCH, 10)) == 0 ||
-            strncmp(HTTP_PUT, httpMethod, strnlen(HTTP_PUT, 10)) == 0) {
-            if (ifMatchHeader == NULL) {
-                // if if-match header is not present, try to load it through get request
-                ZF_LOGE("Try to load etag through get request");
-//                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
-                ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
-                if (ret != UTOOLE_OK) {
-                    goto return_statement;
-                }
-
-                char ifMatch[MAX_HEADER_LEN];
-                snprintf(ifMatch, MAX_URL_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
-                curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
-                UtoolFreeCurlResponse(response);
-            }
-        }
-
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
-
         // setup callback
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, UtoolCurlGetHeaderCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, UtoolCurlGetRespCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, response);
-
-        // setup payload, payload should be freed by caller
-        if (payload != NULL) {
-            /** https://github.com/bagder/everything-curl/blob/master/libcurl-http-requests.md */
-            payloadContent = cJSON_Print(payload);
-            ret = UtoolAssetPrintJsonNotNull(payloadContent);
-            if (ret != UTOOLE_OK) {
-                goto return_statement;
-            }
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payloadContent));
-        }
-
-        // perform request
-        ret = curl_easy_perform(curl);
-        if (ret == CURLE_OK) {
-            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
-        }
-        else {
-            const char *error = curl_easy_strerror((CURLcode) ret);
-            ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
-        }
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
     }
     else {
         ZF_LOGE("Failed to init curl, aboard request.");
-        ret = UTOOLE_CURL_INIT_FAILED;
     }
 
-    goto return_statement;
-
-return_statement:
-    FREE_OBJ(payloadContent)
-    curl_slist_free_all(curlHeaderList);
-    curl_easy_cleanup(curl);
-    return ret;
+    return curl;
 }
 
 

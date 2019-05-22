@@ -210,7 +210,6 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 */
 const char *UtoolGetStringError(UtoolCode code)
 {
-    // TODO, we need to compile using gcc to make sure string literals will be storaged at RO memory zone.
     switch (code) {
         case UTOOLE_OK:
             return "No error";
@@ -226,6 +225,12 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Internal error, failed to print JSON object.";
         case UTOOLE_CURL_INIT_FAILED:
             return "Internal error, failed to init curl.";
+        case UTOOLE_ILLEGAL_UPLOAD_FILE_PATH:
+            return "Illegal local upload file path";
+        case UTOOLE_ILLEGAL_UPLOAD_FILE_SIZE:
+            return "Illegal local upload file size.";
+        case UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH:
+            return "Failed to open local download file.";
         default:
             return "Unknown error";
     }
