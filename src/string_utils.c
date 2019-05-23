@@ -55,3 +55,35 @@ bool UtoolStringEndsWith(const char *source, const char *suffix)
     return strncmp(source + lenSource - lenSuffix, suffix, lenSuffix) == 0;
 }
 
+/**
+* check whether string is in the const string array
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringInArray(const char *str, const char *array[])
+{
+    for (int idx = 0;; idx++) {
+        const char *item = array[idx];
+        if (item == NULL) {
+            break;
+        }
+        if (strncmp(item, str, strlen(item) + 1) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+* check whether string  equals to a string literal
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringEquals(const char *str, const char *literal)
+{
+    return strncmp(str, literal, strlen(literal) + 1) == 0;
+}

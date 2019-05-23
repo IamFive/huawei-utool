@@ -14,6 +14,7 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 static const char *const OPTION_USERNAME_REQUIRED = "Error: option `Username` is required.";
 
@@ -121,7 +122,7 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
             goto failure;
         }
 
-        if (strncmp(currentUsername, username, 32) == 0) {
+        if (UtoolStringEquals(username, currentUsername)) {
             foundUserWithName = true;
             ZF_LOGI("Current username is %s, matched.", username);
             break;
