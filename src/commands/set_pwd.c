@@ -14,6 +14,7 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 typedef struct _SetPasswordOption
 {
@@ -143,7 +144,7 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
             goto failure;
         }
 
-        if (strncmp(setPasswordOption->username, username, 32) == 0) {
+        if (UtoolStringEquals(setPasswordOption->username, username)) {
             foundUserWithName = true;
             ZF_LOGI("Current username is %s, matched.", username);
             break;

@@ -211,7 +211,8 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (header == NULL || header->name == NULL) {
             break;
         }
-        if (strncmp(HEADER_IF_MATCH, header->name, strlen(HEADER_IF_MATCH)) == 0) {
+
+        if (UtoolStringEquals(header->name, HEADER_IF_MATCH)) {
             ifMatchHeader = header;
         }
         char buffer[MAX_URL_LEN];
@@ -220,8 +221,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
     }
 
     // if request method is PATCH, if-match header is required
-    if (strncmp(HTTP_PATCH, httpMethod, strnlen(HTTP_PATCH, 10)) == 0 ||
-        strncmp(HTTP_PUT, httpMethod, strnlen(HTTP_PUT, 10)) == 0) {
+    if (UtoolStringEquals(httpMethod, HTTP_PATCH) || UtoolStringEquals(httpMethod, HTTP_PUT)) {
         if (ifMatchHeader == NULL) {
             // if if-match header is not present, try to load it through get request
             ZF_LOGE("Try to load etag through get request");
@@ -383,7 +383,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
         if (count == 1) {
             cJSON *extendInfo = cJSON_GetArrayItem(extendedInfoArray, 0);
             cJSON *severity = cJSON_GetObjectItem(extendInfo, "Severity");
-            if (severity != NULL && strncmp(SEVERITY_OK, severity->valuestring, strlen(SEVERITY_OK)) == 0) {
+            if (severity != NULL && UtoolStringEquals(severity->valuestring, SEVERITY_OK)) {
                 goto done;
             }
         }

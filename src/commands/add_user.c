@@ -14,6 +14,7 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 typedef struct _AddUserOption
 {
@@ -31,7 +32,7 @@ static const char *const OPTION_ROlEID_ILLEGAL = "Error: option `RoleId` is ille
                                                  "Administrator, Operator, Commonuser, Noaccess.";
 static const char *const OPTION_PRIVILEGE_REQUIRED = "Error: option `Privilege` is required.";
 
-static const char *const ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess"};
+static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
 
 static const char *const usage[] = {
         "utool adduser -n USERNAME -p PASSWORD -r {Administrator,Operator,Commonuser,NoAccess} "
@@ -150,17 +151,7 @@ static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **resu
         goto failure;
     }
 
-    bool found = false;
-    int roleChoiceCount = sizeof(ROLES) / sizeof(ROLES[0]);
-    for (int idx = 0; idx < roleChoiceCount; idx++) {
-        const char *role = ROLES[idx];
-        if (strncmp(role, addUserOption->roleId, strlen(role)) == 0) {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found) {
+    if (!UtoolStringInArray(addUserOption->roleId, ROLES)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_ROlEID_ILLEGAL), result);
         goto failure;
     }

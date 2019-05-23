@@ -37,6 +37,23 @@ bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *target);
 */
 bool UtoolStringEndsWith(const char *source, const char *suffix);
 
+/**
+* check whether string is in the const string array
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringInArray(const char *str, const char *array[]);
+
+/**
+* check whether string  equals to a string literal
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringEquals(const char *str, const char *literal);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H
