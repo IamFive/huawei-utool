@@ -14,3 +14,7 @@
 	path = third-party/zf_log
 	url = https://github.com/wonder-mice/zf_log
 	ignore = dirty
+[submodule "third-party/libyuarel"]
+	path = third-party/libyuarel
+	url = https://github.com/jacketizer/libyuarel
+	ignore = dirty
