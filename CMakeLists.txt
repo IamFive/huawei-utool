@@ -19,43 +19,40 @@ set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
 set(LIBCURL_PATH third-party/curl)
-set(LIBZFLOG_PATH third-party/zf_log)
-#set(LIBUCW_PATH third-party/libucw)
+set(LIBZFLOG_PATH third-party/zf_log/zf_log)
+set(LIBYUAREL_PATH third-party/libyuarel)
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
-        ${CJSON_PATH}
         ${LIBARGPARSE_PATH}
+        ${LIBYUAREL_PATH}
+        ${CJSON_PATH}
         ${LIBCURL_PATH}/include
-        ${LIBZFLOG_PATH}/zf_log
-        #        ${LIBUCW_PATH}/run/include
+        ${LIBZFLOG_PATH}
 )
 
 link_directories(
-        ${CJSON_PATH}/build
-        ${LIBARGPARSE_PATH}
         ${LIBCURL_PATH}/lib/.libs
-        ${LIBZFLOG_PATH}/build/zf_log
-        #        ${LIBUCW_PATH}/run/lib
 )
-
 
 link_libraries(
-        argparse
-        cjson
-        cjson_utils
         curl
-        zf_log
-        #        ucw-6.5
 )
 
+file(GLOB THIRD_PARTY_SOURCE
+        ${LIBYUAREL_PATH}/yuarel.c
+        ${LIBARGPARSE_PATH}/argparse.c
+        ${LIBZFLOG_PATH}/zf_log.c
+        ${CJSON_PATH}/cJSON.c
+        ${CJSON_PATH}/cJSON_Utils.c)
 
-aux_source_directory(src SOURCE_FILES)
-aux_source_directory(src/commands SOURCE_FILES)
-list(REMOVE_ITEM SOURCE_FILES "src/main.c")
-list(REMOVE_ITEM SOURCE_FILES "src/main-debug.c")
+message(STATUS "third-party source files is ${THIRD_PARTY_SOURCE}")
+aux_source_directory(src PRO_SOURCE_FILES)
+aux_source_directory(src/commands PRO_SOURCE_FILES)
+list(REMOVE_ITEM PRO_SOURCE_FILES "src/main.c")
+list(REMOVE_ITEM PRO_SOURCE_FILES "src/main-debug.c")
+list(APPEND SOURCE_FILES ${PRO_SOURCE_FILES} ${THIRD_PARTY_SOURCE})
 message(STATUS "Source files is ${SOURCE_FILES}")
-
 message(STATUS "Install dir prefix is: ${CMAKE_INSTALL_PREFIX}")
 
 # header files
