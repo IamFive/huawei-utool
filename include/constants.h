@@ -28,6 +28,7 @@ extern "C" {
 #define CONTENT_TYPE_JSON "Content-Type: application/json"
 #define USER_AGENT "UTOOL based on libcurl - HUAWEI server management command line tool"
 #define HEADER_ETAG "ETag: "
+#define HEADER_CONTENT_LENGTH "CONTENT-LENGTH: "
 #define HEADER_IF_MATCH "If-Match"
 
 
@@ -50,6 +51,12 @@ extern "C" {
 #define SEVERITY_OK "OK"
 
 /** //Redfish message severity level */
+
+#define ENABLED "Enabled"
+#define DISABLED "Disabled"
+
+#define MEMORY_STATE_ABSENT "Absent"
+#define MEMORY_STATE_ENABLED "Enabled"
 
 
 /**

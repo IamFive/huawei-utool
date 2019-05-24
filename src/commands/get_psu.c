@@ -124,8 +124,10 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
     if (ret != UTOOLE_OK) {
         goto failure;
     }
-    UtoolMappingCJSONItems(chassisJson, output, getPowerSummaryMapping);
-
+    ret = UtoolMappingCJSONItems(chassisJson, output, getPowerSummaryMapping);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
     // initialize output temperatures array
     powerSupplies = cJSON_AddArrayToObject(output, "PSU");
     ret = UtoolAssetCreatedJsonNotNull(powerSupplies);
@@ -153,7 +155,10 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
         }
 
         // create voltage item and add it to array
-        UtoolMappingCJSONItems(member, powerSupply, getPowerSupplyMapping);
+        ret = UtoolMappingCJSONItems(member, powerSupply, getPowerSupplyMapping);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
         cJSON_AddItemToArray(powerSupplies, powerSupply);
     }
 
@@ -162,6 +167,7 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
+    FREE_CJSON(powerSupply)
     FREE_CJSON(output)
     goto done;
 

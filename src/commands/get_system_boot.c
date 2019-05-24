@@ -15,26 +15,17 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getproduct",
+        "utool getsysboot",
         NULL,
 };
 
-static const UtoolOutputMapping getPowerMappings[] = {
-        {.sourceXpath = "/PowerControl/0/PowerConsumedWatts", .targetKeyValue="TotalPowerWatts"},
+static const UtoolOutputMapping getProductMappings[] = {
+        {.sourceXpath = "/Boot/BootSourceOverrideTarget", .targetKeyValue="BootDevice"},
+        {.sourceXpath = "/Boot/BootSourceOverrideMode", .targetKeyValue="BootMode"},
+        {.sourceXpath = "/Boot/BootSourceOverrideEnabled", .targetKeyValue="Effective"},
         NULL
 };
 
-static const UtoolOutputMapping getProductMappings[] = {
-        {.sourceXpath = "/Model", .targetKeyValue="ProductName"},
-        {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
-        {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
-        {.sourceXpath = "/Oem/Huawei/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
-        {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
-        {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},
-        {.sourceXpath = "/Status/Health", .targetKeyValue = "Health"},
-        NULL
-};
 
 /**
  * argparse get version action callback
@@ -43,15 +34,14 @@ static const UtoolOutputMapping getProductMappings[] = {
  * @param option
  * @return
  */
-int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
     cJSON *output = NULL;
-    cJSON *getSystemJson = NULL, *getChassisPowerJson = NULL;
+    cJSON *getSystemJson = NULL;
 
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *getSystemResponse = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getChassisPowerResponse = &(UtoolCurlResponse) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -101,26 +91,6 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // process get chassis power response
-    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Power", HTTP_GET, NULL, NULL, getChassisPowerResponse);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-
-    if (getChassisPowerResponse->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getChassisPowerResponse, result);
-        goto failure;
-    }
-
-    getChassisPowerJson = cJSON_Parse(getChassisPowerResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getChassisPowerJson);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-    ret = UtoolMappingCJSONItems(getChassisPowerJson, output, getPowerMappings);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
     // mapping result to output json
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
     goto done;
@@ -131,9 +101,7 @@ failure:
 
 done:
     FREE_CJSON(getSystemJson)
-    FREE_CJSON(getChassisPowerJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(getSystemResponse);
-    UtoolFreeCurlResponse(getChassisPowerResponse);
     return ret;
 }

@@ -19,6 +19,8 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result);
@@ -29,6 +31,20 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result);
@@ -37,6 +53,7 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result);
 
 /** Test purpose **/
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result);

@@ -7,6 +7,7 @@
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
+#include "string_utils.h"
 #include "zf_log.h"
 #include "constants.h"
 #include "command-helps.h"
@@ -19,35 +20,29 @@ static const char *const usage[] = {
         NULL,
 };
 
-static const UtoolOutputMapping getProcessorSummaryMapping[] = {
-        {.sourceXpath = "/ProcessorSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/ProcessorSummary/Count", .targetKeyValue="Maximum"},
+static const UtoolOutputMapping getMemorySummaryMapping[] = {
+        {.sourceXpath = "/MemorySummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/MemorySummary/TotalSystemMemoryGiB", .targetKeyValue="TotalSystemMemoryGiB"},
         NULL
 };
 
-static const UtoolOutputMapping getProcessorMappings[] = {
+static const UtoolOutputMapping getMemoryMappings[] = {
         {.sourceXpath = "/DeviceLocator", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Position", .targetKeyValue="Location"},
-        {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/L1CacheKiB", .targetKeyValue="L1CacheKiB"},
-        {.sourceXpath = "/L2CacheKiB", .targetKeyValue="L2CacheKiB"},
-        {.sourceXpath = "/L3CacheKiB", .targetKeyValue="L3CacheKiB"},
-        {.sourceXpath = "/Temperature", .targetKeyValue="Temperature"},
-        {.sourceXpath = "/EnabledSetting", .targetKeyValue="EnabledSetting"},
-        {.sourceXpath = "/ProcessorType", .targetKeyValue="ProcessorType"},
-        {.sourceXpath = "/ProcessorArchitecture", .targetKeyValue="ProcessorArchitecture"},
-        {.sourceXpath = "/InstructionSet", .targetKeyValue="InstructionSet"},
-        {.sourceXpath = "/MaxSpeedMHz", .targetKeyValue="MaxSpeedMHz"},
-        {.sourceXpath = "/TotalCores", .targetKeyValue="TotalCores"},
-        {.sourceXpath = "/TotalThreads", .targetKeyValue="TotalThreads"},
-        {.sourceXpath = "/Socket", .targetKeyValue="Socket"},
-        {.sourceXpath = "/IdentificationRegisters", .targetKeyValue="PPIN"},
+        {.sourceXpath = "/CapacityMiB", .targetKeyValue="CapacityMiB"},
+        {.sourceXpath = "/OperatingSpeedMhz", .targetKeyValue="OperatingSpeedMhz"},
+        {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
+        {.sourceXpath = "/MemoryDeviceType", .targetKeyValue="MemoryDeviceType"},
+        {.sourceXpath = "/DataWidthBits", .targetKeyValue="DataWidthBits"},
+        {.sourceXpath = "/RankCount", .targetKeyValue="RankCount"},
+        {.sourceXpath = "/PartNumber", .targetKeyValue="PartNumber"},
+        {.sourceXpath = "/Technology", .targetKeyValue="Technology"},
+        {.sourceXpath = "/MinVoltageMillivolt", .targetKeyValue="MinVoltageMillivolt"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL
 };
-
 
 /**
  * command handler of `getfan`
@@ -56,7 +51,7 @@ static const UtoolOutputMapping getProcessorMappings[] = {
  * @param result
  * @return
  */
-int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 
@@ -67,14 +62,14 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
 
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *getSystemResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getProcessorViewResp = &(UtoolCurlResponse) {0};
+    UtoolCurlResponse *getMemoryViewResp = &(UtoolCurlResponse) {0};
 
     // initialize output objects
     cJSON *output = NULL,                   // output result json
-            *processors = NULL,             // output processor array
-            *processor = NULL,              // output processor item
+            *memories = NULL,               // output memory array
+            *memory = NULL,                 // output memory item
             *systemJson = NULL,             // curl get system response as json
-            *processorViewJson = NULL;      // curl get processor view response as json
+            *memoryViewJson = NULL;         // curl get memory view response as json
 
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
@@ -98,9 +93,9 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // initialize output processor array
-    processors = cJSON_AddArrayToObject(output, "Information");
-    ret = UtoolAssetCreatedJsonNotNull(processors);
+    // initialize output memory array
+    memories = cJSON_AddArrayToObject(output, "Information");
+    ret = UtoolAssetCreatedJsonNotNull(memories);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
@@ -123,44 +118,53 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
     }
 
     // mapping response json to output
-    ret = UtoolMappingCJSONItems(systemJson, output, getProcessorSummaryMapping);
+    ret = UtoolMappingCJSONItems(systemJson, output, getMemorySummaryMapping);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    // curl request get processor view
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/MemoryView", HTTP_GET, NULL, NULL, getProcessorViewResp);
+    // curl request get memory view
+    ret = UtoolMakeCurlRequest(server, "/Systems/%s/MemoryView", HTTP_GET, NULL, NULL, getMemoryViewResp);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
-    if (getProcessorViewResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getProcessorViewResp, result);
+    if (getMemoryViewResp->httpStatusCode >= 400) {
+        ret = UtoolResolveFailureResponse(getMemoryViewResp, result);
         goto failure;
     }
 
-    // process get processor view response
-    processorViewJson = cJSON_Parse(getProcessorViewResp->content);
-    ret = UtoolAssetParseJsonNotNull(processorViewJson);
+    // process get memory view response
+    memoryViewJson = cJSON_Parse(getMemoryViewResp->content);
+    ret = UtoolAssetParseJsonNotNull(memoryViewJson);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     // mapping response json to output
     cJSON *member;
-    cJSON *members = cJSON_GetObjectItem(processorViewJson, "Information");
+    cJSON *members = cJSON_GetObjectItem(memoryViewJson, "Information");
     cJSON_ArrayForEach(member, members) {
-        processor = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(processor);
-        if (ret != UTOOLE_OK) {
-            goto failure;
-        }
+        cJSON *stateNode = cJSONUtils_GetPointer(member, "/Status/State");
+        if (stateNode != NULL && UtoolStringEquals(MEMORY_STATE_ENABLED, stateNode->valuestring)) {
+            memory = cJSON_CreateObject();
+            ret = UtoolAssetCreatedJsonNotNull(memory);
+            if (ret != UTOOLE_OK) {
+                goto failure;
+            }
 
-        // create processor item and add it to array
-        ret = UtoolMappingCJSONItems(member, processor, getProcessorMappings);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+            // create memory item and add it to array
+            ret = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
+            if (ret != UTOOLE_OK) {
+                goto failure;
+            }
+            cJSON_AddItemToArray(memories, memory);
         }
-        cJSON_AddItemToArray(processors, processor);
+    }
+
+    cJSON *maximumNode = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(memories));
+    ret = UtoolAssetCreatedJsonNotNull(maximumNode);
+    if (ret != UTOOLE_OK) {
+        goto failure;
     }
 
     // output to result
@@ -168,15 +172,15 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
-    FREE_CJSON(processor)
+    FREE_CJSON(memory)
     FREE_CJSON(output)
     goto done;
 
 done:
     FREE_CJSON(systemJson)
-    FREE_CJSON(processorViewJson)
+    FREE_CJSON(memoryViewJson)
     UtoolFreeCurlResponse(getSystemResp);
-    UtoolFreeCurlResponse(getProcessorViewResp);
+    UtoolFreeCurlResponse(getMemoryViewResp);
     UtoolFreeRedfishServer(server);
     return ret;
 }

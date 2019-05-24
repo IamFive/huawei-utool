@@ -15,20 +15,23 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool gettemp",
+        "utool getsensor",
         NULL,
 };
 
 static const UtoolOutputMapping getTemperatureMappings[] = {
-        {.sourceXpath = "/Name", .targetKeyValue="Name"},
-        {.sourceXpath = "/SensorNumber", .targetKeyValue="SensorNumber"},
-        {.sourceXpath = "/UpperThresholdFatal", .targetKeyValue="UpperThresholdFatal"},
-        {.sourceXpath = "/UpperThresholdCritical", .targetKeyValue="UpperThresholdCritical"},
-        {.sourceXpath = "/UpperThresholdNonCritical", .targetKeyValue="UpperThresholdNonCritical"},
-        {.sourceXpath = "/ReadingCelsius", .targetKeyValue="ReadingCelsius"},
-        {.sourceXpath = "/LowerThresholdNonCritical", .targetKeyValue="LowerThresholdNonCritical"},
-        {.sourceXpath = "/LowerThresholdCritical", .targetKeyValue="LowerThresholdCritical"},
-        {.sourceXpath = "/LowerThresholdFatal", .targetKeyValue="LowerThresholdFatal"},
+        {.sourceXpath = "/SensorNumber", .targetKeyValue="SensorNumber"}, // ?
+        {.sourceXpath = "/Name", .targetKeyValue="SensorName"},
+        {.sourceXpath = "/ReadingValue", .targetKeyValue="Reading"},
+        {.sourceXpath = "/Unit", .targetKeyValue="Unit"},
+        {.sourceXpath = "/Status", .targetKeyValue="Status"},
+
+        {.sourceXpath = "/UpperThresholdNonCritical", .targetKeyValue="unc"},
+        {.sourceXpath = "/UpperThresholdCritical", .targetKeyValue="uc"},
+        {.sourceXpath = "/UpperThresholdFatal", .targetKeyValue="unr"},
+        {.sourceXpath = "/LowerThresholdNonCritical", .targetKeyValue="lnc"},
+        {.sourceXpath = "/LowerThresholdCritical", .targetKeyValue="lc"},
+        {.sourceXpath = "/LowerThresholdFatal", .targetKeyValue="lnr"},
         NULL
 };
 
@@ -40,7 +43,7 @@ static const UtoolOutputMapping getTemperatureMappings[] = {
  * @param result
  * @return
  */
-int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 
@@ -54,9 +57,9 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
 
     // initialize output objects
     cJSON *output = NULL,       // output result json
-            *temperatures = NULL, // output temperature array
-            *temperature = NULL,    // output temperature
-            *thermalJson = NULL;    // curl response thermal as json
+            *sensors = NULL, // output sensor array
+            *sensor = NULL,    // output sensor
+            *sensorsJson = NULL;    // curl response thermal as json
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
@@ -73,7 +76,7 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
         goto done;
     }
 
-    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Thermal", HTTP_GET, NULL, NULL, response);
+    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/ThresholdSensors", HTTP_GET, NULL, NULL, response);
     if (ret != UTOOLE_OK) {
         goto done;
     }
@@ -89,37 +92,36 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // initialize output temperatures array
-    temperatures = cJSON_AddArrayToObject(output, "Temperature");
-    ret = UtoolAssetCreatedJsonNotNull(temperatures);
+    // initialize output sensors array
+    sensors = cJSON_AddArrayToObject(output, "Sensor");
+    ret = UtoolAssetCreatedJsonNotNull(sensors);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     // process response
-    thermalJson = cJSON_Parse(response->content);
-    ret = UtoolAssetParseJsonNotNull(thermalJson);
+    sensorsJson = cJSON_Parse(response->content);
+    ret = UtoolAssetParseJsonNotNull(sensorsJson);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    cJSON *members = cJSON_GetObjectItem(thermalJson, "Temperatures");
-    int memberCount = cJSON_GetArraySize(members);
-    for (int idx = 0; idx < memberCount; idx++) {
-        cJSON *member = cJSON_GetArrayItem(members, idx);
-
-        temperature = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(temperature);
+    cJSON *member = NULL;
+    cJSON *members = cJSON_GetObjectItem(sensorsJson, "Sensors");
+    cJSON_ArrayForEach(member, members) {
+        sensor = cJSON_CreateObject();
+        ret = UtoolAssetCreatedJsonNotNull(sensor);
         if (ret != UTOOLE_OK) {
             goto failure;
         }
 
-        // create temperature item and add it to array
-        ret = UtoolMappingCJSONItems(member, temperature, getTemperatureMappings);
+        // create sensor item and add it to array
+        ret = UtoolMappingCJSONItems(member, sensor, getTemperatureMappings);
         if (ret != UTOOLE_OK) {
             goto failure;
         }
-        cJSON_AddItemToArray(temperatures, temperature);
+
+        cJSON_AddItemToArray(sensors, sensor);
     }
 
     // output to result
@@ -127,12 +129,12 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
-    FREE_CJSON(temperature)
+    FREE_CJSON(sensor)
     FREE_CJSON(output)
     goto done;
 
 done:
-    FREE_CJSON(thermalJson)
+    FREE_CJSON(sensorsJson)
     UtoolFreeCurlResponse(response);
     UtoolFreeRedfishServer(server);
     return ret;

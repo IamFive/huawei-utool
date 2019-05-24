@@ -60,7 +60,8 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response)
 {
     int ret;
-    struct stat file_info;
+    struct stat fileInfo;
+    struct curl_slist *curlHeaderList = NULL;
 
     FILE *uploadFileFp = fopen(uploadFilePath, "rb"); /* open file to upload */
     if (!uploadFileFp) {
@@ -68,7 +69,7 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
     } /* can't continue */
 
     ///* get the file size */
-    if (fstat(fileno(uploadFileFp), &file_info) != 0) {
+    if (fstat(fileno(uploadFileFp), &fileInfo) != 0) {
         ret = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
         goto return_statement;
     } /* can't continue */
@@ -84,6 +85,10 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
 
     ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
+    // setup content type
+    //curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
+    //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
+
     /* Create the form */
     form = curl_mime_init(curl);
 
@@ -94,6 +99,9 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
 
     // setup mime post form
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+
+    /* enable verbose for easier tracing */
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     /* Perform the request, res will get the return code */
     ret = curl_easy_perform(curl);
@@ -110,6 +118,9 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
 return_statement:
     if (uploadFileFp) {         /* close FP */
         fclose(uploadFileFp);
+    }
+    if (curlHeaderList) {
+        curl_slist_free_all(curlHeaderList);
     }
     curl_easy_cleanup(curl);    /* cleanup the curl */
     curl_mime_free(form);       /* cleanup the form */
@@ -142,6 +153,7 @@ int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri,
     // setup content type
     struct curl_slist *curlHeaderList = NULL;
     curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
+    curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
 
     // setup payload, payload should be freed by caller
@@ -471,9 +483,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
             goto return_statement;
         }
 
-        char *pSystemPath = node->valuestring;
-        char *pLastSlash = strrchr(pSystemPath, '/');
-        char *pSystemId = pLastSlash ? pLastSlash + 1 : pSystemPath;
+        char *pSystemId = UtoolStringLastSplit(node->valuestring, '/');
         ZF_LOGI("Fetch redfish system id succeed, system id is: %s", pSystemId);
         server->systemId = (char *) malloc(strlen(pSystemId) + 1);
         if (server->systemId == NULL) {
@@ -499,18 +509,29 @@ return_statement:
 
 static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
 {
-    // get response content
+    // realloc method is forbidden in HUAWEI developing documents.
+    // because CURL may response multiple times to write response content
+    // so we malloc enough memory according to content length header directly
+    if (response->content == NULL) {
+        response->content = malloc(response->contentLength + 1);
+        response->content[0] = '\0';
+        response->size = response->contentLength;
+    }
+
     unsigned long fullSize = size * nmemb;
-    char *content = (char *) malloc(fullSize + 1);
-    memcpy(content, buffer, fullSize);
-    content[fullSize] = '\0';
+    strncat(response->content, buffer, fullSize);
+
+    // get response content
+    //char *content = (char *) malloc(fullSize + 1);
+    //memcpy(content, buffer, fullSize);
+    //content[fullSize] = '\0';
 
     // log to file in debug level
-    ZF_LOGD("Redfish response: %s", content);
+    //ZF_LOGD("Redfish response: %s", content);
 
     // setup structure
-    response->content = content;
-    response->size = fullSize;
+    //response->content = content;
+    //response->size = fullSize;
 
     // return content size
     return fullSize;
@@ -519,6 +540,21 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
 
 static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
 {
+    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_LENGTH)) {
+        // get response content
+        unsigned long fullSize = size * nitems;
+        char content[fullSize - 1];
+        memcpy(content, buffer, fullSize - 1);
+        content[fullSize - 2] = '\0';
+
+        //int len = strlen(content) - strlen(HEADER_CONTENT_LENGTH) + 1;
+        //char *contentLength = (char *) malloc(len);
+        //memcpy(contentLength, content + strlen(HEADER_CONTENT_LENGTH), len);
+
+        char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
+        response->contentLength = strtol(length, NULL, 10);
+    }
+
     if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
         // get response content
         unsigned long fullSize = size * nitems;

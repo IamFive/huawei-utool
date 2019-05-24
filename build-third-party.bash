@@ -6,6 +6,7 @@ thirdparty::curl() {
   echo "Build curl..."
   echo "install openssl lib..."
   sudo apt install libssl-dev
+#  sudo apt install libcurl4-openssl-dev
   cd ${ProjectRoot}
   cd third-party/curl
   ./buildconf
@@ -50,7 +51,7 @@ thirdparty::zflog() {
 thirdparty::git::update() {
   echo "Update submodule..."
   cd ${ProjectRoot}
-  git submodule update --init
+  git submodule update --init --recursive
 }
 
 main() {

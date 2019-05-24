@@ -19,17 +19,18 @@ set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
-set(LIBCURL_PATH third-party/curl)
 set(LIBZFLOG_PATH third-party/zf_log/zf_log)
-set(LIBYUAREL_PATH third-party/libyuarel)
+set(LIBCURL_PATH third-party/curl)
+
+#find_package(CURL REQUIRED)
+#include_directories(${CURL_INCLUDE_DIR})
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
         ${LIBARGPARSE_PATH}
-        ${LIBYUAREL_PATH}
         ${CJSON_PATH}
-        ${LIBCURL_PATH}/include
         ${LIBZFLOG_PATH}
+        ${LIBCURL_PATH}/include
 )
 
 link_directories(
@@ -41,7 +42,6 @@ link_libraries(
 )
 
 file(GLOB THIRD_PARTY_SOURCE
-        ${LIBYUAREL_PATH}/yuarel.c
         ${LIBARGPARSE_PATH}/argparse.c
         ${LIBZFLOG_PATH}/zf_log.c
         ${CJSON_PATH}/cJSON.c
@@ -62,6 +62,7 @@ install(FILES include/utool.h DESTINATION "${CMAKE_INSTALL_PREFIX}/include/${LIB
 
 # shared library
 add_library(${LIB_NAME} SHARED ${SOURCE_FILES})
+#target_link_libraries(${LIB_NAME} curl)
 set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME} PROPERTIES LINKER_LANGUAGE C)
 set_target_properties("${LIB_NAME}"
