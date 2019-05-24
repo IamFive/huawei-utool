@@ -58,9 +58,9 @@ main() {
   thirdparty::git::update
   thirdparty::curl
 #  thirdparty::libucw
-  thirdparty::cJSON
-  thirdparty::zflog
-  thirdparty::argparse
+#  thirdparty::cJSON
+#  thirdparty::zflog
+#  thirdparty::argparse
 }
 
 (( $_s_ )) || main
