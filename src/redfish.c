@@ -64,12 +64,12 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
 
     FILE *uploadFileFp = fopen(uploadFilePath, "rb"); /* open file to upload */
     if (!uploadFileFp) {
-        return UTOOLE_ILLEGAL_UPLOAD_FILE_PATH;
+        return UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
     } /* can't continue */
 
     ///* get the file size */
     if (fstat(fileno(uploadFileFp), &file_info) != 0) {
-        ret = UTOOLE_ILLEGAL_UPLOAD_FILE_SIZE;
+        ret = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
         goto return_statement;
     } /* can't continue */
 
@@ -82,7 +82,7 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
         goto return_statement;
     }
 
-    ZF_LOGI("Upload file to BMC now");
+    ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
     /* Create the form */
     form = curl_mime_init(curl);
@@ -130,7 +130,7 @@ int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri,
 {
     FILE *outputFileFP = fopen(localFileUri, "wb");
     if (!outputFileFP) {
-        return UTOOLE_ILLEGAL_UPLOAD_FILE_PATH;
+        return UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
     }
 
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
@@ -353,7 +353,9 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     ZF_LOGE("Failed to execute command, error response -> %s", response->content);
     cJSON *failures = cJSON_CreateArray();
     int ret = UtoolGetFailuresFromResponse(response, failures);
-    if (ret != UTOOLE_OK) { return ret; }
+    if (ret != UTOOLE_OK) {
+        return ret;
+    }
 
     return UtoolBuildOutputResult(STATE_FAILURE, failures, result);
 }
@@ -430,6 +432,10 @@ done:
 
 int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result)
 {
+    ZF_LOGI("Try to fetch redfish system id now.");
+
+    cJSON *json = NULL;
+
     char *baseUrl = malloc(MAX_URL_LEN);
     if (baseUrl == NULL) {
         return UTOOLE_INTERNAL;
@@ -451,7 +457,6 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         goto return_statement;
     }
 
-    cJSON *json = NULL;
     // parse response content and detect redfish-system-id
     if (response->httpStatusCode >= 200 && response->httpStatusCode < 300) {
         json = cJSON_Parse(response->content);
@@ -469,7 +474,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         char *pSystemPath = node->valuestring;
         char *pLastSlash = strrchr(pSystemPath, '/');
         char *pSystemId = pLastSlash ? pLastSlash + 1 : pSystemPath;
-        ZF_LOGI("Get redfish system id succeed, system id is: %s", pSystemId);
+        ZF_LOGI("Fetch redfish system id succeed, system id is: %s", pSystemId);
         server->systemId = (char *) malloc(strlen(pSystemId) + 1);
         if (server->systemId == NULL) {
             ret = UTOOLE_INTERNAL;
@@ -514,7 +519,7 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
 
 static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
 {
-    if (UtoolStringIgnoreCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
+    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
         // get response content
         unsigned long fullSize = size * nitems;
         char content[fullSize - 1];

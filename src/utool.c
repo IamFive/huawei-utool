@@ -227,7 +227,7 @@ int utool_main(int argc, char *argv[], char **result)
             // we can not use cJSON to build result here, because it may cause problems...
             // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
             char *buffer = malloc(MAX_OUTPUT_LEN);
-            snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, errorString);
+            snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
             *result = buffer;
         }
 
@@ -243,5 +243,6 @@ int utool_main(int argc, char *argv[], char **result)
     }
 
 return_statement:
+    ZF_LOGI("Command processed, return code is: %d, result is: %s", ret, *result);
     return ret;
 }

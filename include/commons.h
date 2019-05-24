@@ -25,6 +25,12 @@ extern "C" {
 extern UtoolCommand commands[];
 
 /**
+* Redfish Async Task output mapping
+*/
+extern const UtoolOutputMapping getTaskMappings[];
+
+
+/**
  * Free redfish server struct
  *
  * @param self

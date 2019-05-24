@@ -28,7 +28,7 @@ bool UtoolStringStartsWith(const char *source, const char *prefix)
  * @param target
  * @return
  */
-bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *prefix)
+bool UtoolStringCaseStartsWith(const char *source, const char *prefix)
 {
     size_t lenSource = strlen(source),
             lenPrefix = strlen(prefix);
@@ -64,12 +64,41 @@ bool UtoolStringEndsWith(const char *source, const char *suffix)
 */
 bool UtoolStringInArray(const char *str, const char *array[])
 {
+    if (str == NULL) {
+        return false;
+    }
+
     for (int idx = 0;; idx++) {
         const char *item = array[idx];
         if (item == NULL) {
             break;
         }
         if (strncmp(item, str, strlen(item) + 1) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+* check whether string is in the const string array while ignoring differences in case
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringCaseInArray(const char *str, const char **array)
+{
+    if (str == NULL) {
+        return false;
+    }
+
+    for (int idx = 0;; idx++) {
+        const char *item = array[idx];
+        if (item == NULL) {
+            break;
+        }
+        if (strncasecmp(item, str, strlen(item) + 1) == 0) {
             return true;
         }
     }
@@ -86,4 +115,20 @@ bool UtoolStringInArray(const char *str, const char *array[])
 bool UtoolStringEquals(const char *str, const char *literal)
 {
     return strncmp(str, literal, strlen(literal) + 1) == 0;
+}
+
+
+/**
+* check whether string  equals to a string literal
+*
+* @param str
+* @param array
+* @return
+*/
+void UtoolStringToUpper(char *str)
+{
+    while (*str != '\0') {
+        *str = toupper((unsigned char) *str);
+        ++str;
+    }
 }
