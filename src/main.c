@@ -7,8 +7,8 @@ int main(int argc, char **argv)
 {
     char *result = NULL;
     int ret = utool_main(argc, argv, &result);
-    fprintf(ret == 0 ? stdout : stderr, "%s", result);
     if (result != NULL) {
+        fprintf(ret == 0 ? stdout : stderr, "%s", result);
         free(result);
     }
     return ret;

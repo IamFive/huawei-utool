@@ -17,6 +17,7 @@ extern "C" {
 #define MAX_OUTPUT_LEN 2048
 #define MAX_PAYLOAD_LEN 2048
 #define MAX_FAILURE_COUNT 32
+#define MAX_FILE_PATH_LEN 512
 
 #define IPMI_PORT 623;
 #define HTTPS_PORT 443;
@@ -37,7 +38,7 @@ extern "C" {
 #define STATE_SUCCESS "Success"
 #define STATE_FAILURE "Failure"
 
-#define OUTPUT_JSON "{\"State\": \"%s\", \"Message\": [\"%s\"]}"
+#define OUTPUT_JSON "{\"State\": \"%s\", \"Message\": [\"%s: %s\"]}"
 #define OUTPUT_SUCCESS_JSON "{\"State\": \"Success\", \"Message\": [\"Success: successfully completed request\"]}"
 
 //Success: successfully completed request
@@ -84,8 +85,8 @@ typedef enum _Code
     UTOOLE_CREATE_JSON_NULL = 134,                  /** failed to create json object */
     UTOOLE_PRINT_JSON_FAILED = 135,                 /** failed to print json object */
     UTOOLE_CURL_INIT_FAILED = 140,                  /** failed to init curl */
-    UTOOLE_ILLEGAL_UPLOAD_FILE_PATH = 141,          /** illegal local upload file path */
-    UTOOLE_ILLEGAL_UPLOAD_FILE_SIZE = 142,          /** illegal local upload file size */
+    UTOOLE_ILLEGAL_LOCAL_FILE_PATH = 141,          /** illegal local upload file path */
+    UTOOLE_ILLEGAL_LOCAL_FILE_SIZE = 142,          /** illegal local upload file size */
     UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH = 143,          /** illegal local upload file path */
 
 

@@ -14,19 +14,19 @@ extern "C" {
 /**
 * check whether source string starts with target string
 * @param source
-* @param target
+* @param prefix
 * @return
 */
-bool UtoolStringStartsWith(const char *source, const char *target);
+bool UtoolStringStartsWith(const char *source, const char *prefix);
 
 /**
  * check whether source string starts with target string while ignoring differences in case
  *
  * @param source
- * @param target
+ * @param prefix
  * @return
  */
-bool UtoolStringIgnoreCaseStartsWith(const char *source, const char *target);
+bool UtoolStringCaseStartsWith(const char *source, const char *suffix);
 
 /**
 * check whether source string ends with suffix string
@@ -47,12 +47,23 @@ bool UtoolStringEndsWith(const char *source, const char *suffix);
 bool UtoolStringInArray(const char *str, const char *array[]);
 
 /**
+* check whether string is in the const string array while ignoring differences in case
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringCaseInArray(const char *str, const char **array);
+
+/**
 * check whether string  equals to a string literal
 * @param str
 * @param array
 * @return
 */
 bool UtoolStringEquals(const char *str, const char *literal);
+
+void UtoolStringToUpper(char *str);
 
 #ifdef __cplusplus
 }

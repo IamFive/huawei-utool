@@ -6,6 +6,16 @@
 #include <typedefs.h>
 #include <command-interfaces.h>
 
+const UtoolOutputMapping getTaskMappings[] = {
+        {.sourceXpath = "/Id", .targetKeyValue="Id"},
+        {.sourceXpath = "/Name", .targetKeyValue="Name"},
+        {.sourceXpath = "/TaskState", .targetKeyValue="TaskState"},
+        {.sourceXpath = "/StartTime", .targetKeyValue="StartTime"},
+        {.sourceXpath = "/Messages", .targetKeyValue="Messages"},
+        {.sourceXpath = "/Oem/Huawei/TaskPercentage", .targetKeyValue="TaskPercentage"},
+        NULL,
+};
+
 /**
  *
  * build output result JSON
@@ -225,10 +235,10 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Internal error, failed to print JSON object.";
         case UTOOLE_CURL_INIT_FAILED:
             return "Internal error, failed to init curl.";
-        case UTOOLE_ILLEGAL_UPLOAD_FILE_PATH:
-            return "Illegal local upload file path";
-        case UTOOLE_ILLEGAL_UPLOAD_FILE_SIZE:
-            return "Illegal local upload file size.";
+        case UTOOLE_ILLEGAL_LOCAL_FILE_PATH:
+            return "Illegal local file path, please make sure the file exists";
+        case UTOOLE_ILLEGAL_LOCAL_FILE_SIZE:
+            return "Illegal local file size, file should not be empty.";
         case UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH:
             return "Failed to open local download file.";
         default:
