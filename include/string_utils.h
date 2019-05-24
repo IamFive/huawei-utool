@@ -63,7 +63,23 @@ bool UtoolStringCaseInArray(const char *str, const char **array);
 */
 bool UtoolStringEquals(const char *str, const char *literal);
 
+/**
+* check whether string  equals to a string literal
+*
+* @param str
+* @param array
+* @return
+*/
 void UtoolStringToUpper(char *str);
+
+/**
+* get the last segment of split string
+*
+* @param source
+* @param split
+* @return
+*/
+char *UtoolStringLastSplit(char *source, char split);
 
 #ifdef __cplusplus
 }

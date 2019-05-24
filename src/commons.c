@@ -6,15 +6,28 @@
 #include <typedefs.h>
 #include <command-interfaces.h>
 
+static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node);
+
 const UtoolOutputMapping getTaskMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="Id"},
-        {.sourceXpath = "/Name", .targetKeyValue="Name"},
-        {.sourceXpath = "/TaskState", .targetKeyValue="TaskState"},
+        {.sourceXpath = "/Id", .targetKeyValue="TaskId"},
+        {.sourceXpath = "/Name", .targetKeyValue="TaskDesc"},
+        {.sourceXpath = "/Name", .targetKeyValue="TaskType"},
+        {.sourceXpath = "/TaskState", .targetKeyValue="State"},
         {.sourceXpath = "/StartTime", .targetKeyValue="StartTime"},
-        {.sourceXpath = "/Messages", .targetKeyValue="Messages"},
+        {.sourceXpath = "/Null", .targetKeyValue="EstimatedTimeSenconds"},
+        {.sourceXpath = "/Null", .targetKeyValue="Trigger", .handle=TaskTriggerPropertyHandler},
+        //{.sourceXpath = "/Messages", .targetKeyValue="Messages"},
         {.sourceXpath = "/Oem/Huawei/TaskPercentage", .targetKeyValue="TaskPercentage"},
         NULL,
 };
+
+static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node)
+{
+    cJSON_AddRawToObject(target, "Trigger", "[\"automatic\"]");
+    FREE_CJSON(node)
+    return UTOOLE_OK;
+}
+
 
 /**
  *
@@ -153,60 +166,54 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 
         const char *xpath = mapping->sourceXpath;
         cJSON *ref = cJSONUtils_GetPointer(source, xpath);
-        if (ref != NULL) {
-            cJSON *cloned = cJSON_Duplicate(ref, 1);
-            ret = UtoolAssetCreatedJsonNotNull(cloned);
-            if (ret != UTOOLE_OK) {
-                return ret;
-            }
+        cJSON *cloned = ref != NULL ? cJSON_Duplicate(ref, 1) : cJSON_CreateNull();
+        ret = UtoolAssetCreatedJsonNotNull(cloned);
+        if (ret != UTOOLE_OK) {
+            return ret;
+        }
 
-            if (mapping->handle == NULL) {
-                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
-                continue;
-            }
+        if (mapping->handle == NULL) {
+            cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
+            continue;
+        }
 
-            ret = mapping->handle(target, mapping->targetKeyValue, cloned);
-            if (ret != UTOOLE_OK) {
-                return ret;
-            }
+        ret = mapping->handle(target, mapping->targetKeyValue, cloned);
+        if (ret != UTOOLE_OK) {
+            return ret;
+        }
 
-            /** TODO(Qianbiao.NG) we should add more case coverage later?
-            switch (ref->type) {
-                case cJSON_NULL:
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
-                    break;
-                case cJSON_False:
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateFalse());
-                    break;
-                case cJSON_True:
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateTrue());
-                    break;
-                case cJSON_Number:
-                    if (ref->valueint != 0) {
-                        cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valueint));
-                    }
-                    else {
-                        cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valuedouble));
-                    }
-                    break;
-                case cJSON_String: {
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateString(ref->valuestring));
-                    break;
+        /** TODO(Qianbiao.NG) we should add more case coverage later?
+        switch (ref->type) {
+            case cJSON_NULL:
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
+                break;
+            case cJSON_False:
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateFalse());
+                break;
+            case cJSON_True:
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateTrue());
+                break;
+            case cJSON_Number:
+                if (ref->valueint != 0) {
+                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valueint));
                 }
-                    //case cJSON_Array: {
-                    //    cJSON *cloned = cJSON_Duplicate(ref, 1);
-                    //    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
-                    //    break;
-                    //}
-                default:
-                    break;
+                else {
+                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valuedouble));
+                }
+                break;
+            case cJSON_String: {
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateString(ref->valuestring));
+                break;
             }
-            */
-
+                //case cJSON_Array: {
+                //    cJSON *cloned = cJSON_Duplicate(ref, 1);
+                //    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
+                //    break;
+                //}
+            default:
+                break;
         }
-        else {
-            cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
-        }
+        */
     }
 
     return UTOOLE_OK;

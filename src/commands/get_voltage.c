@@ -115,7 +115,10 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
         }
 
         // create voltage item and add it to array
-        UtoolMappingCJSONItems(member, voltage, getVoltageMappings);
+        ret = UtoolMappingCJSONItems(member, voltage, getVoltageMappings);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
         cJSON_AddItemToArray(voltages, voltage);
     }
 
@@ -124,6 +127,7 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
+    FREE_CJSON(voltage)
     FREE_CJSON(output)
     goto done;
 

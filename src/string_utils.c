@@ -132,3 +132,17 @@ void UtoolStringToUpper(char *str)
         ++str;
     }
 }
+
+/**
+* get the last segment of split string
+*
+* @param source
+* @param split
+* @return
+*/
+char *UtoolStringLastSplit(char *source, char split)
+{
+    char *pLastSlash = strrchr(source, split);
+    char *pLastSplit = pLastSlash ? pLastSlash + 1 : source;
+    return pLastSplit;
+}

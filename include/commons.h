@@ -103,9 +103,9 @@ static inline int UtoolAssetParseJsonNotNull(cJSON *json)
  * @param xpath
  * @return
  */
-static inline int UtoolAssetJsonNodeNotNull(cJSON *json, char *xpath)
+static inline int UtoolAssetJsonNodeNotNull(cJSON *node, char *xpath)
 {
-    if (json == NULL) {
+    if (node == NULL || cJSON_IsNull(node)) {
         ZF_LOGE("Failed to get the node(%s) from json", xpath);
         return UTOOLE_UNKNOWN_JSON_FORMAT;
     }

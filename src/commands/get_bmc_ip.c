@@ -21,12 +21,39 @@ static const char *const usage[] = {
         NULL,
 };
 
-static const UtoolOutputMapping getFwMappings[] = {
+static int VlanPropertyHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsNull(node)) {
+        cJSON_AddItemToObjectCS(target, key, node);
+        return UTOOLE_OK;
+    }
+
+    cJSON *vlanEnableNode = cJSON_GetObjectItem(node, "VLANEnable");
+    int ret = UtoolAssetJsonNodeNotNull(vlanEnableNode, "/VLANInfo/VLANEnable");
+    if (ret != UTOOLE_OK) {
+        FREE_CJSON(node)
+        return ret;
+    }
+
+    cJSON *stateNode = cJSON_AddStringToObject(node, "State", cJSON_IsTrue(vlanEnableNode) ? ENABLED : DISABLED);
+    ret = UtoolAssetCreatedJsonNotNull(stateNode);
+    if (ret != UTOOLE_OK) {
+        FREE_CJSON(node)
+        return ret;
+    }
+
+    cJSON_DeleteItemFromObject(node, "VLANEnable");
+    cJSON_AddItemToObjectCS(target, key, node);
+    return UTOOLE_OK;
+}
+
+static const UtoolOutputMapping getEthernetMappings[] = {
         {.sourceXpath = "/Oem/Huawei/IPVersion", .targetKeyValue="IPVersion"},
         {.sourceXpath = "/PermanentMACAddress", .targetKeyValue="PermanentMACAddress"},
         {.sourceXpath = "/IPv4Addresses", .targetKeyValue="IPv4"},
         {.sourceXpath = "/IPv6Addresses", .targetKeyValue="IPv6"},
-        {.sourceXpath = "/VLAN", .targetKeyValue="VLAN"},
+        {.sourceXpath = "/VLAN", .targetKeyValue="VLANInfo", .handle=VlanPropertyHandler},
+        NULL,
 };
 
 
@@ -49,8 +76,8 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
     };
 
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *memberResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *firmwareResp = &(UtoolCurlResponse) {0};
+    UtoolCurlResponse *getMembersResp = &(UtoolCurlResponse) {0};
+    UtoolCurlResponse *getMemberResp = &(UtoolCurlResponse) {0};
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
@@ -67,18 +94,18 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
         goto done;
     }
 
-    ret = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
+    ret = UtoolMakeCurlRequest(server, "/Managers/%s/EthernetInterfaces/", HTTP_GET, NULL, NULL, getMembersResp);
     if (ret != UTOOLE_OK) {
         goto done;
     }
-    if (memberResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(memberResp, result);
+    if (getMembersResp->httpStatusCode >= 400) {
+        ret = UtoolResolveFailureResponse(getMembersResp, result);
         goto done;
     }
 
     // initialize output objects
-    cJSON *firmwareJson = NULL, *firmwareMembersJson = NULL;
-    cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
+    cJSON *memberJson = NULL, *membersJson = NULL;
+    cJSON *output = NULL, *tasks = NULL, *task = NULL;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
@@ -86,66 +113,73 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    firmwares = cJSON_AddArrayToObject(output, "Firmware");
-    ret = UtoolAssetCreatedJsonNotNull(firmwares);
+    tasks = cJSON_AddArrayToObject(output, "task");
+    ret = UtoolAssetCreatedJsonNotNull(tasks);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
     // process response
-    firmwareMembersJson = cJSON_Parse(memberResp->content);
-    ret = UtoolAssetParseJsonNotNull(firmwareMembersJson);
+    membersJson = cJSON_Parse(getMembersResp->content);
+    ret = UtoolAssetParseJsonNotNull(membersJson);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    cJSON *members = cJSON_GetObjectItem(firmwareMembersJson, "Members");
-    int memberCount = cJSON_GetArraySize(members);
-    for (int idx = 0; idx < memberCount; idx++) {
-        cJSON *member = cJSON_GetArrayItem(members, idx);
+    cJSON *member = NULL;
+    cJSON *members = cJSON_GetObjectItem(membersJson, "Members");
+    cJSON_ArrayForEach(member, members) {
         cJSON *odataIdNode = cJSON_GetObjectItem(member, "@odata.id");
         char *url = odataIdNode->valuestring;
 
-        ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, firmwareResp);
+        ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getMemberResp);
         if (ret != UTOOLE_OK) {
             goto failure;
         }
 
-        firmwareJson = cJSON_Parse(firmwareResp->content);
-        ret = UtoolAssetParseJsonNotNull(firmwareJson);
+        if (getMemberResp->httpStatusCode >= 400) {
+            ret = UtoolResolveFailureResponse(getMemberResp, result);
+            goto failure;
+        }
+
+        memberJson = cJSON_Parse(getMemberResp->content);
+        ret = UtoolAssetParseJsonNotNull(memberJson);
         if (ret != UTOOLE_OK) {
             goto failure;
         }
 
-        firmware = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(firmware);
+        task = cJSON_CreateObject();
+        ret = UtoolAssetCreatedJsonNotNull(task);
         if (ret != UTOOLE_OK) {
             goto failure;
         }
 
-        // create firmware item and add it to array
-        UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
-        cJSON_AddItemToArray(firmwares, firmware);
+        // create task item and add it to array
+        ret = UtoolMappingCJSONItems(memberJson, task, getEthernetMappings);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
+        cJSON_AddItemToArray(tasks, task);
 
         // free memory
-        FREE_CJSON(firmwareJson)
-        UtoolFreeCurlResponse(firmwareResp);
+        FREE_CJSON(memberJson)
+        UtoolFreeCurlResponse(getMemberResp);
     }
-
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
     goto done;
 
 failure:
+    FREE_CJSON(task)
     FREE_CJSON(output)
     goto done;
 
 done:
-    FREE_CJSON(firmwareMembersJson)
-    FREE_CJSON(firmwareJson)
-    UtoolFreeCurlResponse(memberResp);
-    UtoolFreeCurlResponse(firmwareResp);
+    FREE_CJSON(membersJson)
+    FREE_CJSON(memberJson)
+    UtoolFreeCurlResponse(getMembersResp);
+    UtoolFreeCurlResponse(getMemberResp);
     UtoolFreeRedfishServer(server);
     return ret;
 }

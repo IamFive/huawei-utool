@@ -131,6 +131,11 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
             goto failure;
         }
 
+        if (getUserResponse->httpStatusCode >= 400) {
+            ret = UtoolResolveFailureResponse(getUserResponse, result);
+            goto failure;
+        }
+
         userJson = cJSON_Parse(getUserResponse->content);
         ret = UtoolAssetParseJsonNotNull(userJson);
         if (ret != UTOOLE_OK) {

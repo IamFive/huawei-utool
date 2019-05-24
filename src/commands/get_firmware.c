@@ -21,7 +21,8 @@ static const char *const usage[] = {
 
 static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
 {
-    if (node == NULL) { // should not happen
+    if (cJSON_IsNull(node)) {
+        cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
     }
 
@@ -29,8 +30,8 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
     // UtoolStringEndsWith(node->valuestring, "BMC");
     // we will try to parse Type from Software-Id
     char *type = strtok(node->valuestring, "-");
-    FREE_CJSON(node)
     cJSON *newNode = cJSON_AddStringToObject(target, key, type);
+    FREE_CJSON(node)
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
@@ -124,6 +125,11 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
             goto failure;
         }
 
+        if (firmwareResp->httpStatusCode >= 400) {
+            ret = UtoolResolveFailureResponse(firmwareResp, result);
+            goto failure;
+        }
+
         firmwareJson = cJSON_Parse(firmwareResp->content);
         ret = UtoolAssetParseJsonNotNull(firmwareJson);
         if (ret != UTOOLE_OK) {
@@ -144,7 +150,10 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
         //}
 
         // create firmware item and add it to array
-        UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
+        ret = UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
         cJSON_AddItemToArray(firmwares, firmware);
 
         // free memory
@@ -158,6 +167,7 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
+    FREE_CJSON(firmware)
     FREE_CJSON(output)
     goto done;
 

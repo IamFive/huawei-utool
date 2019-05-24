@@ -27,7 +27,8 @@ static const UtoolOutputMapping getDriveSummaryMapping[] = {
 
 static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
 {
-    if (node == NULL) { // should not happen
+    if (cJSON_IsNull(node)) { // should not happen
+        cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
     }
 
@@ -40,7 +41,8 @@ static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
 
 static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
 {
-    if (node == NULL) { // should not happen
+    if (cJSON_IsNull(node)) { // should not happen
+        cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
     }
 
@@ -175,7 +177,10 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
     if (ret != UTOOLE_OK) {
         goto failure;
     }
-    UtoolMappingCJSONItems(chassisJson, output, getDriveSummaryMapping);
+    ret = UtoolMappingCJSONItems(chassisJson, output, getDriveSummaryMapping);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
 
     // initialize output drive array
     drives = cJSON_AddArrayToObject(output, "Disk");
@@ -201,6 +206,11 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
             goto failure;
         }
 
+        if (getDriveResponse->httpStatusCode >= 400) {
+            ret = UtoolResolveFailureResponse(getDriveResponse, result);
+            goto failure;
+        }
+
         driveJson = cJSON_Parse(getDriveResponse->content);
         ret = UtoolAssetParseJsonNotNull(driveJson);
         if (ret != UTOOLE_OK) {
@@ -214,7 +224,10 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
         }
 
         // create drive item and add it to array
-        UtoolMappingCJSONItems(driveJson, drive, getDriveMappings);
+        ret = UtoolMappingCJSONItems(driveJson, drive, getDriveMappings);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
         cJSON_AddItemToArray(drives, drive);
 
         FREE_CJSON(driveJson)
@@ -226,6 +239,7 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
+    FREE_CJSON(drive)
     FREE_CJSON(output)
     goto done;
 

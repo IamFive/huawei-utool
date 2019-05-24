@@ -74,6 +74,7 @@ typedef struct _CurlResponse
     size_t size;
     int httpStatusCode;
     char *etag;
+    long contentLength;
 } UtoolCurlResponse;
 
 typedef struct _CurlHeader

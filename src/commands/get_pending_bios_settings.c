@@ -43,15 +43,13 @@ static const UtoolOutputMapping getProductMappings[] = {
  * @param option
  * @return
  */
-int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
-    cJSON *output = NULL;
-    cJSON *getSystemJson = NULL, *getChassisPowerJson = NULL;
+    cJSON *getBiosJson = NULL;
 
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *getSystemResponse = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getChassisPowerResponse = &(UtoolCurlResponse) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -74,16 +72,10 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
         goto done;
     }
 
-    output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
+    // process get system response
+    ret = UtoolMakeCurlRequest(server, "/Systems/%s/Bios/Settings", HTTP_GET, NULL, NULL, getSystemResponse);
     if (ret != UTOOLE_OK) {
         goto failure;
-    }
-
-    // process get system response
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResponse);
-    if (ret != UTOOLE_OK) {
-        goto done;
     }
 
     if (getSystemResponse->httpStatusCode >= 400) {
@@ -91,49 +83,28 @@ int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    getSystemJson = cJSON_Parse(getSystemResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getSystemJson);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-    ret = UtoolMappingCJSONItems(getSystemJson, output, getProductMappings);
+    getBiosJson = cJSON_Parse(getSystemResponse->content);
+    ret = UtoolAssetParseJsonNotNull(getBiosJson);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    // process get chassis power response
-    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Power", HTTP_GET, NULL, NULL, getChassisPowerResponse);
+    cJSON *attributes = cJSON_DetachItemFromObject(getBiosJson, "Attributes");
+    ret = UtoolAssetJsonNodeNotNull(attributes, "/Attributes");
     if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    if (getChassisPowerResponse->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getChassisPowerResponse, result);
-        goto failure;
-    }
-
-    getChassisPowerJson = cJSON_Parse(getChassisPowerResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getChassisPowerJson);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-    ret = UtoolMappingCJSONItems(getChassisPowerJson, output, getPowerMappings);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
     // mapping result to output json
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    ret = UtoolBuildOutputResult(STATE_SUCCESS, attributes, result);
     goto done;
 
 failure:
-    FREE_CJSON(output)
     goto done;
 
 done:
-    FREE_CJSON(getSystemJson)
-    FREE_CJSON(getChassisPowerJson)
+    FREE_CJSON(getBiosJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(getSystemResponse);
-    UtoolFreeCurlResponse(getChassisPowerResponse);
     return ret;
 }
