@@ -31,7 +31,8 @@ static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
         return UTOOLE_OK;
     }
 
-    node->valuedouble = node->valuedouble / 1024 / 1024 / 1024;
+    int gbytes = (int) (node->valuedouble / 1024 / 1024 / 1024 + 0.5);
+    node->valuedouble = gbytes;
     cJSON_AddItemToObjectCS(target, key, node);
     return UTOOLE_OK;
 }
