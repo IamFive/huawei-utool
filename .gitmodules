@@ -1,15 +1,3 @@
-[submodule "argparse"]
-	path = third-party/argparse
-	url = https://github.com/cofyc/argparse.git
-	ignore = dirty
-[submodule "cJSON"]
-	path = third-party/cJSON
-	url = https://github.com/DaveGamble/cJSON.git
-	ignore = dirty
-[submodule "zf_log"]
-	path = third-party/zf_log
-	url = https://github.com/wonder-mice/zf_log.git
-	ignore = dirty
 [submodule "curl"]
 	path = third-party/curl
 	url = https://github.com/curl/curl.git
