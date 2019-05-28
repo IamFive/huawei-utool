@@ -51,7 +51,7 @@ int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    char *filepath = "/home/qianbiao/9.xml";
+    char *filepath = "/data/nfs/2288H_V5_5288_V5-iBMC-V318-3.hpm";
     ret = UtoolUploadFileToBMC(server, filepath, response);
     if (ret != UTOOLE_OK) {
         goto failure;

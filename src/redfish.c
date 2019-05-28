@@ -59,6 +59,8 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 */
 int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response)
 {
+    ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
+
     int ret;
     struct stat fileInfo;
     struct curl_slist *curlHeaderList = NULL;
@@ -83,8 +85,6 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
         goto return_statement;
     }
 
-    ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
-
     // setup content type
     //curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
     //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
@@ -101,16 +101,20 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
     /* enable verbose for easier tracing */
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     /* Perform the request, res will get the return code */
     ret = curl_easy_perform(curl);
     if (ret == CURLE_OK) { /* Check for errors */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+        if (response->httpStatusCode >= 400) {
+            ZF_LOGE("Failed to upload local file `%s` to BMC, http status code is %d.",
+                    uploadFilePath, response->httpStatusCode);
+        }
     }
     else {
         const char *error = curl_easy_strerror((CURLcode) ret);
-        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
+        ZF_LOGE("Failed upload file to BMC, CURL code is %d, error is %s.", ret, error);
     }
 
     goto return_statement;
@@ -346,6 +350,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
 int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
 {
     int code = response->httpStatusCode;
+    ZF_LOGE("Failed to execute request, http error code -> %d", code);
 
     // handle standard internet errors
     if (403 == code) {
@@ -353,6 +358,9 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     }
     else if (412 == code) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, result);
+    }
+    else if (413 == code) {
+        return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_ENTITY_TOO_LARGE, result);
     }
     else if (code == 500) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, result);
@@ -512,13 +520,14 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
     // realloc method is forbidden in HUAWEI developing documents.
     // because CURL may response multiple times to write response content
     // so we malloc enough memory according to content length header directly
+    unsigned long fullSize = size * nmemb;
     if (response->content == NULL) {
-        response->content = malloc(response->contentLength + 1);
+        unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
+        response->content = malloc(length + 1);
         response->content[0] = '\0';
-        response->size = response->contentLength;
+        response->size = length;
     }
 
-    unsigned long fullSize = size * nmemb;
     strncat(response->content, buffer, fullSize);
 
     // get response content

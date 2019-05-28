@@ -58,6 +58,11 @@ extern "C" {
 #define MEMORY_STATE_ABSENT "Absent"
 #define MEMORY_STATE_ENABLED "Enabled"
 
+#define UPGRADE_FIRMWARE_RETRY_TIMES 3
+
+#define UPGRADE_ACTIVATE_MODE_AUTO "Auto"
+#define UPGRADE_ACTIVATE_MODE_MANUAL "Manual"
+
 
 /**
  * Argument parse help messages
@@ -79,7 +84,7 @@ extern "C" {
 #define FAIL_INTERNAL_SERVICE_ERROR "Failure: the request failed due to an internal service error"
 #define FAIL_NOT_SUPPORT "Failure: the server did not support the functionality required"
 #define FAIL_PRE_CONDITION_FAILED "Failure: 412 Precondition Failed"
-
+#define FAIL_ENTITY_TOO_LARGE "Failure: 413 Request Entity Too Large"
 
 typedef enum _Code
 {
