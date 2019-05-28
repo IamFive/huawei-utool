@@ -2,3 +2,7 @@
 	path = third-party/curl
 	url = https://github.com/curl/curl.git
     ignore = dirty
+[submodule "argparse"]
+	path = third-party/argparse
+	url = https://github.com/IamFive/argparse
+	ignore = dirty
