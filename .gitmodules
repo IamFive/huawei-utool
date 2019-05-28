@@ -9,3 +9,8 @@
 [submodule "cJSON"]
 	path = third-party/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
+	ignore = dirty
+[submodule "zf_log"]
+	path = third-party/zf_log
+	url = https://github.com/IamFive/zf_log.git
+	ignore = dirty
