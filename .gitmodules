@@ -6,3 +6,6 @@
 	path = third-party/argparse
 	url = https://github.com/IamFive/argparse
 	ignore = dirty
+[submodule "cJSON"]
+	path = third-party/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
