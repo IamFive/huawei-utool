@@ -28,8 +28,8 @@ git submodule update --init
 ```
 
 ### Build curl
-
-please make sure `libssl-dev` is ready before making CURL. 
+The CURL version required is >=curl-7_65_0.
+Please make sure `libssl-dev` is ready before making CURL. 
 
 - ubuntu: `sudo apt install libssl-dev`
 - RedHat: `sudo yum install openssl-dev`
@@ -41,6 +41,7 @@ cd third-party/curl
 ./configure --with-ssl
 make
 ```
+
 
 ### Build Utool
 
