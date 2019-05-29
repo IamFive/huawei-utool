@@ -46,6 +46,7 @@ static const UtoolOutputMapping getProductMappings[] = {
 int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
+
     cJSON *output = NULL;
     cJSON *getSystemJson = NULL, *getChassisPowerJson = NULL;
 

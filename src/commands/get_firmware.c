@@ -66,6 +66,10 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
     UtoolCurlResponse *memberResp = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *firmwareResp = &(UtoolCurlResponse) {0};
 
+    // initialize output objects
+    cJSON *firmwareJson = NULL, *firmwareMembersJson = NULL;
+    cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
+
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
         goto done;
@@ -89,10 +93,6 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
         ret = UtoolResolveFailureResponse(memberResp, result);
         goto done;
     }
-
-    // initialize output objects
-    cJSON *firmwareJson = NULL, *firmwareMembersJson = NULL;
-    cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);

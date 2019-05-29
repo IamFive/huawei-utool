@@ -79,6 +79,10 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
     UtoolCurlResponse *getMembersResp = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *getMemberResp = &(UtoolCurlResponse) {0};
 
+    // initialize output objects
+    cJSON *memberJson = NULL, *membersJson = NULL;
+    cJSON *output = NULL, *tasks = NULL, *task = NULL;
+
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
         goto done;
@@ -102,10 +106,6 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
         ret = UtoolResolveFailureResponse(getMembersResp, result);
         goto done;
     }
-
-    // initialize output objects
-    cJSON *memberJson = NULL, *membersJson = NULL;
-    cJSON *output = NULL, *tasks = NULL, *task = NULL;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
