@@ -50,6 +50,10 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
     UtoolCurlResponse *getLogServices = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *getLogService0Resp = &(UtoolCurlResponse) {0};
 
+    // initialize output objects
+    cJSON *logService0Json = NULL, *logServicesJson = NULL;
+    cJSON *output = NULL, *healthEvents = NULL, *healthEvent = NULL;
+
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
         goto done;
@@ -59,10 +63,6 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
     if (commandOption->flag != EXECUTABLE) {
         goto done;
     }
-
-    // initialize output objects
-    cJSON *logService0Json = NULL, *logServicesJson = NULL;
-    cJSON *output = NULL, *healthEvents = NULL, *healthEvent = NULL;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
