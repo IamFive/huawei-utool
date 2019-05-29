@@ -37,12 +37,12 @@ UtoolCommand commands[] = {
         {.name = "getpdisk", .pFuncExecute=UtoolCmdGetPhysicalDisks, .type=GET},
         {.name = "getldisk", .pFuncExecute=UtoolCmdGetLogicalDisks, .type=GET},
         {.name = "getnic", .pFuncExecute=UtoolCmdGetNIC, .type=GET},
+        {.name = "getuser", .pFuncExecute=UtoolCmdGetUsers, .type=GET},
         {.name = "getsysboot", .pFuncExecute = UtoolCmdGetSystemBoot, .type = GET},
         {.name = "getsensor", .pFuncExecute = UtoolCmdGetSensor, .type = GET},
         {.name = "getbios", .pFuncExecute = UtoolCmdGetBiosSettings, .type = GET},
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
-
 
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},

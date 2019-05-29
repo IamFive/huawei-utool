@@ -29,6 +29,20 @@ extern UtoolCommand commands[];
 */
 extern const UtoolOutputMapping getTaskMappings[];
 
+/**
+* Free Utool Result object
+*
+* - remember desc should not be freed, it's always used by output string.
+*
+* @param result
+* @return
+*/
+static inline int UtoolFreeUtoolResult(UtoolResult *result)
+{
+    if (result != NULL) {
+        FREE_CJSON(result->data)
+    }
+}
 
 /**
  * Free redfish server struct

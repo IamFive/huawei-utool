@@ -9,6 +9,19 @@ extern "C" {
 #include <stddef.h>
 #include "cJSON.h"
 
+
+/**
+* function call result structure
+*/
+typedef struct _Result
+{
+    int code;           /** result code */
+    char *desc;         /** result desc */
+    cJSON *data;         /** result data */
+    int interrupt;      /** whether the program is interrupt, default no(0) otherwise yes */
+} UtoolResult;
+
+
 /**
  * Redfish Server basic properties
  */

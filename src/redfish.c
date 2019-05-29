@@ -580,3 +580,85 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
 
     return nitems * size;
 }
+
+
+/**
+* Get Redfish resource and parse content to JSON
+*
+* @param server
+* @param url
+* @param result
+*/
+void UtoolRedfishGetResource(UtoolRedfishServer *server, char *url, UtoolResult *result)
+{
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    result->code = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, response);
+    if (result->code != UTOOLE_OK) {
+        goto failure;
+    }
+
+    if (response->httpStatusCode >= 400) {
+        result->code = UtoolResolveFailureResponse(response, &(result->desc));
+        goto failure;
+    }
+
+    result->data = cJSON_Parse(response->content);
+    result->code = UtoolAssetParseJsonNotNull(result->data);
+    if (result->code != UTOOLE_OK) {
+        goto failure;
+    }
+
+    goto done;
+
+failure:
+    result->interrupt = 1;
+    goto done;
+
+done:
+    UtoolFreeCurlResponse(response);
+}
+
+
+void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
+                                    const UtoolOutputMapping *memberMapping, UtoolResult *result)
+{
+    cJSON *outputMember = NULL, *sourceMember = NULL;
+
+    cJSON *link = NULL;
+    cJSON *links = cJSON_GetObjectItem(owner, "Members");
+    cJSON_ArrayForEach(link, links) {
+        outputMember = cJSON_CreateObject();
+        result->code = UtoolAssetCreatedJsonNotNull(outputMember);
+        if (result->code != UTOOLE_OK) {
+            goto failure;
+        }
+
+        cJSON *linkNode = cJSON_GetObjectItem(link, "@odata.id");
+        char *url = linkNode->valuestring;
+        UtoolRedfishGetResource(server, url, result);
+        if (result->interrupt) {
+            goto failure;
+        }
+
+        result->code = UtoolMappingCJSONItems(result->data, outputMember, memberMapping);
+        if (result->code != UTOOLE_OK) {
+            goto failure;
+        }
+        cJSON_AddItemToArray(memberArray, outputMember);
+
+        // free memory
+        FREE_CJSON(result->data)
+    }
+
+    goto done;
+
+failure:
+    result->interrupt = 1;
+    FREE_CJSON(outputMember)  /** make sure output member is freed */
+    goto done;
+
+done:
+    FREE_CJSON(result->data)  /** make sure result cJSON data is freed */
+    return;
+}

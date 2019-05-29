@@ -8,6 +8,7 @@
 
 static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node);
 
+/** Redfish Rsync Task Mapping define */
 const UtoolOutputMapping getTaskMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="TaskId"},
         {.sourceXpath = "/Name", .targetKeyValue="TaskDesc"},
@@ -252,4 +253,3 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Unknown error";
     }
 }
-
