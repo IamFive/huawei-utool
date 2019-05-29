@@ -15,18 +15,22 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getuser",
+        "utool geteventsub",
         NULL,
 };
 
-static const UtoolOutputMapping getUserMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="UserId"},
-        {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
-        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
-        {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+static const UtoolOutputMapping getSubscriptionMappings[] = {
+        {.sourceXpath = "/Id", .targetKeyValue="Id"},
+        {.sourceXpath = "/Destination", .targetKeyValue="Destination"},
+        {.sourceXpath = "/EventTypes", .targetKeyValue="EventTypes"},
+        {.sourceXpath = "/HttpHeaders", .targetKeyValue="HttpHeaders"},
+        {.sourceXpath = "/Protocol", .targetKeyValue="Protocol"},
+        {.sourceXpath = "/Context", .targetKeyValue="Context"},
+        {.sourceXpath = "/MessageIds", .targetKeyValue="MessageIds"},
+        {.sourceXpath = "/OriginResources", .targetKeyValue="OriginResources"},
         NULL
 };
+
 
 /**
  * command handler of `getuser`
@@ -36,7 +40,7 @@ static const UtoolOutputMapping getUserMappings[] = {
  * @param outputStr
  * @return
  */
-int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdGetEventSubscriptions(UtoolCommandOption *commandOption, char **outputStr)
 {
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -44,7 +48,7 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
     };
 
     // initialize output objects
-    cJSON *userMemberJson = NULL, *output = NULL, *userArray = NULL;
+    cJSON *subscriptionMemberJson = NULL, *output = NULL, *subscriptionArray = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -70,19 +74,19 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
         goto failure;
     }
 
-    userArray = cJSON_AddArrayToObject(output, "User");
-    result->code = UtoolAssetCreatedJsonNotNull(userArray);
+    subscriptionArray = cJSON_AddArrayToObject(output, "Subscriber");
+    result->code = UtoolAssetCreatedJsonNotNull(subscriptionArray);
     if (result->code != UTOOLE_OK) {
         goto failure;
     }
 
-    UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
+    UtoolRedfishGet(server, "/EventService/Subscriptions", NULL, NULL, result);
     if (result->interrupt) {
         goto failure;
     }
 
-    userMemberJson = result->data;
-    UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
+    subscriptionMemberJson = result->data;
+    UtoolRedfishGetMemberResources(server, subscriptionMemberJson, subscriptionArray, getSubscriptionMappings, result);
     if (result->interrupt) {
         goto failure;
     }
@@ -96,8 +100,9 @@ failure:
     goto done;
 
 done:
-    FREE_CJSON(userMemberJson)
+    FREE_CJSON(subscriptionMemberJson)
     UtoolFreeRedfishServer(server);
+
     *outputStr = result->desc;
     return result->code;
 }

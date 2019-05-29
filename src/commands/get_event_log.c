@@ -15,7 +15,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool gethealthevent",
+        "utool geteventlog",
         NULL,
 };
 
@@ -31,13 +31,13 @@ static const UtoolOutputMapping getHealthEventMappings[] = {
 };
 
 /**
- * command handler of `getfw`
+ * get all event logs. command handler of `geteventlog`
  *
  * @param commandOption
  * @param result
  * @return
  */
-int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
 

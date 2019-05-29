@@ -29,6 +29,20 @@ static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *nod
     return UTOOLE_OK;
 }
 
+int BoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsTrue(node)) {
+        cJSON_AddStringToObject(target, key, ENABLED);
+    }
+
+    if (cJSON_IsFalse(node)) {
+        cJSON_AddStringToObject(target, key, DISABLED);
+    }
+
+    FREE_CJSON(node)
+    return UTOOLE_OK;
+}
+
 
 /**
  *
@@ -167,21 +181,41 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 
         const char *xpath = mapping->sourceXpath;
         cJSON *ref = cJSONUtils_GetPointer(source, xpath);
-        cJSON *cloned = ref != NULL ? cJSON_Duplicate(ref, 1) : cJSON_CreateNull();
-        ret = UtoolAssetCreatedJsonNotNull(cloned);
-        if (ret != UTOOLE_OK) {
-            return ret;
+
+        /** plain mapping */
+        if (mapping->nestMapping == NULL) {
+            cJSON *cloned = ref != NULL ? cJSON_Duplicate(ref, 1) : cJSON_CreateNull();
+            ret = UtoolAssetCreatedJsonNotNull(cloned);
+            if (ret != UTOOLE_OK) {
+                return ret;
+            }
+            if (mapping->handle == NULL) {
+                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
+                continue;
+            }
+
+            ret = mapping->handle(target, mapping->targetKeyValue, cloned);
+            if (ret != UTOOLE_OK) {
+                return ret;
+            }
+        }
+        else { /** nest array mapping */
+            cJSON *array = cJSON_AddArrayToObject(target, mapping->targetKeyValue);
+            ret = UtoolAssetCreatedJsonNotNull(array);
+            if (ret != UTOOLE_OK) {
+                return ret;
+            }
+
+            UtoolOutputMapping *nestMapping = mapping->nestMapping;
+            cJSON *element = NULL;
+            cJSON_ArrayForEach(element, ref) {
+                cJSON *mapped = cJSON_CreateObject();
+                cJSON_AddItemToArray(array, mapped);
+                // TODO
+                UtoolMappingCJSONItems(element, mapped, nestMapping);
+            }
         }
 
-        if (mapping->handle == NULL) {
-            cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
-            continue;
-        }
-
-        ret = mapping->handle(target, mapping->targetKeyValue, cloned);
-        if (ret != UTOOLE_OK) {
-            return ret;
-        }
 
         /** TODO(Qianbiao.NG) we should add more case coverage later?
         switch (ref->type) {

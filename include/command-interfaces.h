@@ -29,13 +29,27 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetRAID(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result);
 
-int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetEventSubscriptions(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetPowerCapping(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetMgmtPort(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetVNC(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result);
 
@@ -45,17 +59,24 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **result);
+
+int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **result);
+
 int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result);
 
-int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result);
 
 /** Test purpose **/
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result);

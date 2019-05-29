@@ -98,13 +98,6 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // initialize output processor array
-    processors = cJSON_AddArrayToObject(output, "Information");
-    ret = UtoolAssetCreatedJsonNotNull(processors);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-
     // curl request get system
     ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResp);
     if (ret != UTOOLE_OK) {
@@ -128,8 +121,15 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
+    // initialize output processor array
+    processors = cJSON_AddArrayToObject(output, "Information");
+    ret = UtoolAssetCreatedJsonNotNull(processors);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
+
     // curl request get processor view
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/MemoryView", HTTP_GET, NULL, NULL, getProcessorViewResp);
+    ret = UtoolMakeCurlRequest(server, "/Systems/%s/ProcessorView", HTTP_GET, NULL, NULL, getProcessorViewResp);
     if (ret != UTOOLE_OK) {
         goto failure;
     }

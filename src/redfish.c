@@ -581,19 +581,18 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
     return nitems * size;
 }
 
-
-/**
-* Get Redfish resource and parse content to JSON
-*
-* @param server
-* @param url
-* @param result
-*/
-void UtoolRedfishGetResource(UtoolRedfishServer *server, char *url, UtoolResult *result)
+void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
+                                char *url,
+                                const char *httpMethod,
+                                const cJSON *payload,
+                                const UtoolCurlHeader *headers,
+                                cJSON *output,
+                                const UtoolOutputMapping *outputMapping,
+                                UtoolResult *result)
 {
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
-    result->code = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, response);
+    result->code = UtoolMakeCurlRequest(server, url, httpMethod, payload, headers, response);
     if (result->code != UTOOLE_OK) {
         goto failure;
     }
@@ -609,6 +608,14 @@ void UtoolRedfishGetResource(UtoolRedfishServer *server, char *url, UtoolResult 
         goto failure;
     }
 
+    if (output && outputMapping) {
+        result->code = UtoolMappingCJSONItems(result->data, output, outputMapping);
+        if (result->code != UTOOLE_OK) {
+            FREE_CJSON(result->data)
+            goto failure;
+        }
+    }
+
     goto done;
 
 failure:
@@ -620,13 +627,43 @@ done:
 }
 
 
+/**
+* Get Redfish resource and parse content to JSON.
+*
+* if success, result->data will carry the (cJSON *) format response content.
+* if interrupt, result->data will be safe freed. Caller do not need to care about the data.
+*
+* @param server
+* @param url
+* @param result
+*/
+void UtoolRedfishGet(UtoolRedfishServer *server, char *url, cJSON *output,
+                     const UtoolOutputMapping *outputMapping, UtoolResult *result)
+{
+    UtoolRedfishProcessRequest(server, url, HTTP_GET, NULL, NULL, output, outputMapping, result);
+}
+
+
+void UtoolRedfishPost(UtoolRedfishServer *server, char *url, cJSON *payload, cJSON *output,
+                      const UtoolOutputMapping *outputMapping, UtoolResult *result)
+{
+    UtoolRedfishProcessRequest(server, url, HTTP_POST, payload, NULL, output, outputMapping, result);
+}
+
+void UtoolRedfishPatch(UtoolRedfishServer *server, char *url, cJSON *payload, const UtoolCurlHeader *headers,
+                       cJSON *output, const UtoolOutputMapping *outputMapping, UtoolResult *result)
+{
+    UtoolRedfishProcessRequest(server, url, HTTP_PATCH, payload, headers, output, outputMapping, result);
+}
+
+
 void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
                                     const UtoolOutputMapping *memberMapping, UtoolResult *result)
 {
-    cJSON *outputMember = NULL, *sourceMember = NULL;
+    cJSON *outputMember = NULL;
 
     cJSON *link = NULL;
-    cJSON *links = cJSON_GetObjectItem(owner, "Members");
+    cJSON *links = cJSON_IsArray(owner) ? owner : cJSON_GetObjectItem(owner, "Members");
     cJSON_ArrayForEach(link, links) {
         outputMember = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(outputMember);
@@ -636,15 +673,11 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
 
         cJSON *linkNode = cJSON_GetObjectItem(link, "@odata.id");
         char *url = linkNode->valuestring;
-        UtoolRedfishGetResource(server, url, result);
+        UtoolRedfishGet(server, url, outputMember, memberMapping, result);
         if (result->interrupt) {
             goto failure;
         }
 
-        result->code = UtoolMappingCJSONItems(result->data, outputMember, memberMapping);
-        if (result->code != UTOOLE_OK) {
-            goto failure;
-        }
         cJSON_AddItemToArray(memberArray, outputMember);
 
         // free memory
@@ -662,3 +695,5 @@ done:
     FREE_CJSON(result->data)  /** make sure result cJSON data is freed */
     return;
 }
+
+

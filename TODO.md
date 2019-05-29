@@ -115,3 +115,16 @@ RedundantType
 "Serialnumber": "xxxxxx",
 "FirmwareVersion": "1.5",
 "PortCount": 2,
+
+
+
+
+### 
+
+服务器关机的情况下 get task state 会出错
+
+###
+
+不在位状态的过滤
+
+重新封装支撑 getraid 那种模式？自动多层加载。

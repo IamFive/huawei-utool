@@ -34,20 +34,32 @@ UtoolCommand commands[] = {
         {.name = "getvolt", .pFuncExecute=UtoolCmdGetVoltage, .type=GET},
         {.name = "getpsu", .pFuncExecute=UtoolCmdGetPowerSupply, .type=GET},
         {.name = "getfan", .pFuncExecute=UtoolCmdGetFan, .type=GET},
+        {.name = "getraid", .pFuncExecute=UtoolCmdGetRAID, .type=GET},
         {.name = "getpdisk", .pFuncExecute=UtoolCmdGetPhysicalDisks, .type=GET},
         {.name = "getldisk", .pFuncExecute=UtoolCmdGetLogicalDisks, .type=GET},
         {.name = "getnic", .pFuncExecute=UtoolCmdGetNIC, .type=GET},
         {.name = "getuser", .pFuncExecute=UtoolCmdGetUsers, .type=GET},
+        {.name = "getservice", .pFuncExecute=UtoolCmdGetServices, .type=GET},
+        {.name = "geteventsub", .pFuncExecute=UtoolCmdGetEventSubscriptions, .type=GET},
+        {.name = "getpwrcap", .pFuncExecute=UtoolCmdGetPowerCapping, .type=GET},
+        {.name = "getmgmtport", .pFuncExecute=UtoolCmdGetMgmtPort, .type=GET},
+        {.name = "gettrap", .pFuncExecute=UtoolCmdGetSNMP, .type=GET},
+        {.name = "getvnc", .pFuncExecute=UtoolCmdGetVNC, .type=GET},
+        {.name = "gethealth", .pFuncExecute=UtoolCmdGetHealth, .type=GET},
         {.name = "getsysboot", .pFuncExecute = UtoolCmdGetSystemBoot, .type = GET},
         {.name = "getsensor", .pFuncExecute = UtoolCmdGetSensor, .type = GET},
         {.name = "getbios", .pFuncExecute = UtoolCmdGetBiosSettings, .type = GET},
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
-
+        {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
+
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
+        {.name = "mountvmm", .pFuncExecute = UtoolCmdMountVMM, .type = SET},
+
+
         {.name = "fwupdate", .pFuncExecute = UtoolCmdUpdateOutbandFirmware, .type = SET},
 
         // Test purpose start
