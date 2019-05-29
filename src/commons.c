@@ -16,7 +16,7 @@ const UtoolOutputMapping getTaskMappings[] = {
         {.sourceXpath = "/StartTime", .targetKeyValue="StartTime"},
         {.sourceXpath = "/Null", .targetKeyValue="EstimatedTimeSenconds"},
         {.sourceXpath = "/Null", .targetKeyValue="Trigger", .handle=TaskTriggerPropertyHandler},
-        //{.sourceXpath = "/Messages", .targetKeyValue="Messages"},
+        {.sourceXpath = "/Messages", .targetKeyValue="Messages"},
         {.sourceXpath = "/Oem/Huawei/TaskPercentage", .targetKeyValue="TaskPercentage"},
         NULL,
 };

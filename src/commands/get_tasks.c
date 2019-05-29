@@ -39,6 +39,10 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
     UtoolCurlResponse *getTasksResp = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *getTaskResp = &(UtoolCurlResponse) {0};
 
+    // initialize output objects
+    cJSON *taskJson = NULL, *taskMembersJson = NULL;
+    cJSON *output = NULL, *tasks = NULL, *task = NULL;
+
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
         goto done;
@@ -62,10 +66,6 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
         ret = UtoolResolveFailureResponse(getTasksResp, result);
         goto done;
     }
-
-    // initialize output objects
-    cJSON *taskJson = NULL, *taskMembersJson = NULL;
-    cJSON *output = NULL, *tasks = NULL, *task = NULL;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
