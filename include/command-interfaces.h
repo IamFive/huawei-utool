@@ -35,6 +35,8 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result);

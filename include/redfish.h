@@ -85,6 +85,27 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result);
  */
 int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures);
 
+/**
+* Get Redfish Resource
+*
+* @param server
+* @param url
+* @param result
+*/
+void UtoolRedfishGetResource(UtoolRedfishServer *server, char *url, UtoolResult *result);
+
+/**
+* Get All Redfish member resources
+*
+* @param server
+* @param owner
+* @param memberArray
+* @param memberMapping
+* @param result
+*/
+void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
+                                    const UtoolOutputMapping *memberMapping, UtoolResult *result);
+
 
 #ifdef __cplusplus
 }
