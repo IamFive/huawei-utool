@@ -15,39 +15,36 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getuser",
+        "utool getpwrcap",
         NULL,
 };
 
-static const UtoolOutputMapping getUserMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="UserId"},
-        {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
-        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
-        {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+static const UtoolOutputMapping getMgmtPortMappings[] = {
+        {.sourceXpath = "/Oem/Huawei/AdaptivePort", .targetKeyValue="AdaptivePort"},
+        {.sourceXpath = "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues", .targetKeyValue="AllowablePorts"},
         NULL
 };
 
+
 /**
- * command handler of `getuser`
- * get BMC user information
- *
- * @param commandOption
- * @param outputStr
- * @return
- */
-int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
+* get management port mode and specified port, command handler for `getmgmtport`.
+*
+* @param commandOption
+* @param outputStr
+* @return
+*/
+int UtoolCmdGetMgmtPort(UtoolCommandOption *commandOption, char **outputStr)
 {
+    int ret;
+    cJSON *output = NULL, *getEthernetInterfacesRespJson = NULL;
+
+    UtoolResult *result = &(UtoolResult) {0};
+    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
+
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
-
-    // initialize output objects
-    cJSON *userMemberJson = NULL, *output = NULL, *userArray = NULL;
-
-    UtoolResult *result = &(UtoolResult) {0};
-    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
@@ -65,29 +62,27 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    userArray = cJSON_AddArrayToObject(output, "User");
-    result->code = UtoolAssetCreatedJsonNotNull(userArray);
-    if (result->code != UTOOLE_OK) {
-        goto failure;
-    }
-
-    UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
+    UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
     if (result->interrupt) {
         goto failure;
     }
+    getEthernetInterfacesRespJson = result->data;
 
-    userMemberJson = result->data;
-    UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
+    cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
+    char *url = linkNode->valuestring;
+
+    UtoolRedfishGet(server, url, output, getMgmtPortMappings, result);
     if (result->interrupt) {
         goto failure;
     }
+    FREE_CJSON(result->data)
 
-    // output to outputStr
+    // mapping result to output json
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto done;
 
@@ -96,8 +91,9 @@ failure:
     goto done;
 
 done:
-    FREE_CJSON(userMemberJson)
+    FREE_CJSON(getEthernetInterfacesRespJson)
     UtoolFreeRedfishServer(server);
+
     *outputStr = result->desc;
     return result->code;
 }

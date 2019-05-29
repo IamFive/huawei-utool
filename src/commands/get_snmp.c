@@ -15,39 +15,48 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getuser",
+        "utool gettrap",
         NULL,
 };
 
-static const UtoolOutputMapping getUserMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="UserId"},
-        {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
-        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
-        {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
+static const UtoolOutputMapping getTrapServerMappings[] = {
+        {.sourceXpath = "/MemberId", .targetKeyValue="Id"},
         {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+        {.sourceXpath = "/TrapServerAddress", .targetKeyValue="Address"},
+        {.sourceXpath = "/TrapServerPort", .targetKeyValue="Port"},
         NULL
 };
 
+static const UtoolOutputMapping getTrapNotificationMappings[] = {
+        {.sourceXpath = "/SnmpTrapNotification/ServiceEnabled", .targetKeyValue="Enabled"},
+        {.sourceXpath = "/SnmpTrapNotification/TrapVersion", .targetKeyValue="TrapVersion"},
+        {.sourceXpath = "/SnmpTrapNotification/CommunityName", .targetKeyValue="Community"},
+        {.sourceXpath = "/SnmpTrapNotification/AlarmSeverity", .targetKeyValue="Severity"},
+        {.sourceXpath = "/SnmpTrapNotification/TrapServer", .targetKeyValue="Destination",
+                .nestMapping=getTrapServerMappings},
+        NULL
+};
+
+
 /**
- * command handler of `getuser`
- * get BMC user information
- *
- * @param commandOption
- * @param outputStr
- * @return
- */
-int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
+* get SNMP trap, command handler for `gettrap`.
+*
+* @param commandOption
+* @param outputStr
+* @return
+*/
+int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr)
 {
+    int ret;
+    cJSON *output = NULL, *getEthernetInterfacesRespJson = NULL;
+
+    UtoolResult *result = &(UtoolResult) {0};
+    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
+
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
-
-    // initialize output objects
-    cJSON *userMemberJson = NULL, *output = NULL, *userArray = NULL;
-
-    UtoolResult *result = &(UtoolResult) {0};
-    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
@@ -65,29 +74,17 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
+    ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
         goto failure;
     }
 
-    userArray = cJSON_AddArrayToObject(output, "User");
-    result->code = UtoolAssetCreatedJsonNotNull(userArray);
-    if (result->code != UTOOLE_OK) {
-        goto failure;
-    }
-
-    UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
+    UtoolRedfishGet(server, "/Managers/%s/SnmpService", output, getTrapNotificationMappings, result);
     if (result->interrupt) {
         goto failure;
     }
 
-    userMemberJson = result->data;
-    UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
-    if (result->interrupt) {
-        goto failure;
-    }
-
-    // output to outputStr
+    // mapping result to output json
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto done;
 
@@ -96,8 +93,9 @@ failure:
     goto done;
 
 done:
-    FREE_CJSON(userMemberJson)
+    FREE_CJSON(getEthernetInterfacesRespJson)
     UtoolFreeRedfishServer(server);
+
     *outputStr = result->desc;
     return result->code;
 }

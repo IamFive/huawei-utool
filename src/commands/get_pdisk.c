@@ -164,7 +164,6 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
         goto done;
     }
 
-
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {

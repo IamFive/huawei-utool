@@ -81,7 +81,7 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
 
     // initialize output objects
     cJSON *memberJson = NULL, *membersJson = NULL;
-    cJSON *output = NULL, *tasks = NULL, *task = NULL;
+    cJSON *output = NULL;
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
@@ -113,12 +113,6 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    tasks = cJSON_AddArrayToObject(output, "task");
-    ret = UtoolAssetCreatedJsonNotNull(tasks);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-
     // process response
     membersJson = cJSON_Parse(getMembersResp->content);
     ret = UtoolAssetParseJsonNotNull(membersJson);
@@ -126,44 +120,32 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    cJSON *member = NULL;
+
     cJSON *members = cJSON_GetObjectItem(membersJson, "Members");
-    cJSON_ArrayForEach(member, members) {
-        cJSON *odataIdNode = cJSON_GetObjectItem(member, "@odata.id");
-        char *url = odataIdNode->valuestring;
+    cJSON *member = cJSON_GetArrayItem(members, 0);
+    cJSON *odataIdNode = cJSON_GetObjectItem(member, "@odata.id");
+    char *url = odataIdNode->valuestring;
 
-        ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getMemberResp);
-        if (ret != UTOOLE_OK) {
-            goto failure;
-        }
+    ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getMemberResp);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
 
-        if (getMemberResp->httpStatusCode >= 400) {
-            ret = UtoolResolveFailureResponse(getMemberResp, result);
-            goto failure;
-        }
+    if (getMemberResp->httpStatusCode >= 400) {
+        ret = UtoolResolveFailureResponse(getMemberResp, result);
+        goto failure;
+    }
 
-        memberJson = cJSON_Parse(getMemberResp->content);
-        ret = UtoolAssetParseJsonNotNull(memberJson);
-        if (ret != UTOOLE_OK) {
-            goto failure;
-        }
+    memberJson = cJSON_Parse(getMemberResp->content);
+    ret = UtoolAssetParseJsonNotNull(memberJson);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
 
-        task = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(task);
-        if (ret != UTOOLE_OK) {
-            goto failure;
-        }
-
-        // create task item and add it to array
-        ret = UtoolMappingCJSONItems(memberJson, task, getEthernetMappings);
-        if (ret != UTOOLE_OK) {
-            goto failure;
-        }
-        cJSON_AddItemToArray(tasks, task);
-
-        // free memory
-        FREE_CJSON(memberJson)
-        UtoolFreeCurlResponse(getMemberResp);
+    // create task item and add it to array
+    ret = UtoolMappingCJSONItems(memberJson, output, getEthernetMappings);
+    if (ret != UTOOLE_OK) {
+        goto failure;
     }
 
     // output to result
@@ -171,15 +153,14 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
     goto done;
 
 failure:
-    FREE_CJSON(task)
     FREE_CJSON(output)
     goto done;
 
 done:
-    FREE_CJSON(membersJson)
     FREE_CJSON(memberJson)
-    UtoolFreeCurlResponse(getMembersResp);
+    FREE_CJSON(membersJson)
     UtoolFreeCurlResponse(getMemberResp);
+    UtoolFreeCurlResponse(getMembersResp);
     UtoolFreeRedfishServer(server);
     return ret;
 }

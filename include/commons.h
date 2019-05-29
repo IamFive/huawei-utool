@@ -29,6 +29,8 @@ extern UtoolCommand commands[];
 */
 extern const UtoolOutputMapping getTaskMappings[];
 
+extern int BoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
+
 /**
 * Free Utool Result object
 *

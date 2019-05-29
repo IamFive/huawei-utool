@@ -93,13 +93,6 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // initialize output memory array
-    memories = cJSON_AddArrayToObject(output, "Information");
-    ret = UtoolAssetCreatedJsonNotNull(memories);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-
     // curl request get system
     ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResp);
     if (ret != UTOOLE_OK) {
@@ -143,28 +136,35 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result)
     // mapping response json to output
     cJSON *member;
     cJSON *members = cJSON_GetObjectItem(memoryViewJson, "Information");
-    cJSON_ArrayForEach(member, members) {
-        cJSON *stateNode = cJSONUtils_GetPointer(member, "/Status/State");
-        if (stateNode != NULL && UtoolStringEquals(MEMORY_STATE_ENABLED, stateNode->valuestring)) {
-            memory = cJSON_CreateObject();
-            ret = UtoolAssetCreatedJsonNotNull(memory);
-            if (ret != UTOOLE_OK) {
-                goto failure;
-            }
-
-            // create memory item and add it to array
-            ret = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
-            if (ret != UTOOLE_OK) {
-                goto failure;
-            }
-            cJSON_AddItemToArray(memories, memory);
-        }
-    }
-
-    cJSON *maximumNode = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(memories));
+    cJSON *maximumNode = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(members));
     ret = UtoolAssetCreatedJsonNotNull(maximumNode);
     if (ret != UTOOLE_OK) {
         goto failure;
+    }
+
+    // initialize output memory array
+    memories = cJSON_AddArrayToObject(output, "Information");
+    ret = UtoolAssetCreatedJsonNotNull(memories);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
+
+    cJSON_ArrayForEach(member, members) {
+        //cJSON *stateNode = cJSONUtils_GetPointer(member, "/Status/State");
+        //if (stateNode != NULL && UtoolStringEquals(MEMORY_STATE_ENABLED, stateNode->valuestring)) {
+        memory = cJSON_CreateObject();
+        ret = UtoolAssetCreatedJsonNotNull(memory);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
+
+        // create memory item and add it to array
+        ret = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
+        if (ret != UTOOLE_OK) {
+            goto failure;
+        }
+        cJSON_AddItemToArray(memories, memory);
+        //}
     }
 
     // output to result

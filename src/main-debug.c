@@ -4,6 +4,7 @@
 #include <utool.h>
 #include <constants.h>
 #include <cJSON.h>
+#include <typedefs.h>
 #include "zf_log.h"
 #include "string_utils.h"
 #include "url_parser.h"
@@ -16,7 +17,7 @@ int run_utool_main()
             //"--version",
             "-H", "112.93.129.9",
             "-U", "qianbiao",
-            "-P", "*********",
+            "-P", "chajian43@1",
             //"getproduct",
             //"getfw",
             //"getcpu",
@@ -28,7 +29,12 @@ int run_utool_main()
             //"getfan",
             //"getpdisk",
             //"getldisk",
-            "getnic",
+            //"getnic",
+            //"getservice",
+            //"geteventsub",
+            //"getpwrcap",
+            "getmgmtport",
+            //"getuser",
             //"gettaskstate",
             //"getsysboot",
             //"getsensor",
@@ -42,6 +48,7 @@ int run_utool_main()
             //"download",
             //"fwupdate",
             //"-e", "Auto", "-t", "BMC",
+            //"-u", "/data/nfs/cpldimage.hpm",
             //"-u", "/data/nfs/ubuntu-iso.zip",
             //"-u", "nfs://112.93.129.100/data/nfs/cpldimage.hpm",
             NULL
@@ -56,26 +63,19 @@ int run_utool_main()
     return ret;
 }
 
-int debug()
+int debug(UtoolResult *result)
 {
-    //char *source = "this is a very long sentance.";
-    //char *ori = malloc(100);
-    //memset(ori, 0, 100);
-    //memccpy(ori, source, sizeof(char), strlen(source));
-    //
-    //printf("%s\n", ori);
-    //char *token = strtok(ori, " ");
-    //token = strtok(NULL, " ");
-    //printf("token: %s\n", token);
-    //
-    //free(token);
+    result->data = NULL;
+    result->code = 100;
+    result->desc = (char *) malloc(100);
+    strcpy(result->desc, "this is desc");
 }
 
 
 int main(int argc, const char **argv)
 {
     int ret = 0;
-    //debug();
+    //debug(result);
     ret = run_utool_main();
     return ret;
 }

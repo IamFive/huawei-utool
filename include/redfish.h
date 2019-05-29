@@ -85,14 +85,70 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result);
  */
 int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures);
 
+
+/**
+* Process Redfish request
+*
+*   - send request
+*   - get response
+*   - parsing response
+*
+* @param server
+* @param url
+* @param httpMethod
+* @param payload
+* @param headers
+* @param output
+* @param outputMapping
+* @param result
+*/
+void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
+                                char *url,
+                                const char *httpMethod,
+                                const cJSON *payload,
+                                const UtoolCurlHeader *headers,
+                                cJSON *output,
+                                const UtoolOutputMapping *outputMapping,
+                                UtoolResult *result);
+
+
 /**
 * Get Redfish Resource
 *
 * @param server
 * @param url
+* @param output
+* @param outputMapping
 * @param result
 */
-void UtoolRedfishGetResource(UtoolRedfishServer *server, char *url, UtoolResult *result);
+void UtoolRedfishGet(UtoolRedfishServer *server, char *url, cJSON *output,
+                     const UtoolOutputMapping *outputMapping, UtoolResult *result);
+
+/**
+* Post Redfish request
+* @param server
+* @param url
+* @param payload
+* @param output
+* @param outputMapping
+* @param result
+*/
+void UtoolRedfishPost(UtoolRedfishServer *server, char *url, cJSON *payload, cJSON *output,
+                      const UtoolOutputMapping *outputMapping, UtoolResult *result);
+
+/**
+* Patch Redfish request
+*
+* @param server
+* @param url
+* @param payload
+* @param headers
+* @param output
+* @param outputMapping
+* @param result
+*/
+void UtoolRedfishPatch(UtoolRedfishServer *server, char *url, cJSON *payload, const UtoolCurlHeader *headers,
+                       cJSON *output, const UtoolOutputMapping *outputMapping, UtoolResult *result);
 
 /**
 * Get All Redfish member resources

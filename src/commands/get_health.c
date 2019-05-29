@@ -13,30 +13,41 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 static const char *const usage[] = {
-        "utool getuser",
+        "utool getraid",
         NULL,
 };
 
-static const UtoolOutputMapping getUserMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="UserId"},
-        {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
-        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
-        {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+
+static const UtoolOutputMapping getSystemSummaryMappings[] = {
+        {.sourceXpath = "/Status/Health", .targetKeyValue="System"},
+        {.sourceXpath = "/ProcessorSummary/Status/HealthRollup", .targetKeyValue="CPU"},
+        {.sourceXpath = "/MemorySummary/Status/HealthRollup", .targetKeyValue="Memory"},
+        {.sourceXpath = "/Oem/Huawei/StorageSummary/Status/HealthRollup", .targetKeyValue="Storage"},
+        NULL
+};
+
+static const UtoolOutputMapping getChassisSummaryMappings[] = {
+        {.sourceXpath = "/Oem/Huawei/NetworkAdaptersSummary/Status/HealthRollup", .targetKeyValue="Network"},
+        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="PSU"},
+        NULL
+};
+
+static const UtoolOutputMapping getThermalSummaryMappings[] = {
+        {.sourceXpath = "/Oem/Huawei/FanSummary/Status/HealthRollup", .targetKeyValue="Fan"},
         NULL
 };
 
 /**
- * command handler of `getuser`
- * get BMC user information
+ * get server overall health and component health, command handler of `gethealth`
  *
  * @param commandOption
  * @param outputStr
  * @return
  */
-int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr)
 {
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -44,7 +55,7 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
     };
 
     // initialize output objects
-    cJSON *userMemberJson = NULL, *output = NULL, *userArray = NULL;
+    cJSON *output = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -70,22 +81,23 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
         goto failure;
     }
 
-    userArray = cJSON_AddArrayToObject(output, "User");
-    result->code = UtoolAssetCreatedJsonNotNull(userArray);
-    if (result->code != UTOOLE_OK) {
-        goto failure;
-    }
-
-    UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
+    UtoolRedfishGet(server, "/Systems/%s", output, getSystemSummaryMappings, result);
     if (result->interrupt) {
         goto failure;
     }
+    FREE_CJSON(result->data)
 
-    userMemberJson = result->data;
-    UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
+    UtoolRedfishGet(server, "/Chassis/%s", output, getChassisSummaryMappings, result);
     if (result->interrupt) {
         goto failure;
     }
+    FREE_CJSON(result->data)
+
+    UtoolRedfishGet(server, "/Chassis/%s/Thermal", output, getThermalSummaryMappings, result);
+    if (result->interrupt) {
+        goto failure;
+    }
+    FREE_CJSON(result->data)
 
     // output to outputStr
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
@@ -96,8 +108,8 @@ failure:
     goto done;
 
 done:
-    FREE_CJSON(userMemberJson)
     UtoolFreeRedfishServer(server);
+
     *outputStr = result->desc;
     return result->code;
 }

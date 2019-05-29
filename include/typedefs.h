@@ -101,6 +101,7 @@ typedef struct _OutputMapping
 {
     const char *const sourceXpath;
     const char *const targetKeyValue;
+    const struct _OutputMapping *nestMapping;
 
     int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;

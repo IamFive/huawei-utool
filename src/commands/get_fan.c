@@ -100,13 +100,6 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
         goto failure;
     }
 
-    // initialize output fan array
-    fans = cJSON_AddArrayToObject(output, "Fan");
-    ret = UtoolAssetCreatedJsonNotNull(fans);
-    if (ret != UTOOLE_OK) {
-        goto failure;
-    }
-
     // process response
     thermalJson = cJSON_Parse(response->content);
     ret = UtoolAssetParseJsonNotNull(thermalJson);
@@ -115,6 +108,13 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
     }
 
     ret = UtoolMappingCJSONItems(thermalJson, output, getFanSummaryMapping);
+    if (ret != UTOOLE_OK) {
+        goto failure;
+    }
+
+    // initialize output fan array
+    fans = cJSON_AddArrayToObject(output, "Fan");
+    ret = UtoolAssetCreatedJsonNotNull(fans);
     if (ret != UTOOLE_OK) {
         goto failure;
     }
