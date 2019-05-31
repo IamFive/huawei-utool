@@ -40,7 +40,9 @@ extern "C" {
 #define STATE_FAILURE "Failure"
 
 #define OUTPUT_JSON "{\"State\": \"%s\", \"Message\": [\"%s: %s\"]}"
-#define OUTPUT_SUCCESS_JSON "{\"State\": \"Success\", \"Message\": [\"Success: successfully completed request\"]}"
+#define OUTPUT_SUCCESS_JSON "{\"State\": \"Success\", \"Message\": [\"Success: Successfully Completed Request\"]}"
+
+#define NOTHING_TO_PATCH "Error: nothing to update, at least one update option must be specified"
 
 //Success: successfully completed request
 /** //UTOOL response json constants */
@@ -55,6 +57,8 @@ extern "C" {
 #define ENABLED "Enabled"
 #define DISABLED "Disabled"
 
+#define DEFAULT_INT_V -10086
+
 #define MEMORY_STATE_ABSENT "Absent"
 #define MEMORY_STATE_ENABLED "Enabled"
 
@@ -67,7 +71,6 @@ extern "C" {
 /**
  * Argument parse help messages
  */
-
 #define TOOL_DESC "\nCommand-line interface to the HUAWEI server management APIs."
 #define TOOL_EPI_LOG "\nThanks for using."
 #define HELP_DESC "Show help message."
@@ -75,7 +78,6 @@ extern "C" {
 #define OPTIONAL_ARG_GROUP_TITLE "Optional arguments:"
 #define LOG_CMD_HELP_ACTION "Help action for command %s detected, output help info now."
 #define HELP_ACTION_OUTPUT_MESSAGE "please read help info from command line"
-
 #define TOO_MANY_ARGUMENTS "Too many arguments is provided."
 
 

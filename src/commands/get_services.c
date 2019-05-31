@@ -20,7 +20,7 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getProtocolMappings[] = {
-        {.sourceXpath = "/ProtocolEnabled", .targetKeyValue="Enabled", .handle=BoolToEnabledPropertyHandler},
+        {.sourceXpath = "/ProtocolEnabled", .targetKeyValue="Enabled", .handle=UtoolBoolToEnabledPropertyHandler},
         {.sourceXpath = "/Port", .targetKeyValue="Port"},
         NULL
 };

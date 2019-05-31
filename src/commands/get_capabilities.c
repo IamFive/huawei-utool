@@ -63,7 +63,7 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 
 
     for (int idx = 0;; idx++) {
-        UtoolCommand *command = commands + idx;
+        UtoolCommand *command = utoolCommands + idx;
         if (command->name != NULL) {
             switch (command->type) {
                 case GET:

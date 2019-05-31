@@ -6,10 +6,12 @@
 #include <typedefs.h>
 #include <command-interfaces.h>
 
+const char *UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
+
 static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node);
 
 /** Redfish Rsync Task Mapping define */
-const UtoolOutputMapping getTaskMappings[] = {
+const UtoolOutputMapping utoolGetTaskMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="TaskId"},
         {.sourceXpath = "/Name", .targetKeyValue="TaskDesc"},
         {.sourceXpath = "/Name", .targetKeyValue="TaskType"},
@@ -29,7 +31,7 @@ static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *nod
     return UTOOLE_OK;
 }
 
-int BoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
+int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsTrue(node)) {
         cJSON_AddStringToObject(target, key, ENABLED);
@@ -252,6 +254,30 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
     }
 
     return UTOOLE_OK;
+}
+
+
+cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result)
+{
+    cJSON *wrapped = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(wrapped);
+    if (result->code != UTOOLE_OK) {
+        goto failure;
+    }
+
+    cJSON *oem = cJSON_AddObjectToObject(wrapped, "Oem");
+    result->code = UtoolAssetCreatedJsonNotNull(oem);
+    if (result->code != UTOOLE_OK) {
+        goto failure;
+    }
+
+    cJSON_AddItemToObject(oem, "Huawei", source);
+    return wrapped;
+
+failure:
+    FREE_CJSON(wrapped)
+    result->interrupt = 1;
+    return NULL;
 }
 
 /**

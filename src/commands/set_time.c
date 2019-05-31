@@ -51,7 +51,7 @@ static cJSON *BuildPayload(UtoolMountVMMOption *option);
 * @param result
 * @return
 * */
-int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdSetTime(UtoolCommandOption *commandOption, char **outputStr)
 {
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
