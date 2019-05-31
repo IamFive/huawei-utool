@@ -77,6 +77,22 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result);
 
 int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result);
 
+int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetTime(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetTimezone(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetIP(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr);
+
 
 /** Test purpose **/
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result);

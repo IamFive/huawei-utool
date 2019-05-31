@@ -115,7 +115,7 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
         }
 
         // create task item and add it to array
-        ret = UtoolMappingCJSONItems(taskJson, task, getTaskMappings);
+        ret = UtoolMappingCJSONItems(taskJson, task, utoolGetTaskMappings);
         if (ret != UTOOLE_OK) {
             goto failure;
         }

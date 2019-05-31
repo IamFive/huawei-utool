@@ -12,6 +12,18 @@ extern "C" {
 #include <stdbool.h>
 
 /**
+* check whether a string is null or empty
+*
+*  - NULL -> true
+*  - "" -> true
+*  - " " -> false
+*
+* @param str
+* @return
+*/
+bool UtoolStringIsEmpty(char *str);
+
+/**
 * check whether source string starts with target string
 * @param source
 * @param prefix

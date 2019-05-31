@@ -23,7 +23,7 @@ static pthread_mutex_t mutex;
 /**
  * All support commands
  */
-UtoolCommand commands[] = {
+UtoolCommand utoolCommands[] = {
         {.name = "getcapabilities", .pFuncExecute=UtoolCmdGetCapabilities, .type=GET},
         {.name = "getproduct", .pFuncExecute=UtoolCmdGetProduct, .type=GET},
         {.name = "getfw", .pFuncExecute=UtoolCmdGetFirmware, .type=GET},
@@ -51,13 +51,21 @@ UtoolCommand commands[] = {
         {.name = "getbios", .pFuncExecute = UtoolCmdGetBiosSettings, .type = GET},
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
-        {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
+        //{.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
         {.name = "mountvmm", .pFuncExecute = UtoolCmdMountVMM, .type = SET},
+        {.name = "clearsel", .pFuncExecute = UtoolCmdClearSEL, .type = SET},
+        //{.name = "settime", .pFuncExecute = UtoolCmdSetTime, .type = SET},
+        {.name = "settimezone", .pFuncExecute = UtoolCmdSetTimezone, .type = SET},
+        {.name = "powercontrol", .pFuncExecute = UtoolCmdSystemPowerControl, .type = SET},
+        //{.name = "restorebios", .pFuncExecute = UtoolCmdRestoreBIOS, .type = SET},
+        {.name = "setservice", .pFuncExecute = UtoolCmdSetService, .type = SET},
+        {.name = "setip", .pFuncExecute = UtoolCmdSetIP, .type = SET},
+        {.name = "setvlan", .pFuncExecute = UtoolCmdSetVLAN, .type = SET},
 
 
         {.name = "fwupdate", .pFuncExecute = UtoolCmdUpdateOutbandFirmware, .type = SET},
@@ -228,7 +236,7 @@ int utool_main(int argc, char *argv[], char **result)
 
     UtoolCommand *targetCommand = NULL;
     for (int idx = 0;; idx++) {
-        UtoolCommand *_command = commands + idx;
+        UtoolCommand *_command = utoolCommands + idx;
         if (_command->name != NULL) {
             if (strncasecmp(commandName, _command->name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0) {
                 targetCommand = _command;

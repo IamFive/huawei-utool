@@ -6,6 +6,25 @@
 #include <string.h>
 #include <string_utils.h>
 
+
+/**
+*
+* @param str
+* @return
+*/
+bool UtoolStringIsEmpty(char *str)
+{
+    if (str == NULL) {
+        return true;
+    }
+
+    if (0 == strnlen(str, 1)) {
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * check whether source string starts with prefix string
  *

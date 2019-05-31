@@ -173,7 +173,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **resu
     }
 
     // output to result
-    ret = UtoolMappingCJSONItems(updateFirmwareJson, output, getTaskMappings);
+    ret = UtoolMappingCJSONItems(updateFirmwareJson, output, utoolGetTaskMappings);
     if (ret != UTOOLE_OK) {
         goto failure;
     }

@@ -208,18 +208,12 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
                          const UtoolCurlHeader *headers,
                          UtoolCurlResponse *response)
 {
+
+
     int ret = UTOOLE_INTERNAL;
 
     char *payloadContent = NULL;
     struct curl_slist *curlHeaderList = NULL;
-
-    CURL *curl = UtoolSetupCurlRequest(server, resourceURL, httpMethod, response);
-    if (!curl) {
-        return UTOOLE_CURL_INIT_FAILED;
-    }
-
-    // setup headers
-    curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
 
     const UtoolCurlHeader *ifMatchHeader = NULL;
     for (int idx = 0;; idx++) {
@@ -254,6 +248,13 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         }
     }
 
+    CURL *curl = UtoolSetupCurlRequest(server, resourceURL, httpMethod, response);
+    if (!curl) {
+        return UTOOLE_CURL_INIT_FAILED;
+    }
+
+    // setup headers
+    curlHeaderList = curl_slist_append(curlHeaderList, CONTENT_TYPE_JSON);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
 
     // setup payload, payload should be freed by caller
@@ -264,6 +265,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (ret != UTOOLE_OK) {
             goto return_statement;
         }
+        ZF_LOGD("Sending payload: %s", payloadContent);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payloadContent));
     }

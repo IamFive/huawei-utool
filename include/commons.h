@@ -18,18 +18,22 @@ extern "C" {
 #define FREE_CJSON(json) if ((json) != NULL) { cJSON_Delete((json)); (json) = NULL; }
 #define FREE_OBJ(obj) if ((obj) != NULL) { free((obj)); (obj) = NULL; }
 
+/**
+* choices: Enabled, Disabled
+*/
+extern const char *UTOOL_ENABLED_CHOICES[];
 
 /**
 *   All command metadata define
 */
-extern UtoolCommand commands[];
+extern UtoolCommand utoolCommands[];
 
 /**
 * Redfish Async Task output mapping
 */
-extern const UtoolOutputMapping getTaskMappings[];
+extern const UtoolOutputMapping utoolGetTaskMappings[];
 
-extern int BoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
+extern int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
 
 /**
 * Free Utool Result object
@@ -182,6 +186,16 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 * @param result
 */
 void UtoolBuildDefaultSuccessResult(char **result);
+
+
+/**
+* wrap a cJSON object with Huawei Oem structure
+*
+* @param source
+* @param result
+* @return
+*/
+cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result);
 
 
 /**
