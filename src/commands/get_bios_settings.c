@@ -42,51 +42,51 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     // process get system response
     ret = UtoolMakeCurlRequest(server, "/Systems/%s/Bios", HTTP_GET, NULL, NULL, getSystemResponse);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (getSystemResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getSystemResponse, result);
-        goto failure;
+        goto FAILURE;
     }
 
     getBiosJson = cJSON_Parse(getSystemResponse->content);
     ret = UtoolAssetParseJsonNotNull(getBiosJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *attributes = cJSON_DetachItemFromObject(getBiosJson, "Attributes");
     ret = UtoolAssetJsonNodeNotNull(attributes, "/Attributes");
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // mapping result to output json
     ret = UtoolBuildOutputResult(STATE_SUCCESS, attributes, result);
-    goto done;
+    goto DONE;
 
-failure:
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(getBiosJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(getSystemResponse);

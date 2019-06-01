@@ -9,31 +9,31 @@
 extern "C" {
 #endif
 
-int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetRAID(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetRAID(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr);
 
@@ -43,7 +43,7 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetEventSubscriptions(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetPowerCapping(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetPowerCapping(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetMgmtPort(UtoolCommandOption *commandOption, char **outputStr);
 
@@ -51,31 +51,35 @@ int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetVNC(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr);
 
@@ -89,15 +93,29 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdResetBMC(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetSNMPTrapNotification(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdSetVNCSettings(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr);
+
 
 /** Test purpose **/
-int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr);
 
-int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **result);
+int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr);
 
 #ifdef __cplusplus
 }

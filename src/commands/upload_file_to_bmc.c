@@ -37,38 +37,38 @@ int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **result)
     // validation
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // get redfish system id
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
-    char *filepath = "/data/nfs/2288H_V5_5288_V5-iBMC-V318-3.hpm";
+    char *filepath = "/data/nfs/9.xml";
     ret = UtoolUploadFileToBMC(server, filepath, response);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (response->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(response, result);
-        goto done;
+        goto DONE;
     }
 
     UtoolBuildDefaultSuccessResult(result);
-    goto done;
+    goto DONE;
 
-failure:
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(response);
     return ret;

@@ -27,8 +27,6 @@ typedef struct _UpdateFirmwareOption
     char *imageURI;
     char *activateMode;
     char *firmwareType;
-    int retryable;
-    UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
 } UtoolUpdateFirmwareOption;
 
 static const char *MODE_CHOICES[] = {UPGRADE_ACTIVATE_MODE_AUTO, UPGRADE_ACTIVATE_MODE_MANUAL, NULL};
@@ -47,10 +45,10 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, char **result);
+static void ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
-static int BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOption *updateFirmwareOption,
-                        char **result);
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+                           UtoolResult *result);
 
 static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server);
 
@@ -64,17 +62,16 @@ static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server);
  * @param option
  * @return
  */
-int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret = UTOOLE_OK;
-
     cJSON *output = NULL,           /** output result json*/
             *payload = NULL,        /** payload json */
             *updateFirmwareJson = NULL;    /** curl response thermal as json */
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
-    UtoolUpdateFirmwareOption *updateFirmwareOption = &(UtoolUpdateFirmwareOption) {.flag = EXECUTABLE};
+    UtoolUpdateFirmwareOption *updateFirmwareOption = &(UtoolUpdateFirmwareOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -88,109 +85,105 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **resu
     };
 
     // validation sub command options
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // validation connection options
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // validation update firmware options
-    ret = ValidateUpdateFirmwareOptions(updateFirmwareOption, result);
-    if (updateFirmwareOption->flag != EXECUTABLE) {
-        goto done;
+    ValidateUpdateFirmwareOptions(updateFirmwareOption, result);
+    if (result->interrupt) {
+        goto FAILURE;
     }
 
     // get redfish system id
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto FAILURE;
     }
 
     // create output container
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
-        goto failure;
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
     }
 
     int retryTimes = 0;
+    cJSON *cJSONTask = NULL;
     while (retryTimes++ < UPGRADE_FIRMWARE_RETRY_TIMES) {
         ZF_LOGI("Start to upgrade outband firmware now, retry round: %d", retryTimes);
 
-        if (*result != NULL) {
-            free(*result);
+        if (result->desc != NULL) {
+            FREE_OBJ(result->desc);
         }
 
-        // build payload
-        payload = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(payload);
-        if (ret != UTOOLE_OK) {
-            continue;
+        if (result->data != NULL) {
+            FREE_CJSON(result->data)
         }
-        ret = BuildPayload(server, payload, updateFirmwareOption, result);
-        if (ret != UTOOLE_OK || updateFirmwareOption->flag != EXECUTABLE) {
+
+        payload = BuildPayload(server, updateFirmwareOption, result);
+        if (payload == NULL || result->interrupt) {
             // TODO should we only retry when BMC return failure?
-            if (updateFirmwareOption->retryable) {
-                if (UtoolStringEquals(UPGRADE_ACTIVATE_MODE_AUTO, updateFirmwareOption->activateMode)
-                    && retryTimes != UPGRADE_FIRMWARE_RETRY_TIMES) {
+            if (result->retryable) {
+                if (UtoolStringEquals(UPGRADE_ACTIVATE_MODE_AUTO, updateFirmwareOption->activateMode)) {
                     ZF_LOGI("Failed to upload file to BMC and activate mode is auto, will try reset BMC now.");
                     // we do not care about whether server is alive?
-                    ResetBMCAndWaitingAlive(server);
+                    // TODO
+                    // ResetBMCAndWaitingAlive(server);
                 }
             }
             continue;
         }
 
         char *url = "/UpdateService/Actions/UpdateService.SimpleUpdate";
-        ret = UtoolMakeCurlRequest(server, url, HTTP_POST, payload, NULL, response);
-        if (ret != UTOOLE_OK) {
+        UtoolRedfishPost(server, url, payload, NULL, NULL, result);
+        if (result->interrupt) {
             continue;
         }
 
-        if (response->httpStatusCode >= 400) {
-            ret = UtoolResolveFailureResponse(response, result);
-            if (ret != UTOOLE_OK) {
-                continue;
-            }
-        }
-
-        // process response
-        updateFirmwareJson = cJSON_Parse(response->content);
-        ret = UtoolAssetParseJsonNotNull(updateFirmwareJson);
-        if (ret == UTOOLE_OK) {
+        // waiting util task complete or exception
+        UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
+        if (!result->interrupt) {
             break;
         }
+        // TODO 是否需要判断task的状态？如果状态异常也是需要自动重试？
     }
 
     // if it still fails when reaching the maximum retries
-    if (ret != UTOOLE_OK || updateFirmwareOption->flag != EXECUTABLE) {
-        goto failure;
+    if (result->interrupt) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
     }
 
     // output to result
-    ret = UtoolMappingCJSONItems(updateFirmwareJson, output, utoolGetTaskMappings);
-    if (ret != UTOOLE_OK) {
-        goto failure;
+    result->code = UtoolMappingCJSONItems(result->data, output, utoolGetTaskMappings);
+    FREE_CJSON(result->data)
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
     }
 
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     FREE_CJSON(updateFirmwareJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(response);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }
 
 static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server)
@@ -206,7 +199,7 @@ static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server)
     payload = cJSON_CreateRaw(payloadString);
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
 
     // we do not care about whether reset manager is successful
@@ -232,7 +225,7 @@ static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server)
         UtoolFreeCurlResponse(getRedfishResp);
     }
 
-done:
+DONE:
     FREE_CJSON(payload)
     UtoolFreeCurlResponse(resetManagerResp);
     return ret;
@@ -246,46 +239,50 @@ done:
 * @param result
 * @return
 */
-static int ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, char **result)
+static void ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
 {
-    int ret = UTOOLE_OK;
     if (updateFirmwareOption->imageURI == NULL) {
-        ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_REQUIRED), result);
-        goto failure;
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_REQUIRED),
+                                              &(result->desc));
+        goto FAILURE;
     }
 
     if (updateFirmwareOption->activateMode == NULL) {
-        ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_MODE_REQUIRED), result);
-        goto failure;
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_MODE_REQUIRED), &(result->desc));
+        goto FAILURE;
     }
 
     if (!UtoolStringInArray(updateFirmwareOption->activateMode, MODE_CHOICES)) {
-        ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_MODE_ILLEGAL), result);
-        goto failure;
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_MODE_ILLEGAL), &(result->desc));
+        goto FAILURE;
     }
 
     if (updateFirmwareOption->firmwareType != NULL) {
         if (!UtoolStringInArray(updateFirmwareOption->firmwareType, TYPE_CHOICES)) {
-            ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_TYPE_ILLEGAL), result);
-            goto failure;
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_TYPE_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
         }
     }
 
-    goto done;
+    return;
 
-failure:
-    updateFirmwareOption->flag = ILLEGAL;
-    goto done;
-
-done:
-    return ret;
+FAILURE:
+    result->interrupt = 1;
+    return;
 }
 
-static int
-BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOption *updateFirmwareOption, char **result)
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+                           UtoolResult *result)
 {
-    // reset flag
-    updateFirmwareOption->flag = EXECUTABLE;
+
+    // build payload
+    cJSON *payload = cJSON_CreateObject();
+
+    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
 
     char *imageUri = updateFirmwareOption->imageURI;
 
@@ -297,7 +294,6 @@ BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOpti
     ZF_LOGI("\t\tFirmwareType\t : %s", updateFirmwareOption->firmwareType);
     ZF_LOGI(" ");
 
-    int ret;
     struct stat fileInfo;
     UtoolParsedUrl *parsedUrl = NULL;
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
@@ -314,17 +310,16 @@ BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOpti
     if (isLocalFile) {  /** if file exists in local machine, try to upload it to BMC */
         ZF_LOGI("Firmware image uri `%s` is a local file.", imageUri);
 
-        ret = UtoolUploadFileToBMC(server, imageUri, response);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+        result->code = UtoolUploadFileToBMC(server, imageUri, response);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
 
         if (response->httpStatusCode >= 400) {
             ZF_LOGE("Failed to upload local file `%s` to BMC.", imageUri);
-            ret = UtoolResolveFailureResponse(response, result);
-            // should we only retry when BMC return failure?
-            updateFirmwareOption->retryable = 1;
-            goto failure;
+            result->code = UtoolResolveFailureResponse(response, &(result->desc));
+            result->retryable = 1; // should we only retry when BMC return failure?
+            goto FAILURE;
         }
 
         char *filename = basename(imageUri);
@@ -332,20 +327,20 @@ BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOpti
         snprintf(uploadFilePath, MAX_FILE_PATH_LEN, "/tmp/web/%s", filename);
 
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", uploadFilePath);
-        ret = UtoolAssetCreatedJsonNotNull(imageUriNode);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+        result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
 
-        goto done;
+        goto DONE;
     }
     else if (UtoolStringStartsWith(imageUri, "/tmp/")) { /** handle BMC tmp file */
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", imageUri);
-        ret = UtoolAssetCreatedJsonNotNull(imageUriNode);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+        result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
-        goto done;
+        goto DONE;
     }
     else { /** handle remote file */
         ZF_LOGI("Firmware image uri `%s` is not local file.", imageUri);
@@ -353,37 +348,40 @@ BuildPayload(UtoolRedfishServer *server, cJSON *payload, UtoolUpdateFirmwareOpti
         /** parse url */
         parsedUrl = UtoolParseURL(imageUri);
 
-        if (!parsedUrl && !UtoolStringCaseInArray(parsedUrl->scheme, IMAGE_PROTOCOL_CHOICES)) {
+        if (!parsedUrl || !UtoolStringCaseInArray(parsedUrl->scheme, IMAGE_PROTOCOL_CHOICES)) {
             ZF_LOGI("It seems the image uri is illegal.");
-            ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_ILLEGAL), result);
-            goto failure;
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
         }
 
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", imageUri);
-        ret = UtoolAssetCreatedJsonNotNull(imageUriNode);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+        result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
 
         UtoolStringToUpper(parsedUrl->scheme);
         cJSON *protocolNode = cJSON_AddStringToObject(payload, "TransferProtocol", parsedUrl->scheme);
-        ret = UtoolAssetCreatedJsonNotNull(protocolNode);
-        if (ret != UTOOLE_OK) {
-            goto failure;
+        result->code = UtoolAssetCreatedJsonNotNull(protocolNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
     }
 
-    goto done;
+    goto DONE;
 
-failure:
-    updateFirmwareOption->flag = ILLEGAL;
-    goto done;
+FAILURE:
+    result->interrupt = 1;
+    FREE_CJSON(payload)
+    payload = NULL;
+    goto DONE;
 
-done:
+DONE:
     if (imageFileFP) {                  /* close FP */
         fclose(imageFileFP);
     }
     UtoolFreeParsedURL(parsedUrl);
     UtoolFreeCurlResponse(response);    /* free response */
-    return ret;
+    return payload;
 }

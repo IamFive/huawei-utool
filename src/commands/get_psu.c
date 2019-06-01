@@ -81,65 +81,65 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Power", HTTP_GET, NULL, NULL, getPowerResponse);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getPowerResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getPowerResponse, result);
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s", HTTP_GET, NULL, NULL, getChassisResponse);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getChassisResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getChassisResponse, result);
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process chassis response
     chassisJson = cJSON_Parse(getChassisResponse->content);
     ret = UtoolAssetParseJsonNotNull(chassisJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     ret = UtoolMappingCJSONItems(chassisJson, output, getPowerSummaryMapping);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     // initialize output temperatures array
     powerSupplies = cJSON_AddArrayToObject(output, "PSU");
     ret = UtoolAssetCreatedJsonNotNull(powerSupplies);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process power response
     powerJson = cJSON_Parse(getPowerResponse->content);
     ret = UtoolAssetParseJsonNotNull(powerJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
 
@@ -151,27 +151,27 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
         powerSupply = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(powerSupply);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create voltage item and add it to array
         ret = UtoolMappingCJSONItems(member, powerSupply, getPowerSupplyMapping);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(powerSupplies, powerSupply);
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(powerSupply)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(powerJson)
     FREE_CJSON(chassisJson)
     UtoolFreeCurlResponse(getPowerResponse);

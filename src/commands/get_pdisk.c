@@ -142,50 +142,50 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s", HTTP_GET, NULL, NULL, getChassisResponse);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getChassisResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getChassisResponse, result);
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process get chassis response
     chassisJson = cJSON_Parse(getChassisResponse->content);
     ret = UtoolAssetParseJsonNotNull(chassisJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     ret = UtoolMappingCJSONItems(chassisJson, output, getDriveSummaryMapping);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output drive array
     drives = cJSON_AddArrayToObject(output, "Disk");
     ret = UtoolAssetCreatedJsonNotNull(drives);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *links = cJSONUtils_GetPointer(chassisJson, "/Links/Drives");
@@ -195,37 +195,37 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
         cJSON *link = cJSON_GetObjectItem(driveLinkObject, "@odata.id");
         ret = UtoolAssetJsonNodeNotNull(link, "/Links/Drives/*/@odata.id");
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         char *url = link->valuestring;
 
         ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getDriveResponse);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (getDriveResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(getDriveResponse, result);
-            goto failure;
+            goto FAILURE;
         }
 
         driveJson = cJSON_Parse(getDriveResponse->content);
         ret = UtoolAssetParseJsonNotNull(driveJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         drive = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(drive);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create drive item and add it to array
         ret = UtoolMappingCJSONItems(driveJson, drive, getDriveMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(drives, drive);
 
@@ -235,14 +235,14 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(drive)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(chassisJson)
     FREE_CJSON(driveJson)
     UtoolFreeCurlResponse(getChassisResponse);

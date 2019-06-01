@@ -76,49 +76,49 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
     // validation
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = ValidateAddUserOptions(addUserOption, result);
     if (addUserOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // build payload
     payload = BuildPayload(addUserOption);
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get redfish system id
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/AccountService/Accounts", HTTP_POST, payload, NULL, response);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (response->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(response, result);
-        goto done;
+        goto DONE;
     }
 
     UtoolBuildDefaultSuccessResult(result);
-    goto done;
+    goto DONE;
 
-failure:
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(response);
@@ -138,34 +138,34 @@ static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **resu
     int ret = UTOOLE_OK;
     if (addUserOption->username == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_USERNAME_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     if (addUserOption->password == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PASSWORD_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     if (addUserOption->roleId == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_ROlEID_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     if (!UtoolStringInArray(addUserOption->roleId, ROLES)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_ROlEID_ILLEGAL), result);
-        goto failure;
+        goto FAILURE;
     }
 
 //if (ret == UTOOLE_OK && privileges == NULL) {
 //    ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PRIVILEGE_REQUIRED), result);
 //}
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     addUserOption->flag = ILLEGAL;
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     return ret;
 }
 
@@ -176,30 +176,30 @@ static cJSON *BuildPayload(UtoolAddUserOption *addUserOption)
     cJSON *payload = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *username = cJSON_AddStringToObject(payload, "UserName", addUserOption->username);
     ret = UtoolAssetCreatedJsonNotNull(username);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *password = cJSON_AddStringToObject(payload, "Password", addUserOption->password);
     ret = UtoolAssetCreatedJsonNotNull(password);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", addUserOption->roleId);
     ret = UtoolAssetCreatedJsonNotNull(roleId);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     return payload;
 
-failure:
+FAILURE:
     FREE_CJSON(payload)
     return NULL;
 }

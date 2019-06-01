@@ -51,51 +51,51 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(output);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     userArray = cJSON_AddArrayToObject(output, "User");
     result->code = UtoolAssetCreatedJsonNotNull(userArray);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
 
     userMemberJson = result->data;
     UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
 
     // output to outputStr
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(userMemberJson)
     UtoolFreeRedfishServer(server);
     *outputStr = result->desc;

@@ -6,6 +6,7 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
 #include <stddef.h>
 #include "cJSON.h"
 
@@ -19,6 +20,7 @@ typedef struct _Result
     char *desc;         /** result desc */
     cJSON *data;         /** result data */
     int interrupt;      /** whether the program is interrupt, default no(0) otherwise yes */
+    int retryable;
 } UtoolResult;
 
 
@@ -50,7 +52,7 @@ typedef struct _CommandOption
 
 typedef enum _CommandType
 {
-    GET = 1, SET = 2
+    GET = 1, SET = 2, DEBUG = 3,
 } UtoolCommandType;
 
 /**
@@ -88,8 +90,25 @@ typedef struct _CurlResponse
     int httpStatusCode;
     char *etag;
     long contentLength;
+    char *contentType;
+    FILE *downloadToFP;  /** used for download file request */
 } UtoolCurlResponse;
 
+/**
+ * Curl response meta properties
+ */
+typedef struct _CurlProgress
+{
+    double dltotal;
+    double dlnow;
+    double ultotal;
+    double ulnow;
+} UtoolCurlProgress;
+
+
+/**
+ * Curl header meta properties
+ */
 typedef struct _CurlHeader
 {
     const char *const name;
@@ -97,6 +116,9 @@ typedef struct _CurlHeader
 } UtoolCurlHeader;
 
 
+/**
+ * Curl response to output json-path mapping
+ */
 typedef struct _OutputMapping
 {
     const char *const sourceXpath;
@@ -105,6 +127,31 @@ typedef struct _OutputMapping
 
     int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;
+
+
+/**
+* Redfish Task structure
+*/
+
+typedef struct _RedfishMessage
+{
+    char *id;
+    char *message;
+    char *severity;
+    char *resolution;
+
+} UtoolRedfishMessage;
+
+typedef struct _RedfishTask
+{
+    char *url;
+    char *id;
+    char *name;
+    char *taskState;
+    char *startTime;
+    char *taskPercentage;
+    UtoolRedfishMessage *message;
+} UtoolRedfishTask;
 
 
 #ifdef __cplusplus

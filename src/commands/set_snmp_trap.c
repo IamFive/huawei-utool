@@ -16,28 +16,21 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OEM_SERVICE_CHOICES[] = {"VNC", "Video", "NAT", NULL};
-static const char *SERVICE_CHOICES[] = {"HTTP", "HTTPS", "SNMP", "VirtualMedia", "IPMI", "SSH", "KVMIP", "VNC",
-                                        "Video", "NAT", "SSDP", NULL};
-
-static const char *OPT_SERVICE_REQUIRED = "Error: option `Service` is required.";
-static const char *OPT_SERVICE_ILLEGAL = "Error: option `Service` is illegal, available choices: "
-                                         "HTTP, HTTPS, SNMP, VirtualMedia, IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP.";
+static const char *SEVERITY_CHOICES[] = {"All", "WarningAndCritical", "Critical", NULL};
 static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_PORT_ILLEGAL = "Error: option `Port` is illegal, value range should be: 1~65535";
+static const char *OPT_SEVERITY_ILLEGAL = "Error: option `Severity` is illegal, "
+                                          "available choices: All, WarningAndCritical, Critical";
 
 static const char *const usage[] = {
         "utool setservice -s Service [-e Enabled] [-p Port] [-q PORT2] [-t SSLEnabled]",
         NULL,
 };
 
-typedef struct _UpdateServiceOption
+typedef struct _UpdateSNMPTrapNotification
 {
-    char *service;
-    char *enabled;
-    int port;
-    int port2;
-    char *sslEnabled;
+    char *bootDevice;
+    char *effective;
+    char *bootMode;
 } UtoolUpdateSNMPTrapNotification;
 
 static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result);
@@ -45,29 +38,29 @@ static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult 
 static void ValidateSubcommandOptions(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result);
 
 /**
-* set BMC network protocol services, command handler for `setservice`
+* set SNMP trap common configuration, enable,community etc, command handler for `settrapcom`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdSetSNMPTrapNotification(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolUpdateSNMPTrapNotification *option = &(UtoolUpdateSNMPTrapNotification) {.port=DEFAULT_INT_V, 0};
+    UtoolUpdateSNMPTrapNotification *option = &(UtoolUpdateSNMPTrapNotification) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('s', "Service", &(option->service),
-                        "specifies service to update, available choices: {HTTP, HTTPS, SNMP, VirtualMedia, "
-                        "IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP}", NULL, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->enabled),
-                        "specifies whether the service is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('p', "Port", &(option->port),
-                        "specifies service port, value range: 1~65535", NULL, 0, 0),
+            OPT_STRING ('c', "Community", &(option->bootDevice),
+                        "specifies community name", NULL, 0, 0),
+            OPT_STRING ('e', "Enabled", &(option->effective),
+                        "specifies whether trap is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
+            OPT_STRING ('s', "Severity", &(option->bootMode),
+                        "specifies level of alarm to sent, available choices: {All, WarningAndCritical, Critical}",
+                        NULL, 0, 0),
             OPT_END()
     };
 
@@ -99,7 +92,7 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    UtoolRedfishPatch(server, "/Managers/%s/NetworkProtocol", payload, NULL, NULL, NULL, result);
+    UtoolRedfishPatch(server, "/Managers/%s/SnmpService", payload, NULL, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
     }
@@ -130,35 +123,24 @@ DONE:
 */
 static void ValidateSubcommandOptions(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result)
 {
-    if (UtoolStringIsEmpty(option->service)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SERVICE_REQUIRED),
-                                              &(result->desc));
-        goto FAILURE;
-    }
-
-    if (!UtoolStringInArray(option->service, SERVICE_CHOICES)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SERVICE_ILLEGAL),
-                                              &(result->desc));
-        goto FAILURE;
-    }
-
-    if (!UtoolStringIsEmpty(option->enabled)) {
-        if (!UtoolStringInArray(option->enabled, UTOOL_ENABLED_CHOICES)) {
+    if (!UtoolStringIsEmpty(option->effective)) {
+        if (!UtoolStringInArray(option->effective, UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (option->port != DEFAULT_INT_V) {
-        if (option->port < 1 || option->port > 65535) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PORT_ILLEGAL),
+    if (!UtoolStringIsEmpty(option->bootMode)) {
+        if (!UtoolStringInArray(option->bootMode, SEVERITY_CHOICES)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SEVERITY_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (UtoolStringIsEmpty(option->enabled) && option->port == DEFAULT_INT_V) {
+    if (UtoolStringIsEmpty(option->effective) && UtoolStringIsEmpty(option->bootMode) &&
+        UtoolStringIsEmpty(option->bootDevice)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
         goto FAILURE;
     }
@@ -178,31 +160,42 @@ static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult 
         goto FAILURE;
     }
 
-    cJSON *service = cJSON_AddObjectToObject(payload, option->service);
-    result->code = UtoolAssetCreatedJsonNotNull(service);
+    cJSON *trap = cJSON_AddObjectToObject(payload, "SnmpTrapNotification");
+    result->code = UtoolAssetCreatedJsonNotNull(trap);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    if (!UtoolStringIsEmpty(option->enabled)) {
-        cJSON *node = cJSON_AddBoolToObject(service, "ProtocolEnabled", UtoolStringEquals(option->enabled, ENABLED));
+    if (!UtoolStringIsEmpty(option->effective)) {
+        cJSON *node = cJSON_AddBoolToObject(trap, "ServiceEnabled", UtoolStringEquals(option->effective, ENABLED));
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
 
-    if (option->port != DEFAULT_INT_V) {
-        cJSON *node = cJSON_AddNumberToObject(service, "Port", option->port);
+    if (!UtoolStringIsEmpty(option->bootDevice)) {
+        cJSON *node = cJSON_AddStringToObject(trap, "CommunityName", option->bootDevice);
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
 
-    if (UtoolStringInArray(option->service, OEM_SERVICE_CHOICES)) {
-        payload = UtoolWrapOem(payload, result);
-        if (result->interrupt) {
+    if (!UtoolStringIsEmpty(option->bootMode)) {
+        cJSON *node = NULL;
+        if (UtoolStringEquals("Critical", option->bootMode)) {
+            node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_CRITICAL);
+        }
+        else if (UtoolStringEquals("WarningAndCritical", option->bootMode)) {
+            node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_MAJOR);
+        }
+        else if (UtoolStringEquals("All", option->bootMode)) {
+            node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_NORMAL);
+        }
+
+        result->code = UtoolAssetCreatedJsonNotNull(node);
+        if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }

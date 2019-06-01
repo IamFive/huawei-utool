@@ -50,56 +50,56 @@ int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process get system response
     ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResponse);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
 
     if (getSystemResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getSystemResponse, result);
-        goto failure;
+        goto FAILURE;
     }
 
     getSystemJson = cJSON_Parse(getSystemResponse->content);
     ret = UtoolAssetParseJsonNotNull(getSystemJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     ret = UtoolMappingCJSONItems(getSystemJson, output, getProductMappings);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // mapping result to output json
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(getSystemJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(getSystemResponse);

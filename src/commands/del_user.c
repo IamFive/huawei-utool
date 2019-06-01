@@ -55,40 +55,40 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
     // validation
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     if (username == NULL || strlen(username) == 0) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_USERNAME_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     // get redfish system id
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/AccountService/Accounts", HTTP_GET, NULL, NULL, getUserMemberResponse);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process get chassis response
     if (getUserMemberResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getUserMemberResponse, result);
-        goto done;
+        goto DONE;
     }
 
     userMembersJson = cJSON_Parse(getUserMemberResponse->content);
     ret = UtoolAssetParseJsonNotNull(userMembersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     bool foundUserWithName = false;
@@ -100,31 +100,31 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
         cJSON *link = cJSON_GetObjectItem(userLinkObject, "@odata.id");
         ret = UtoolAssetJsonNodeNotNull(link, "/Members/*/@odata.id");
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         userAccountUrl = link->valuestring;
         ret = UtoolMakeCurlRequest(server, userAccountUrl, HTTP_GET, NULL, NULL, getUserResponse);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (getUserResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(getUserResponse, result);
-            goto failure;
+            goto FAILURE;
         }
 
         userJson = cJSON_Parse(getUserResponse->content);
         ret = UtoolAssetParseJsonNotNull(userJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON *userNameNode = cJSON_GetObjectItem(userJson, "UserName");
         ret = UtoolAssetJsonNodeNotNull(userNameNode, "UserName");
         char *currentUsername = userNameNode->valuestring;
         if (ret != UTOOLE_OK || username == NULL) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (UtoolStringEquals(username, currentUsername)) {
@@ -154,23 +154,23 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
 
         ret = UtoolMakeCurlRequest(server, userAccountUrl, HTTP_DELETE, NULL, NULL, deleteUserResponse);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (deleteUserResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(deleteUserResponse, result);
-            goto failure;
+            goto FAILURE;
         }
 
         UtoolBuildDefaultSuccessResult(result);
     }
 
-    goto done;
+    goto DONE;
 
-failure:
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(userJson)
     FREE_CJSON(userMembersJson)
     UtoolFreeCurlResponse(getUserResponse);

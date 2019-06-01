@@ -71,52 +71,52 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Thermal", HTTP_GET, NULL, NULL, response);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (response->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(response, result);
-        goto done;
+        goto DONE;
     }
 
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     thermalJson = cJSON_Parse(response->content);
     ret = UtoolAssetParseJsonNotNull(thermalJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolMappingCJSONItems(thermalJson, output, getFanSummaryMapping);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output fan array
     fans = cJSON_AddArrayToObject(output, "Fan");
     ret = UtoolAssetCreatedJsonNotNull(fans);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *members = cJSON_GetObjectItem(thermalJson, "Fans");
@@ -127,27 +127,27 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
         fan = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(fan);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create fan item and add it to array
         ret = UtoolMappingCJSONItems(member, fan, getFanMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(fans, fan);
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(fan)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(thermalJson)
     UtoolFreeCurlResponse(response);
     UtoolFreeRedfishServer(server);

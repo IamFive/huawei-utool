@@ -38,16 +38,17 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 */
 int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response);
 
+
 /**
 * download file from BMC temp storage to a local file through CURL lib
+*
 * @param server
 * @param bmcFileUri
 * @param localFileUri
-* @param response
-* @return
+* @param result
 */
-int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
-                             UtoolCurlResponse *response);
+void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
+                              UtoolResult *result);
 
 /**
  * Make a new redfish request through CURL lib
@@ -150,6 +151,19 @@ void UtoolRedfishPost(UtoolRedfishServer *server, char *url, cJSON *payload, cJS
 void UtoolRedfishPatch(UtoolRedfishServer *server, char *url, cJSON *payload, const UtoolCurlHeader *headers,
                        cJSON *output, const UtoolOutputMapping *outputMapping, UtoolResult *result);
 
+
+/**
+* Delete Redfish request
+*
+* @param server
+* @param url
+* @param output
+* @param outputMapping
+* @param result
+*/
+void UtoolRedfishDelete(UtoolRedfishServer *server, char *url, cJSON *output, const UtoolOutputMapping *outputMapping,
+                        UtoolResult *result);
+
 /**
 * Get All Redfish member resources
 *
@@ -161,6 +175,17 @@ void UtoolRedfishPatch(UtoolRedfishServer *server, char *url, cJSON *payload, co
 */
 void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
                                     const UtoolOutputMapping *memberMapping, UtoolResult *result);
+
+/**
+* mapping a json format task to struct task
+*
+* @param cJSONTask
+* @param result
+* @return
+*/
+UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result);
+
+void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result);
 
 
 #ifdef __cplusplus

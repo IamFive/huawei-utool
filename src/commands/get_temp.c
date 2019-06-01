@@ -60,47 +60,47 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Thermal", HTTP_GET, NULL, NULL, response);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (response->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(response, result);
-        goto done;
+        goto DONE;
     }
 
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output temperatures array
     temperatures = cJSON_AddArrayToObject(output, "Temperature");
     ret = UtoolAssetCreatedJsonNotNull(temperatures);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     thermalJson = cJSON_Parse(response->content);
     ret = UtoolAssetParseJsonNotNull(thermalJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *members = cJSON_GetObjectItem(thermalJson, "Temperatures");
@@ -111,27 +111,27 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
         temperature = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(temperature);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create temperature item and add it to array
         ret = UtoolMappingCJSONItems(member, temperature, getTemperatureMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(temperatures, temperature);
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(temperature)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(thermalJson)
     UtoolFreeCurlResponse(response);
     UtoolFreeRedfishServer(server);

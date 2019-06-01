@@ -51,54 +51,54 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(output);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     serviceArray = cJSON_AddArrayToObject(output, "Service");
     result->code = UtoolAssetCreatedJsonNotNull(serviceArray);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     UtoolRedfishGet(server, "/Managers/%s/NetworkProtocol", NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     serviceRespJson = result->data;
 
     /** walk though ROOT node */
     result->code = walkThoughNodeToFindService(serviceArray, serviceRespJson->child);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     /** get oem node */
     cJSON *oem = cJSONUtils_GetPointer(serviceRespJson, "/Oem/Huawei");
     result->code = UtoolAssetJsonNodeNotNull(oem, "/Oem/Huawei");
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     /** walk though oem node */
     result->code = walkThoughNodeToFindService(serviceArray, oem->child);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     /** add SSDP node */
@@ -113,13 +113,13 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
 
     // output to outputStr
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(serviceRespJson)
     UtoolFreeRedfishServer(server);
 

@@ -85,39 +85,39 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Managers/%s/EthernetInterfaces/", HTTP_GET, NULL, NULL, getMembersResp);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getMembersResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getMembersResp, result);
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     membersJson = cJSON_Parse(getMembersResp->content);
     ret = UtoolAssetParseJsonNotNull(membersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
 
@@ -128,35 +128,35 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getMemberResp);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (getMemberResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getMemberResp, result);
-        goto failure;
+        goto FAILURE;
     }
 
     memberJson = cJSON_Parse(getMemberResp->content);
     ret = UtoolAssetParseJsonNotNull(memberJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // create task item and add it to array
     ret = UtoolMappingCJSONItems(memberJson, output, getEthernetMappings);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(memberJson)
     FREE_CJSON(membersJson)
     UtoolFreeCurlResponse(getMemberResp);

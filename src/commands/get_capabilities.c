@@ -37,7 +37,7 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     cJSON *output, *getCommandList, *setCommandList;
@@ -45,7 +45,7 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     getCommandList = cJSON_AddArrayToObject(output, "GetCommandList");
@@ -53,12 +53,12 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolAssetCreatedJsonNotNull(setCommandList);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
 
@@ -82,12 +82,12 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
     }
 
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     return ret;
 }

@@ -34,7 +34,7 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
     // initialize output objects
-    cJSON *output = NULL, *payload = NULL, *logServices = NULL;
+    cJSON *payload = NULL, *logServices = NULL;
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -44,35 +44,29 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
     // validation
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
-    }
-
-    output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto DONE;
     }
 
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     UtoolRedfishGet(server, "/Systems/%s/LogServices", NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     logServices = result->data;
     cJSON *logService0LinkNode = cJSONUtils_GetPointer(logServices, "/Members/0/@odata.id");
     result->code = UtoolAssetJsonNodeNotNull(logService0LinkNode, "/Members/0/@odata.id");
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     /** send clear SEL request */
@@ -81,24 +75,23 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
     payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     UtoolRedfishPost(server, clearSELUrl, payload, NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     // output to outputStr
     UtoolBuildDefaultSuccessResult(&(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
-    FREE_CJSON(output)
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     FREE_CJSON(logServices)
     UtoolFreeRedfishServer(server);
