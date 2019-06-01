@@ -121,10 +121,144 @@ RedundantType
 
 ### 
 
-服务器关机的情况下 get task state 会出错
+固件升级自动重启 BMC 会有未知问题，不稳定。比如当前BMC正在升级另外一个固件，强行重启。
+
+{
+    "@odata.context": "/redfish/v1/$metadata#TaskService/Tasks/Members/$entity",
+    "@odata.type": "#Task.v1_0_2.Task",
+    "@odata.id": "/redfish/v1/TaskService/Tasks/1",
+    "Id": "1",
+    "Name": "Upgarde Task",
+    "TaskState": "Running",
+    "StartTime": "2019-06-03T12:07:36+08:00",
+    "Messages": {
+        "@odata.type": "/redfish/v1/$metadata#MessageRegistry.1.0.0.MessageRegistry",
+        "MessageId": "iBMC.1.0.FirmwareUpgradeComponent",
+        "RelatedProperties": [],
+        "Message": "Upgrading the BMC.",
+        "MessageArgs": [
+            "BMC"
+        ],
+        "Severity": "OK",
+        "Resolution": "Wait until the upgrade is complete."
+    },
+    "Oem": {
+        "Huawei": {
+            "TaskPercentage": "7%"
+        }
+    }
+}
+
+{
+    "@odata.context": "/redfish/v1/$metadata#TaskService/Tasks/Members/$entity",
+    "@odata.type": "#Task.v1_0_2.Task",
+    "@odata.id": "/redfish/v1/TaskService/Tasks/1",
+    "Id": "1",
+    "Name": "Upgarde Task",
+    "TaskState": "Running",
+    "StartTime": "2019-06-03T12:07:36+08:00",
+    "Messages": {
+        "@odata.type": "/redfish/v1/$metadata#MessageRegistry.1.0.0.MessageRegistry",
+        "MessageId": "iBMC.1.0.FirmwareUpgradeComponent",
+        "RelatedProperties": [],
+        "Message": "Upgrading the BMC.",
+        "MessageArgs": [
+            "BMC"
+        ],
+        "Severity": "OK",
+        "Resolution": "Wait until the upgrade is complete."
+    },
+    "Oem": {
+        "Huawei": {
+            "TaskPercentage": "75%"
+        }
+    }
+}
+
+{
+    "@odata.context": "/redfish/v1/$metadata#TaskService/Tasks/Members/$entity",
+    "@odata.type": "#Task.v1_0_2.Task",
+    "@odata.id": "/redfish/v1/TaskService/Tasks/1",
+    "Id": "1",
+    "Name": "Upgarde Task",
+    "TaskState": "Running",
+    "StartTime": "1970-01-01T08:03:54+08:00",
+    "Messages": {
+        "@odata.type": "/redfish/v1/$metadata#MessageRegistry.1.0.0.MessageRegistry",
+        "MessageId": "iBMC.1.0.FileTransferProgress",
+        "RelatedProperties": [],
+        "Message": "Downloading the upgrade package ... Progress: 4% complete.",
+        "MessageArgs": [
+            "4%"
+        ],
+        "Severity": "OK",
+        "Resolution": "Wait until the upgrade package is downloaded. The upgrade starts after the upgrade package is downloaded."
+    },
+    "Oem": {
+        "Huawei": {
+            "TaskPercentage": null
+        }
+    }
+}
+
+{
+    "@odata.context": "/redfish/v1/$metadata#TaskService/Tasks/Members/$entity",
+    "@odata.type": "#Task.v1_0_2.Task",
+    "@odata.id": "/redfish/v1/TaskService/Tasks/1",
+    "Id": "1",
+    "Name": "Upgarde Task",
+    "TaskState": "Running",
+    "StartTime": "1970-01-01T08:03:54+08:00",
+    "Messages": {
+        "@odata.type": "/redfish/v1/$metadata#MessageRegistry.1.0.0.MessageRegistry",
+        "MessageId": "iBMC.1.0.FirmwareUpgradeComponent",
+        "RelatedProperties": [],
+        "Message": "Upgrading the BMC.",
+        "MessageArgs": [
+            "BMC"
+        ],
+        "Severity": "OK",
+        "Resolution": "Wait until the upgrade is complete."
+    },
+    "Oem": {
+        "Huawei": {
+            "TaskPercentage": "18%"
+        }
+    }
+}
+
+
+{
+    "@odata.context": "/redfish/v1/$metadata#TaskService/Tasks/Members/$entity",
+    "@odata.type": "#Task.v1_0_2.Task",
+    "@odata.id": "/redfish/v1/TaskService/Tasks/1",
+    "Id": "1",
+    "Name": "Upgarde Task",
+    "TaskState": "Running",
+    "StartTime": "2019-06-03T14:52:32+08:00",
+    "Messages": {
+        "@odata.type": "/redfish/v1/$metadata#MessageRegistry.1.0.0.MessageRegistry",
+        "MessageId": "iBMC.1.0.FirmwareUpgradeComponent",
+        "RelatedProperties": [],
+        "Message": "Upgrading the Motherboard CPLD.",
+        "MessageArgs": [
+            "Motherboard CPLD"
+        ],
+        "Severity": "OK",
+        "Resolution": "Wait until the upgrade is complete."
+    },
+    "Oem": {
+        "Huawei": {
+            "TaskPercentage": "3%"
+        }
+    }
+}
 
 ###
-
 不在位状态的过滤
-
 重新封装支撑 getraid 那种模式？自动多层加载。
+
+
+### getip
+
+- IpMode 也是必填项？

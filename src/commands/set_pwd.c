@@ -70,47 +70,47 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
     // validation
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = ValidateSetPasswordOptions(setPasswordOption, result);
     if (setPasswordOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // build payload
     payload = BuildPayload(setPasswordOption);
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get redfish system id
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/AccountService/Accounts", HTTP_GET, NULL, NULL, getUserMemberResponse);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process get chassis response
     if (getUserMemberResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getUserMemberResponse, result);
-        goto done;
+        goto DONE;
     }
 
     userMembersJson = cJSON_Parse(getUserMemberResponse->content);
     ret = UtoolAssetParseJsonNotNull(userMembersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     bool foundUserWithName = false;
@@ -122,31 +122,31 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
         cJSON *link = cJSON_GetObjectItem(userLinkObject, "@odata.id");
         ret = UtoolAssetJsonNodeNotNull(link, "/Members/*/@odata.id");
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         userAccountUrl = link->valuestring;
         ret = UtoolMakeCurlRequest(server, userAccountUrl, HTTP_GET, NULL, NULL, getUserResponse);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (getUserResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(getUserResponse, result);
-            goto failure;
+            goto FAILURE;
         }
 
         userJson = cJSON_Parse(getUserResponse->content);
         ret = UtoolAssetParseJsonNotNull(userJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON *userNameNode = cJSON_GetObjectItem(userJson, "UserName");
         ret = UtoolAssetJsonNodeNotNull(userNameNode, "UserName");
         char *username = userNameNode->valuestring;
         if (ret != UTOOLE_OK || username == NULL) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (UtoolStringEquals(setPasswordOption->username, username)) {
@@ -176,23 +176,23 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
         ret = UtoolMakeCurlRequest(server, userAccountUrl, HTTP_PATCH, payload, ifMatchHeader, updateUserResponse);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (updateUserResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(updateUserResponse, result);
-            goto failure;
+            goto FAILURE;
         }
 
         UtoolBuildDefaultSuccessResult(result);
     }
 
-    goto done;
+    goto DONE;
 
-failure:
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     FREE_CJSON(userJson)
     FREE_CJSON(userMembersJson)
@@ -205,7 +205,7 @@ done:
 
 
 /**
-* validate user input options for setpwd command
+* validate user input options for the command
 *
 * @param option
 * @param result
@@ -216,17 +216,17 @@ static int ValidateSetPasswordOptions(UtoolSetPasswordOption *option, char **res
     int ret = UTOOLE_OK;
     if (option->username == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_USERNAME_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     if (option->password == NULL) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PASSWORD_REQUIRED), result);
-        goto failure;
+        goto FAILURE;
     }
 
     return ret;
 
-failure:
+FAILURE:
     option->flag = ILLEGAL;
     return ret;
 }
@@ -238,18 +238,18 @@ static cJSON *BuildPayload(UtoolSetPasswordOption *option)
     cJSON *payload = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *password = cJSON_AddStringToObject(payload, "Password", option->password);
     ret = UtoolAssetCreatedJsonNotNull(password);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     return payload;
 
-failure:
+FAILURE:
     FREE_CJSON(payload)
     return NULL;
 }

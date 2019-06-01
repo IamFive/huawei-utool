@@ -22,12 +22,11 @@ static const char *const usage[] = {
 };
 
 
-int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -35,42 +34,38 @@ int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **result)
     };
 
     // validation
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     // get redfish system id
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto failure;
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto FAILURE;
     }
 
     char *bmcFileUri = "/tmp/web/9.xml";
     char *filepath = "/home/qianbiao/9-download.xml";
-    ret = UtoolDownloadFileFromBMC(server, bmcFileUri, filepath, response);
-    if (ret != UTOOLE_OK) {
-        goto failure;
+    UtoolDownloadFileFromBMC(server, bmcFileUri, filepath, result);
+    if (result->interrupt) {
+        goto FAILURE;
     }
 
-    if (response->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(response, result);
-        goto done;
-    }
+    UtoolBuildDefaultSuccessResult(&(result->desc));
+    goto DONE;
 
-    UtoolBuildDefaultSuccessResult(result);
-    goto done;
+FAILURE:
+    goto DONE;
 
-failure:
-    goto done;
-
-done:
+DONE:
     UtoolFreeRedfishServer(server);
-    UtoolFreeCurlResponse(response);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }

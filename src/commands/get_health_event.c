@@ -56,70 +56,70 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     healthEvents = cJSON_AddArrayToObject(output, "HealthEvents");
     ret = UtoolAssetCreatedJsonNotNull(healthEvents);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Systems/%s/LogServices", HTTP_GET, NULL, NULL, getLogServices);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getLogServices->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getLogServices, result);
-        goto done;
+        goto DONE;
     }
 
     // process get log services response
     logServicesJson = cJSON_Parse(getLogServices->content);
     ret = UtoolAssetParseJsonNotNull(logServicesJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *logService0 = cJSONUtils_GetPointer(logServicesJson, "/Members/0/@odata.id");
     ret = UtoolAssetJsonNodeNotNull(logService0, "/Members/0/@odata.id");
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get log service 0
     char *url = logService0->valuestring;
     ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getLogService0Resp);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (getLogService0Resp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getLogServices, result);
-        goto failure;
+        goto FAILURE;
     }
 
     // process get log services response
     logService0Json = cJSON_Parse(getLogService0Resp->content);
     ret = UtoolAssetParseJsonNotNull(logService0Json);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
 
@@ -129,27 +129,27 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
         healthEvent = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(healthEvent);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create healthEvent item and add it to array
         ret = UtoolMappingCJSONItems(member, healthEvent, getHealthEventMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(healthEvents, healthEvent);
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(healthEvent)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(logServicesJson)
     FREE_CJSON(logService0Json)
     UtoolFreeCurlResponse(getLogServices);

@@ -1,7 +1,7 @@
 //
 // Created by qianbiao on 5/11/19.
 //
-
+#include <ctype.h>
 #include <stddef.h>
 #include <string.h>
 #include <string_utils.h>
@@ -164,4 +164,23 @@ char *UtoolStringLastSplit(char *source, char split)
     char *pLastSlash = strrchr(source, split);
     char *pLastSplit = pLastSlash ? pLastSlash + 1 : source;
     return pLastSplit;
+}
+
+char *UtoolStringCaseFindInArray(const char *str, const char **array)
+{
+    if (str == NULL) {
+        return false;
+    }
+
+    for (int idx = 0;; idx++) {
+        const char *item = array[idx];
+        if (item == NULL) {
+            break;
+        }
+        if (strncasecmp(item, str, strlen(item) + 1) == 0) {
+            return (char *) item;
+        }
+    }
+
+    return NULL;
 }

@@ -63,47 +63,47 @@ int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/Chassis/%s/ThresholdSensors", HTTP_GET, NULL, NULL, response);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (response->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(response, result);
-        goto done;
+        goto DONE;
     }
 
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output sensors array
     sensors = cJSON_AddArrayToObject(output, "Sensor");
     ret = UtoolAssetCreatedJsonNotNull(sensors);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     sensorsJson = cJSON_Parse(response->content);
     ret = UtoolAssetParseJsonNotNull(sensorsJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *member = NULL;
@@ -112,13 +112,13 @@ int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result)
         sensor = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(sensor);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create sensor item and add it to array
         ret = UtoolMappingCJSONItems(member, sensor, getTemperatureMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON_AddItemToArray(sensors, sensor);
@@ -126,14 +126,14 @@ int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result)
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(sensor)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(sensorsJson)
     UtoolFreeCurlResponse(response);
     UtoolFreeRedfishServer(server);

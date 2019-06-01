@@ -29,6 +29,7 @@ extern "C" {
 #define USER_AGENT "UTOOL based on libcurl - HUAWEI server management command line tool"
 #define HEADER_ETAG "ETag: "
 #define HEADER_CONTENT_LENGTH "CONTENT-LENGTH: "
+#define HEADER_CONTENT_TYPE "CONTENT-TYPE: "
 #define HEADER_IF_MATCH "If-Match"
 
 
@@ -53,6 +54,42 @@ extern "C" {
 #define SEVERITY_OK "OK"
 
 /** //Redfish message severity level */
+
+/** Redfish SNMP trap severity level// */
+#define SEVERITY_CRITICAL "Critical"
+#define SEVERITY_MAJOR "Major"
+#define SEVERITY_MINOR "Minor"
+#define SEVERITY_NORMAL "Normal"
+/** //Redfish SNMP trap severity level */
+
+/** Redfish indicator LED state// */
+#define INDICATOR_STATE_ON "Lit"
+#define INDICATOR_STATE_OFF "Off"
+#define INDICATOR_STATE_BLINKING "Blinking"
+/** //Redfish indicator LED state */
+
+/** //Redfish TASK state  */
+#define TASK_STATE_NEW "New"
+#define TASK_STATE_STARTING "Starting"
+#define TASK_STATE_RUNNING "Running"
+#define TASK_STATE_SUSPENDED "Suspended"
+#define TASK_STATE_INTERRUPTED "Interrupted"
+#define TASK_STATE_PENDING "Pending"
+#define TASK_STATE_STOPPING "Stopping"
+#define TASK_STATE_COMPLETED "Completed"
+#define TASK_STATE_KILLED "Killed"
+#define TASK_STATE_EXCEPTION "Exception"
+#define TASK_STATE_SERVICE "Service"
+/** Redfish TASK state // */
+
+/** // Redfish boot devices */
+#define BOOT_DEVICE_NONE "None"
+#define BOOT_DEVICE_PXE "Pxe"
+#define BOOT_DEVICE_FLOPPY "Floppy"
+#define BOOT_DEVICE_CD "Cd"
+#define BOOT_DEVICE_HDD "Hdd"
+#define BOOT_DEVICE_BIOSSETUP "BiosSetup"
+/** Redfish boot devices // */
 
 #define ENABLED "Enabled"
 #define DISABLED "Disabled"
@@ -87,6 +124,13 @@ extern "C" {
 #define FAIL_NOT_SUPPORT "Failure: the server did not support the functionality required"
 #define FAIL_PRE_CONDITION_FAILED "Failure: 412 Precondition Failed"
 #define FAIL_ENTITY_TOO_LARGE "Failure: 413 Request Entity Too Large"
+
+
+/** opt validation */
+#define OPT_REQUIRED(OPT_NAME) "Error: option `"#OPT_NAME"` is required."
+#define OPT_ILLEGAL(OPT_NAME) "Error: option `"#OPT_NAME"` is illegal."
+#define OPT_NOT_IN_CHOICE(OPT_NAME, CHOICES) "Error: option `"#OPT_NAME"` is illegal, available choices: "CHOICES"."
+#define OPT_NOT_IN_RANGE(OPT_NAME, RANGE) "Error: option `"#OPT_NAME"` is illegal, available value range:"RANGE"."
 
 typedef enum _Code
 {

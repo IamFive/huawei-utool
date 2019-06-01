@@ -72,45 +72,45 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (memberResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(memberResp, result);
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     firmwares = cJSON_AddArrayToObject(output, "Firmware");
     ret = UtoolAssetCreatedJsonNotNull(firmwares);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     firmwareMembersJson = cJSON_Parse(memberResp->content);
     ret = UtoolAssetParseJsonNotNull(firmwareMembersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *members = cJSON_GetObjectItem(firmwareMembersJson, "Members");
@@ -122,37 +122,37 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
 
         ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, firmwareResp);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (firmwareResp->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(firmwareResp, result);
-            goto failure;
+            goto FAILURE;
         }
 
         firmwareJson = cJSON_Parse(firmwareResp->content);
         ret = UtoolAssetParseJsonNotNull(firmwareJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         firmware = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(firmware);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON_AddRawToObject(firmware, "SupportActivateType", "[\"automatic\"]");
         //cJSON *supportActivateTypes = cJSON_AddArrayToObject(firmware, "SupportActivateType");
         //ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
         //if (ret != UTOOLE_OK) {
-        //    goto failure;
+        //    goto FAILURE;
         //}
 
         // create firmware item and add it to array
         ret = UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(firmwares, firmware);
 
@@ -164,14 +164,14 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(firmware)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(firmwareMembersJson)
     FREE_CJSON(firmwareJson)
     UtoolFreeCurlResponse(memberResp);

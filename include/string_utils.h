@@ -93,6 +93,15 @@ void UtoolStringToUpper(char *str);
 */
 char *UtoolStringLastSplit(char *source, char split);
 
+/**
+* find a given string in array while ignoring differences in case
+*
+* @param str
+* @param array
+* @return
+*/
+char *UtoolStringCaseFindInArray(const char *str, const char **array);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

@@ -58,11 +58,11 @@ static cJSON *UtoolBuildOutputJson(const char *const state, cJSON *messages)
 {
     cJSON *response = cJSON_CreateObject();
     if (response == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (cJSON_AddStringToObject(response, RESULT_KEY_STATE, state) == NULL) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (cJSON_IsArray(messages)) {
@@ -71,14 +71,14 @@ static cJSON *UtoolBuildOutputJson(const char *const state, cJSON *messages)
     else {
         cJSON *_message = cJSON_AddArrayToObject(response, RESULT_KEY_MESSAGES);
         if (_message == NULL) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(_message, messages);
     }
 
     return response;
 
-failure:
+FAILURE:
     FREE_CJSON(messages)
     FREE_CJSON(response)
     return NULL;
@@ -208,7 +208,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
                 return ret;
             }
 
-            UtoolOutputMapping *nestMapping = mapping->nestMapping;
+            const UtoolOutputMapping *nestMapping = mapping->nestMapping;
             cJSON *element = NULL;
             cJSON_ArrayForEach(element, ref) {
                 cJSON *mapped = cJSON_CreateObject();
@@ -262,19 +262,19 @@ cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result)
     cJSON *wrapped = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(wrapped);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *oem = cJSON_AddObjectToObject(wrapped, "Oem");
     result->code = UtoolAssetCreatedJsonNotNull(oem);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON_AddItemToObject(oem, "Huawei", source);
     return wrapped;
 
-failure:
+FAILURE:
     FREE_CJSON(wrapped)
     result->interrupt = 1;
     return NULL;

@@ -46,7 +46,7 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
 
     char *resetType = NULL;
     // initialize output objects
-    cJSON *output = NULL, *payload = NULL;
+    cJSON *payload = NULL;
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -60,53 +60,46 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
     // validation
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ValidateSubcommandOptions(resetType, result);
     if (result->interrupt) {
-        goto done;
+        goto DONE;
     }
 
     // build payload
     payload = BuildPayload(resetType, result);
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
-    }
-
-    output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto DONE;
     }
 
     UtoolRedfishPost(server, "/Systems/%s/Actions/ComputerSystem.Reset", payload, NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     // output to outputStr
     UtoolBuildDefaultSuccessResult(&(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
-    FREE_CJSON(output)
-    goto done;
+FAILURE:
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
 
@@ -116,7 +109,7 @@ done:
 
 
 /**
-* validate user input options for setpwd command
+* validate user input options for the command
 *
 * @param option
 * @param result
@@ -127,18 +120,18 @@ static void ValidateSubcommandOptions(char *resetType, UtoolResult *result)
     if (UtoolStringIsEmpty(resetType)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_RESET_TYPE_REQUIRED),
                                               &(result->desc));
-        goto failure;
+        goto FAILURE;
     }
 
     if (!UtoolStringInArray(resetType, RESET_TYPE_CHOICES)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_RESET_TYPE_ILLEGAL),
                                               &(result->desc));
-        goto failure;
+        goto FAILURE;
     }
 
     return;
 
-failure:
+FAILURE:
     result->interrupt = 1;
     return;
 }
@@ -148,18 +141,18 @@ static cJSON *BuildPayload(char *resetType, UtoolResult *result)
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *node = cJSON_AddStringToObject(payload, "ResetType", resetType);
     result->code = UtoolAssetCreatedJsonNotNull(node);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     return payload;
 
-failure:
+FAILURE:
     FREE_CJSON(payload)
     return NULL;
 }

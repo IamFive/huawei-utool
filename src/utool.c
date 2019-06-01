@@ -54,6 +54,7 @@ UtoolCommand utoolCommands[] = {
         //{.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
 
+
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
@@ -62,17 +63,25 @@ UtoolCommand utoolCommands[] = {
         //{.name = "settime", .pFuncExecute = UtoolCmdSetTime, .type = SET},
         {.name = "settimezone", .pFuncExecute = UtoolCmdSetTimezone, .type = SET},
         {.name = "powercontrol", .pFuncExecute = UtoolCmdSystemPowerControl, .type = SET},
-        //{.name = "restorebios", .pFuncExecute = UtoolCmdRestoreBIOS, .type = SET},
+        {.name = "restorebios", .pFuncExecute = UtoolCmdRestoreBIOS, .type = SET},
         {.name = "setservice", .pFuncExecute = UtoolCmdSetService, .type = SET},
         {.name = "setip", .pFuncExecute = UtoolCmdSetIP, .type = SET},
         {.name = "setvlan", .pFuncExecute = UtoolCmdSetVLAN, .type = SET},
-
-
+        {.name = "resetbmc", .pFuncExecute = UtoolCmdResetBMC, .type = SET},
+        {.name = "settrapcom", .pFuncExecute = UtoolCmdSetSNMPTrapNotification, .type = SET},
+        {.name = "settrapdest", .pFuncExecute = UtoolCmdSetSNMPTrapNotificationDest, .type = SET},
         {.name = "fwupdate", .pFuncExecute = UtoolCmdUpdateOutbandFirmware, .type = SET},
+        {.name = "collect", .pFuncExecute = UtoolCmdCollectAllBoardInfo, .type = SET},
+        {.name = "locateserver", .pFuncExecute = UtoolCmdSetIndicatorLED, .type = SET},
+        {.name = "setvnc", .pFuncExecute = UtoolCmdSetVNCSettings, .type = SET},
+        {.name = "setsysboot", .pFuncExecute = UtoolCmdSetBootSourceOverride, .type = SET},
+        {.name = "delvncsession", .pFuncExecute = UtoolCmdDeleteVNCSession, .type = SET},
 
         // Test purpose start
-        {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = SET},
-        {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = SET},
+        {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
+        {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
+        {.name = "waittask", .pFuncExecute = UtoolCmdWaitRedfishTask, .type = DEBUG},
+
         NULL,
 };
 

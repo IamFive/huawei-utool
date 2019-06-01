@@ -60,39 +60,39 @@ int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr)
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     UtoolRedfishGet(server, "/Managers/%s/SnmpService", output, getTrapNotificationMappings, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
 
     // mapping result to output json
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(getEthernetInterfacesRespJson)
     UtoolFreeRedfishServer(server);
 

@@ -79,70 +79,70 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // curl request get system
     ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResp);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     if (getSystemResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getSystemResp, result);
-        goto failure;
+        goto FAILURE;
     }
 
     // process get system response
     systemJson = cJSON_Parse(getSystemResp->content);
     ret = UtoolAssetParseJsonNotNull(systemJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // mapping response json to output
     ret = UtoolMappingCJSONItems(systemJson, output, getProcessorSummaryMapping);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output processor array
     processors = cJSON_AddArrayToObject(output, "Information");
     ret = UtoolAssetCreatedJsonNotNull(processors);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // curl request get processor view
     ret = UtoolMakeCurlRequest(server, "/Systems/%s/ProcessorView", HTTP_GET, NULL, NULL, getProcessorViewResp);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
     if (getProcessorViewResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getProcessorViewResp, result);
-        goto failure;
+        goto FAILURE;
     }
 
     // process get processor view response
     processorViewJson = cJSON_Parse(getProcessorViewResp->content);
     ret = UtoolAssetParseJsonNotNull(processorViewJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // mapping response json to output
@@ -152,27 +152,27 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
         processor = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(processor);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create processor item and add it to array
         ret = UtoolMappingCJSONItems(member, processor, getProcessorMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(processors, processor);
     }
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(processor)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(systemJson)
     FREE_CJSON(processorViewJson)
     UtoolFreeCurlResponse(getSystemResp);

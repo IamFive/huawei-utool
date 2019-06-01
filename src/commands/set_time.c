@@ -72,56 +72,56 @@ int UtoolCmdSetTime(UtoolCommandOption *commandOption, char **outputStr)
     // validation
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ValidateMountVMMOptions(mountVMMOptions, result);
     if (result->interrupt) {
-        goto done;
+        goto DONE;
     }
 
     // build payload
     payload = BuildPayload(mountVMMOptions);
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
 
     output = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(output);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     char *url = "/Managers/%s/VirtualMedia/CD/Oem/Huawei/Actions/VirtualMedia.VmmControl";
     UtoolRedfishPost(server, url, payload, output, utoolGetTaskMappings, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     // output to outputStr
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     //UtoolBuildDefaultSuccessResult(&(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
 
@@ -131,7 +131,7 @@ done:
 
 
 /**
-* validate user input options for setpwd command
+* validate user input options for the command
 *
 * @param option
 * @param result
@@ -141,25 +141,25 @@ static void ValidateMountVMMOptions(UtoolMountVMMOption *option, UtoolResult *re
 {
     if (option->operatorType == NULL) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_OP_TYPE_REQUIRED), &(result->desc));
-        goto failure;
+        goto FAILURE;
     }
 
     if (!UtoolStringInArray(option->operatorType, TYPE_CHOICES)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_OP_ILLEGAL), &(result->desc));
-        goto failure;
+        goto FAILURE;
     }
 
     if (UtoolStringEquals(option->operatorType, OP_MOUNT)) {
         if (option->image == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_IMAGE_REQUIRED),
                                                   &(result->desc));
-            goto failure;
+            goto FAILURE;
         }
     }
 
     return;
 
-failure:
+FAILURE:
     result->interrupt = 1;
     return;
 }
@@ -171,33 +171,33 @@ static cJSON *BuildPayload(UtoolMountVMMOption *option)
     cJSON *payload = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(payload);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (UtoolStringEquals(option->operatorType, OP_MOUNT)) {
         cJSON *vmmControlType = cJSON_AddStringToObject(payload, "VmmControlType", VMM_CTRL_CONNECT);
         ret = UtoolAssetCreatedJsonNotNull(vmmControlType);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON *vmmVRI = cJSON_AddStringToObject(payload, "Image", option->image);
         ret = UtoolAssetCreatedJsonNotNull(vmmVRI);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
     }
     else {
         cJSON *vmmControlType = cJSON_AddStringToObject(payload, "VmmControlType", VMM_CTRL_DISCONNECT);
         ret = UtoolAssetCreatedJsonNotNull(vmmControlType);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
     }
 
     return payload;
 
-failure:
+FAILURE:
     FREE_CJSON(payload)
     return NULL;
 }

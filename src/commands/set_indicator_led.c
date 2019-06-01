@@ -16,15 +16,23 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_VLAN_ID_ILLEGAL = "Error: option `VLANID` is illegal, value range should be: 1~4094";
+#define STATE_ON "On"
+#define STATE_OFF "Off"
+#define STATE_BLINK "Blink"
+
+static const char *INDICATOR_STATE_CHOICES[] = {STATE_ON, STATE_OFF, STATE_BLINK, NULL};
+static const char *OPT_STATE_REQUIRED = "Error: option `LEDState` is required.";
+static const char *OPT_STATE_ILLEGAL = "Error: option `LEDState` is illegal, available choices: On, Off, Blink.";
+static const char *OPT_FEQ_ILLEGAL = "Error: option `Frequency` is illegal, value range should be: 1~255.";
+static const char *OPT_FEQ_NO_USE = "Error: option `Frequency` should not be set when state is not Blink.";
 
 static const char *const usage[] = {
-        "utool setvlan [-e Enabled] [-v VLANID]",
+        "utool locateserver -s LedState [-f Frequency]",
         NULL,
 };
 
-typedef struct _SetVlanOption
+
+typedef struct _SetIndicatorOption
 {
     char *state;
     int frequency;
@@ -35,15 +43,15 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
 static void ValidateSubcommandOptions(UtoolSetIndicatorOption *option, UtoolResult *result);
 
 /**
-* set BMC NCSI port  VLAN, command handler for `setvlan`
+* locate the server by UID IndicatorLED, command handler for `locateserver`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *payload = NULL, *getEthernetInterfacesRespJson = NULL;
+    cJSON *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -51,10 +59,11 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->state),
-                        "specifies whether VLAN is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('v', "VLANID", &(option->frequency),
-                        "specifies VLAN Id if enabled, range: 1~4094", NULL, 0, 0),
+            OPT_STRING ('s', "LEDState", &(option->state),
+                        "specifies indicator LED state, available choices: {On, Off, Blink}", NULL, 0, 0),
+            OPT_INTEGER('f', "Frequency", &(option->frequency),
+                        "specifies blink period (in seconds) when state is blink, value range: 1~255.",
+                        NULL, 0, 0),
             OPT_END()
     };
 
@@ -86,16 +95,15 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
-    if (result->interrupt) {
-        goto FAILURE;
+    if (option->frequency == DEFAULT_INT_V) {
+        char *url = "/Chassis/%s";
+        UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
     }
-    getEthernetInterfacesRespJson = result->data;
+    else {
+        char *url = "/Chassis/%s/Oem/Huawei/Actions/Chassis.ControlIndicatorLED";
+        UtoolRedfishPost(server, url, payload, NULL, NULL, result);
+    }
 
-    cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
-    char *url = linkNode->valuestring;
-
-    UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
     }
@@ -110,7 +118,6 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    FREE_CJSON(getEthernetInterfacesRespJson)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;
@@ -128,24 +135,25 @@ DONE:
 static void ValidateSubcommandOptions(UtoolSetIndicatorOption *option, UtoolResult *result)
 {
 
-    if (!UtoolStringIsEmpty(option->state)) {
-        if (!UtoolStringInArray(option->state, UTOOL_ENABLED_CHOICES)) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
-                                                  &(result->desc));
-            goto FAILURE;
-        }
+    if (UtoolStringIsEmpty(option->state)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_STATE_REQUIRED), &(result->desc));
+        goto FAILURE;
+    }
+
+    if (!UtoolStringInArray(option->state, INDICATOR_STATE_CHOICES)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_STATE_ILLEGAL), &(result->desc));
+        goto FAILURE;
     }
 
     if (option->frequency != DEFAULT_INT_V) {
-        if (option->frequency < 1 || option->frequency > 4094) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_VLAN_ID_ILLEGAL),
-                                                  &(result->desc));
+        if (option->frequency < 1 || option->frequency > 255) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FEQ_ILLEGAL), &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (UtoolStringIsEmpty(option->state) && option->frequency == DEFAULT_INT_V) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
+    if (!UtoolStringEquals(STATE_BLINK, option->state) && option->frequency != DEFAULT_INT_V) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FEQ_NO_USE), &(result->desc));
         goto FAILURE;
     }
 
@@ -164,14 +172,18 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
         goto FAILURE;
     }
 
-    cJSON *vlan = cJSON_AddObjectToObject(payload, "VLAN");
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
     if (!UtoolStringIsEmpty(option->state)) {
-        cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
+        cJSON *node = NULL;
+        if (UtoolStringEquals(STATE_ON, option->state)) {
+            node = cJSON_AddStringToObject(payload, "IndicatorLED", INDICATOR_STATE_ON);
+        }
+        else if (UtoolStringEquals(STATE_OFF, option->state)) {
+            node = cJSON_AddStringToObject(payload, "IndicatorLED", INDICATOR_STATE_OFF);
+        }
+        else if (UtoolStringEquals(STATE_BLINK, option->state)) {
+            node = cJSON_AddStringToObject(payload, "IndicatorLED", INDICATOR_STATE_BLINKING);
+        }
+
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
@@ -179,7 +191,7 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
     }
 
     if (option->frequency != DEFAULT_INT_V) {
-        cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->frequency);
+        cJSON *node = cJSON_AddNumberToObject(payload, "Duration", option->frequency);
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;

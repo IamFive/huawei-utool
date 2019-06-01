@@ -102,41 +102,41 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     UtoolRedfishGet(server, "/Chassis/%s", output, getNetworkAdapterSummaryMapping, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     chassisJson = result->data;
 
     UtoolRedfishGet(server, "/Chassis/%s/NetworkAdapters", NULL, NULL, result);
     if (result->interrupt) {
-        goto failure;
+        goto FAILURE;
     }
     networkAdapterMembersJson = result->data;
 
     networkAdapterArray = cJSON_AddArrayToObject(output, "NIC");
     ret = UtoolAssetCreatedJsonNotNull(networkAdapterArray);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     /** processing all network adapters */
@@ -146,14 +146,14 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
         networkAdapter = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(networkAdapter);
         if (result->code != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON *linkNode = cJSON_GetObjectItem(member, "@odata.id");
         char *url = linkNode->valuestring;
         UtoolRedfishGet(server, url, networkAdapter, getNetworkAdapterMappings, result);
         if (result->interrupt) {
-            goto failure;
+            goto FAILURE;
         }
         networkAdapterJson = result->data;
 
@@ -162,27 +162,27 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
         cJSON *outputController = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(outputController);
         if (result->code != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(controllerArray, outputController);
 
         result->code = UtoolMappingCJSONItems(networkAdapterJson, outputController, getControllerMapping);
         if (result->code != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         /** add ports to controller */
         cJSON *ports = cJSON_AddArrayToObject(outputController, "Port");
         result->code = UtoolAssetCreatedJsonNotNull(ports);
         if (result->code != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         /** load all network ports */
         cJSON *networkPortMembers = cJSONUtils_GetPointer(networkAdapterJson, "/Controllers/0/Link/NetworkPorts");
         UtoolRedfishGetMemberResources(server, networkPortMembers, ports, getNetworkPortMappings, result);
         if (result->interrupt) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON_AddItemToArray(networkAdapterArray, networkAdapter);
@@ -193,15 +193,15 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
 
     // output to &(result->desc)
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(networkAdapterJson)
     FREE_CJSON(networkAdapter)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(chassisJson)
     FREE_CJSON(networkAdapterMembersJson)
     UtoolFreeCurlResponse(getChassisResp);

@@ -35,6 +35,26 @@ extern const UtoolOutputMapping utoolGetTaskMappings[];
 
 extern int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
 
+
+static inline int UtoolFreeRedfishTask(UtoolRedfishTask *task)
+{
+    if (task != NULL) {
+        FREE_OBJ(task->url)
+        FREE_OBJ(task->id)
+        FREE_OBJ(task->name)
+        FREE_OBJ(task->taskState)
+        FREE_OBJ(task->startTime)
+        FREE_OBJ(task->taskPercentage)
+
+        FREE_OBJ(task->message->id)
+        FREE_OBJ(task->message->message)
+        FREE_OBJ(task->message->severity)
+        FREE_OBJ(task->message->resolution)
+        FREE_OBJ(task->message)
+        FREE_OBJ(task)
+    }
+}
+
 /**
 * Free Utool Result object
 *
@@ -80,6 +100,7 @@ static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
     if (response != NULL) {
         FREE_OBJ(response->content)
         FREE_OBJ(response->etag)
+        FREE_OBJ(response->contentType)
     }
 }
 
@@ -108,7 +129,7 @@ static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
  */
 static inline int UtoolAssetParseJsonNotNull(cJSON *json)
 {
-    if (json == NULL) {
+    if (json == NULL || cJSON_IsNull(json)) {
         ZF_LOGE("Failed to parse JSON content into JSON object.");
         return UTOOLE_PARSE_JSON_FAILED;
     }

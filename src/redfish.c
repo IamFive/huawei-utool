@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <curl/curl.h>
 #include <cJSON_Utils.h>
 #include "commons.h"
@@ -36,6 +37,9 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
  */
 static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
 
+static int
+UtoolCurlPrintUploadProgressCallback(void *adapterp, double dltotal, double dlnow, double ultotal, double ulnow);
+
 /**
 * Setup a new Curl Request with common basic config for redfish API.
 *
@@ -48,6 +52,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
                                    const char *resourceURL,
                                    const char *httpMethod,
                                    UtoolCurlResponse *response);
+
 
 /**
 * Upload a file to BMC Temp storage
@@ -100,6 +105,11 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
     // setup mime post form
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
+    // setup progress callback
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, UtoolCurlPrintUploadProgressCallback);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, NULL);
+
     /* enable verbose for easier tracing */
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
@@ -134,24 +144,35 @@ return_statement:
 
 static char *DOWNLOAD_BMC_FILE_PAYLOAD = "{ \"TransferProtocol\" : \"HTTPS\", \"Path\" : \"%s\" }";
 
-static size_t WriteStreamToFP(void *ptr, size_t size, size_t nmemb, FILE *stream)
+static size_t WriteStreamToFP(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
 {
-    size_t written = fwrite(ptr, size, nmemb, stream);
-    return written;
+    if (UtoolStringEquals("application/octet-stream", response->contentType)) {
+        size_t written = fwrite(buffer, size, nmemb, response->downloadToFP);
+        return written;
+    }
+    else {
+        return UtoolCurlGetRespCallback(buffer, size, nmemb, response);
+    }
 }
 
-int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
-                             UtoolCurlResponse *response)
+void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
+                              UtoolResult *result)
 {
+
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
     FILE *outputFileFP = fopen(localFileUri, "wb");
     if (!outputFileFP) {
-        return UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        return;
     }
+    response->downloadToFP = outputFileFP;
 
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
     CURL *curl = UtoolSetupCurlRequest(server, url, HTTP_POST, response);
     if (!curl) {
-        return UTOOLE_CURL_INIT_FAILED;
+        result->code = UTOOLE_CURL_INIT_FAILED;
+        return;
     }
 
     // setup content type
@@ -166,20 +187,31 @@ int UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri,
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
 
+    /* ask libcurl to show us the verbose output */
+    // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
     /* write data to file  */
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteStreamToFP);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, outputFileFP);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
 
     // perform request
-    int ret = curl_easy_perform(curl);
-    if (ret == CURLE_OK) {
+    result->code = curl_easy_perform(curl);
+    if (result->code == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+        if (response->httpStatusCode >= 400) {
+            result->code = UtoolResolveFailureResponse(response, &(result->desc));
+            goto FAILURE;
+        }
     }
     else {
-        const char *error = curl_easy_strerror((CURLcode) ret);
-        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
+        const char *error = curl_easy_strerror((CURLcode) result->code);
+        ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", result->code, error);
     }
 
+    goto return_statement;
+
+FAILURE:
+    result->interrupt = 1;
     goto return_statement;
 
 return_statement:
@@ -188,7 +220,7 @@ return_statement:
     }
     curl_easy_cleanup(curl);
     curl_slist_free_all(curlHeaderList);
-    return ret;
+    UtoolFreeCurlResponse(response);
 }
 
 /**
@@ -274,6 +306,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
     ret = curl_easy_perform(curl);
     if (ret == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+        ZF_LOGD("Response: %s", response->content);
     }
     else {
         const char *error = curl_easy_strerror((CURLcode) ret);
@@ -372,7 +405,7 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     }
 
     // if status code not in the list above, read detail from response content
-    ZF_LOGE("Failed to execute command, error response -> %s", response->content);
+    ZF_LOGE("Failed to execute request, error response -> %s", response->content);
     cJSON *failures = cJSON_CreateArray();
     int ret = UtoolGetFailuresFromResponse(response, failures);
     if (ret != UTOOLE_OK) {
@@ -394,7 +427,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
     cJSON *json = cJSON_Parse(response->content);
     int ret = UtoolAssetParseJsonNotNull(json);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
 
     cJSON *extendedInfoArray = cJSONUtils_GetPointer(json, "/error/@Message.ExtendedInfo");
@@ -408,7 +441,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
             cJSON *extendInfo = cJSON_GetArrayItem(extendedInfoArray, 0);
             cJSON *severity = cJSON_GetObjectItem(extendInfo, "Severity");
             if (severity != NULL && UtoolStringEquals(severity->valuestring, SEVERITY_OK)) {
-                goto done;
+                goto DONE;
             }
         }
 
@@ -421,7 +454,7 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
                 cJSON *message = cJSON_GetObjectItem(extendInfo, "Message");
                 if (severity == NULL || resolution == NULL || message == NULL) {
                     ret = UTOOLE_UNKNOWN_JSON_FORMAT;
-                    goto done;
+                    goto DONE;
                 }
 
                 char buffer[MAX_FAILURE_MSG_LEN];
@@ -444,9 +477,9 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
     }
 
 
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(json);
     return ret;
 }
@@ -580,7 +613,35 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
         response->etag = etag;
     }
 
+    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_TYPE)) {
+        // get response content
+        unsigned long fullSize = size * nitems;
+        char content[fullSize - 1];
+        memcpy(content, buffer, fullSize - 1);
+        content[fullSize - 2] = '\0';
+
+        int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
+        char *etag = (char *) malloc(len);
+        memcpy(etag, content + strlen(HEADER_CONTENT_TYPE), len);
+
+        response->contentType = etag;
+    }
+
     return nitems * size;
+}
+
+static int
+UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+    (void *) output;
+    (double) dltotal;
+    (double) dlnow;
+    if (ultotal > 0 && ulnow > 0) {
+        fprintf(stdout, "Uploading file... Progress: %.0f%%. \r", (ulnow * 100) / ultotal);
+        fflush(stdout);
+    }
+
+    return 0;
 }
 
 void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
@@ -596,35 +657,35 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
 
     result->code = UtoolMakeCurlRequest(server, url, httpMethod, payload, headers, response);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (response->httpStatusCode >= 400) {
         result->code = UtoolResolveFailureResponse(response, &(result->desc));
-        goto failure;
+        goto FAILURE;
     }
 
     result->data = cJSON_Parse(response->content);
     result->code = UtoolAssetParseJsonNotNull(result->data);
     if (result->code != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     if (output && outputMapping) {
         result->code = UtoolMappingCJSONItems(result->data, output, outputMapping);
         if (result->code != UTOOLE_OK) {
             FREE_CJSON(result->data)
-            goto failure;
+            goto FAILURE;
         }
     }
 
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     result->interrupt = 1;
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     UtoolFreeCurlResponse(response);
 }
 
@@ -658,6 +719,21 @@ void UtoolRedfishPatch(UtoolRedfishServer *server, char *url, cJSON *payload, co
     UtoolRedfishProcessRequest(server, url, HTTP_PATCH, payload, headers, output, outputMapping, result);
 }
 
+/**
+* Delete Redfish request
+*
+* @param server
+* @param url
+* @param output
+* @param outputMapping
+* @param result
+*/
+void UtoolRedfishDelete(UtoolRedfishServer *server, char *url, cJSON *output, const UtoolOutputMapping *outputMapping,
+                        UtoolResult *result)
+{
+    UtoolRedfishProcessRequest(server, url, HTTP_DELETE, NULL, NULL, output, outputMapping, result);
+}
+
 
 void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
                                     const UtoolOutputMapping *memberMapping, UtoolResult *result)
@@ -670,14 +746,14 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
         outputMember = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(outputMember);
         if (result->code != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON *linkNode = cJSON_GetObjectItem(link, "@odata.id");
         char *url = linkNode->valuestring;
         UtoolRedfishGet(server, url, outputMember, memberMapping, result);
         if (result->interrupt) {
-            goto failure;
+            goto FAILURE;
         }
 
         cJSON_AddItemToArray(memberArray, outputMember);
@@ -686,16 +762,195 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
         FREE_CJSON(result->data)
     }
 
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     result->interrupt = 1;
     FREE_CJSON(outputMember)  /** make sure output member is freed */
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(result->data)  /** make sure result cJSON data is freed */
     return;
 }
 
 
+/**
+* mapping a json format task to struct task
+*
+* @param cJSONTask
+* @param result
+* @return
+*/
+UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result)
+{
+    UtoolRedfishTask *task = (UtoolRedfishTask *) malloc(sizeof(UtoolRedfishTask));
+    if (task == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+    memset(task, 0, sizeof(UtoolRedfishTask));
+
+    task->message = (UtoolRedfishMessage *) malloc(sizeof(UtoolRedfishMessage));
+    if (task->message == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+    memset(task->message, 0, sizeof(UtoolRedfishMessage));
+
+    if (!cJSON_IsObject(cJSONTask)) {
+        result->code = UTOOLE_UNKNOWN_JSON_FORMAT;
+        goto FAILURE;
+    }
+
+    // url
+    cJSON *node = cJSON_GetObjectItem(cJSONTask, "@odata.id");
+    result->code = UtoolAssetParseJsonNotNull(node);
+    if (result->code != UTOOLE_OK || node->valuestring == NULL) {
+        goto FAILURE;
+    }
+    task->url = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+    strncpy(task->url, node->valuestring, strnlen(node->valuestring, 128) + 1);
+
+    // id
+    node = cJSON_GetObjectItem(cJSONTask, "Id");
+    result->code = UtoolAssetParseJsonNotNull(node);
+    if (result->code != UTOOLE_OK || node->valuestring == NULL) {
+        goto FAILURE;
+    }
+    task->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
+    strncpy(task->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+
+    // name
+    node = cJSON_GetObjectItem(cJSONTask, "Name");
+    result->code = UtoolAssetParseJsonNotNull(node);
+    if (result->code != UTOOLE_OK || node->valuestring == NULL) {
+        goto FAILURE;
+    }
+    task->name = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+    strncpy(task->name, node->valuestring, strnlen(node->valuestring, 128) + 1);
+
+    // state
+    node = cJSON_GetObjectItem(cJSONTask, "TaskState");
+    if (node != NULL && node->valuestring != NULL) {
+        task->taskState = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        strncpy(task->taskState, node->valuestring, strnlen(node->valuestring, 32) + 1);
+    }
+
+    // startTime
+    node = cJSON_GetObjectItem(cJSONTask, "StartTime");
+    if (node != NULL && node->valuestring != NULL) {
+        task->startTime = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        strncpy(task->startTime, node->valuestring, strnlen(node->valuestring, 32) + 1);
+    }
+
+    // TaskPercent
+    node = cJSONUtils_GetPointer(cJSONTask, "/Oem/Huawei/TaskPercentage");
+    if (node != NULL && node->valuestring != NULL) {
+        task->taskPercentage = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        strncpy(task->taskPercentage, node->valuestring, strnlen(node->valuestring, 32) + 1);
+    }
+
+    // messages
+    cJSON *messages = cJSON_GetObjectItem(cJSONTask, "Messages");
+    if (messages != NULL && !cJSON_IsNull(messages)) {
+        node = cJSON_GetObjectItem(messages, "MessageId");
+        if (node != NULL && node->valuestring != NULL) {
+            task->message->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
+            strncpy(task->message->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+        }
+
+        node = cJSON_GetObjectItem(messages, "Message");
+        if (node != NULL && node->valuestring != NULL) {
+            task->message->message = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+            strncpy(task->message->message, node->valuestring, strnlen(node->valuestring, 128) + 1);
+        }
+
+        node = cJSON_GetObjectItem(messages, "Severity");
+        if (node != NULL && node->valuestring != NULL) {
+            task->message->severity = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+            strncpy(task->message->severity, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        }
+
+        node = cJSON_GetObjectItem(messages, "Resolution");
+        if (node != NULL && node->valuestring != NULL) {
+            task->message->resolution = (char *) malloc(strnlen(node->valuestring, 256) + 1);
+            strncpy(task->message->resolution, node->valuestring, strnlen(node->valuestring, 256) + 1);
+        }
+    }
+
+    return task;
+
+FAILURE:
+    result->interrupt = 1;
+    UtoolFreeRedfishTask(task);
+    return NULL;
+}
+
+
+static const char *redfishTaskFinishedStatus[] = {TASK_STATE_COMPLETED,
+                                                  TASK_STATE_EXCEPTION,
+                                                  TASK_STATE_INTERRUPTED,
+                                                  TASK_STATE_KILLED,
+                                                  NULL};
+
+/**
+* wait redfish task util completed or failed.
+*
+*  - result->data will carry the last success response of "get-task" request, caller should free it themself.
+*
+* @param server
+* @param cJSONTask
+* @param result
+*/
+void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result)
+{
+    // waiting util task complete or exception
+    UtoolRedfishTask *task = NULL;
+    cJSON *jsonTask = cJSONTask;
+
+    while (true) {
+        task = UtoolRedfishMapTaskFromJson(jsonTask, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+
+        // print task progress to stdout
+        if (task->taskPercentage == NULL) { /** try to print message if task has not started */
+            if (task->message->message != NULL) {
+                // main task has not start, we need to load percent from message args
+                fprintf(stdout, "%s\r", task->message->message);
+                fflush(stdout);
+            }
+        }
+        else {
+            char *taskName = task->message->message == NULL ? task->name : task->message->message;
+            fprintf(stdout, "%s Progress: %s complete.\r", taskName, task->taskPercentage);
+            fflush(stdout);
+        }
+
+        /** if task is processed */
+        if (UtoolStringInArray(task->taskState, redfishTaskFinishedStatus)) {
+            fprintf(stdout, "\r");
+            fflush(stdout);
+            goto DONE;
+        }
+
+        /** if task is still processing */
+        UtoolRedfishGet(server, task->url, NULL, NULL, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+        FREE_CJSON(jsonTask)        /** free last json TASK */
+        jsonTask = result->data;
+
+        UtoolFreeRedfishTask(task); /** free task structure */
+        sleep(3); /** next task query interval */
+    }
+
+FAILURE:
+    goto DONE;
+
+DONE:
+    UtoolFreeRedfishTask(task);
+}

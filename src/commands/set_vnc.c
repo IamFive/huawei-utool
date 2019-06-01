@@ -16,45 +16,50 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_VLAN_ID_ILLEGAL = "Error: option `VLANID` is illegal, value range should be: 1~4094";
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `SSLEnabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_TIMEOUT_ILLEGAL = "Error: option `Timeout` is illegal, available value range: 0~480.";
 
 static const char *const usage[] = {
-        "utool setvlan [-e Enabled] [-v VLANID]",
+        "utool setvnc [-e SSLEnabled] [-t Timeout] [-p Password]",
         NULL,
 };
 
-typedef struct _SetVlanOption
+typedef struct _UpdateVNCSettings
 {
-    char *state;
-    int frequency;
-} UtoolSetIndicatorOption;
+    int timeout;
+    char *sslEnabled;
+    char *password;
+} UtoolUpdateVNCSettings;
 
-static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolUpdateVNCSettings *option, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolSetIndicatorOption *option, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolUpdateVNCSettings *option, UtoolResult *result);
 
 /**
-* set BMC NCSI port  VLAN, command handler for `setvlan`
+* set VNC setting, command handler for `setvnc`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdSetVNCSettings(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *payload = NULL, *getEthernetInterfacesRespJson = NULL;
+    cJSON *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolSetIndicatorOption *option = &(UtoolSetIndicatorOption) {.frequency = DEFAULT_INT_V};
+    UtoolUpdateVNCSettings *option = &(UtoolUpdateVNCSettings) {.timeout=DEFAULT_INT_V};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->state),
-                        "specifies whether VLAN is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('v', "VLANID", &(option->frequency),
-                        "specifies VLAN Id if enabled, range: 1~4094", NULL, 0, 0),
+            OPT_STRING ('e', "SSLEnabled", &(option->sslEnabled),
+                        "specifies Whether SSL encryption is enabled, available choices: {Enabled, Disabled}",
+                        NULL, 0, 0),
+            OPT_INTEGER('t', "Timeout", &(option->timeout),
+                        "specifies VNC session timeout period in minute, value range: 0~480.", NULL, 0, 0),
+            OPT_STRING ('p', "Password", &(option->password),
+                        "specifies VNC password.",
+                        NULL, 0, 0),
             OPT_END()
     };
 
@@ -86,16 +91,7 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
-    if (result->interrupt) {
-        goto FAILURE;
-    }
-    getEthernetInterfacesRespJson = result->data;
-
-    cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
-    char *url = linkNode->valuestring;
-
-    UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
+    UtoolRedfishPatch(server, "/Managers/%s/VNCService", payload, NULL, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
     }
@@ -110,7 +106,6 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    FREE_CJSON(getEthernetInterfacesRespJson)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;
@@ -125,26 +120,26 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolSetIndicatorOption *option, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolUpdateVNCSettings *option, UtoolResult *result)
 {
-
-    if (!UtoolStringIsEmpty(option->state)) {
-        if (!UtoolStringInArray(option->state, UTOOL_ENABLED_CHOICES)) {
+    if (!UtoolStringIsEmpty(option->sslEnabled)) {
+        if (!UtoolStringInArray(option->sslEnabled, UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (option->frequency != DEFAULT_INT_V) {
-        if (option->frequency < 1 || option->frequency > 4094) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_VLAN_ID_ILLEGAL),
+    if (option->timeout != DEFAULT_INT_V) {
+        if (option->timeout < 0 || option->timeout > 480) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_TIMEOUT_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (UtoolStringIsEmpty(option->state) && option->frequency == DEFAULT_INT_V) {
+    if (UtoolStringIsEmpty(option->sslEnabled) && option->timeout == DEFAULT_INT_V &&
+        UtoolStringIsEmpty(option->password)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
         goto FAILURE;
     }
@@ -156,7 +151,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
+static cJSON *BuildPayload(UtoolUpdateVNCSettings *option, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
@@ -164,22 +159,24 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
         goto FAILURE;
     }
 
-    cJSON *vlan = cJSON_AddObjectToObject(payload, "VLAN");
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    if (!UtoolStringIsEmpty(option->state)) {
-        cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
+    if (!UtoolStringIsEmpty(option->sslEnabled)) {
+        cJSON *node = cJSON_AddBoolToObject(payload, "SSLEncryptionEnabled", UtoolStringEquals(option->sslEnabled, ENABLED));
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
 
-    if (option->frequency != DEFAULT_INT_V) {
-        cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->frequency);
+    if (!UtoolStringIsEmpty(option->password)) {
+        cJSON *node = cJSON_AddStringToObject(payload, "Password", option->password);
+        result->code = UtoolAssetCreatedJsonNotNull(node);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+    }
+
+    if (option->timeout != DEFAULT_INT_V) {
+        cJSON *node = cJSON_AddNumberToObject(payload, "SessionTimeoutMinutes", option->timeout);
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;

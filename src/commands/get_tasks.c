@@ -45,45 +45,45 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolMakeCurlRequest(server, "/TaskService/Tasks", HTTP_GET, NULL, NULL, getTasksResp);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getTasksResp->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getTasksResp, result);
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     tasks = cJSON_AddArrayToObject(output, "task");
     ret = UtoolAssetCreatedJsonNotNull(tasks);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // process response
     taskMembersJson = cJSON_Parse(getTasksResp->content);
     ret = UtoolAssetParseJsonNotNull(taskMembersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *member = NULL;
@@ -94,30 +94,30 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
 
         ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getTaskResp);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         if (getTaskResp->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(getTaskResp, result);
-            goto failure;
+            goto FAILURE;
         }
 
         taskJson = cJSON_Parse(getTaskResp->content);
         ret = UtoolAssetParseJsonNotNull(taskJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         task = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(task);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // create task item and add it to array
         ret = UtoolMappingCJSONItems(taskJson, task, utoolGetTaskMappings);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
         cJSON_AddItemToArray(tasks, task);
 
@@ -128,14 +128,14 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(task)
     FREE_CJSON(output)
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(taskMembersJson)
     FREE_CJSON(taskJson)
     UtoolFreeCurlResponse(getTasksResp);

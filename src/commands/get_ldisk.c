@@ -45,13 +45,13 @@ static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
 
     if (!cJSON_IsArray(node)) {
         ret = UTOOLE_UNKNOWN_JSON_FORMAT;
-        goto done;
+        goto DONE;
     }
 
     //cJSON *drives = cJSON_AddArrayToObject(target, "Drives");
     //ret = UtoolAssetCreatedJsonNotNull(drives);
     //if (ret != UTOOLE_OK) {
-    //    goto failure;
+    //    goto FAILURE;
     //}
 
 
@@ -63,7 +63,7 @@ static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
         cJSON *link = cJSON_GetObjectItem(drive, "@odata.id");
         ret = UtoolAssetCreatedJsonNotNull(link);
         if (ret != UTOOLE_OK) {
-            goto done;
+            goto DONE;
         }
 
         char *driveId = UtoolStringLastSplit(link->valuestring, '/');
@@ -75,9 +75,9 @@ static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, buffer);
     ret = UtoolAssetCreatedJsonNotNull(newNode);
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(node)
     return ret;
 }
@@ -141,47 +141,47 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
 
     ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolValidateConnectOptions(commandOption, result);
     if (commandOption->flag != EXECUTABLE) {
-        goto done;
+        goto DONE;
     }
 
     ret = UtoolGetRedfishServer(commandOption, server, result);
     if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto done;
+        goto DONE;
     }
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // initialize output memory array
     volumes = cJSON_AddArrayToObject(output, "LogicDisk");
     ret = UtoolAssetCreatedJsonNotNull(volumes);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     // get storage members
     ret = UtoolMakeCurlRequest(server, "/Systems/%s/Storages", HTTP_GET, NULL, NULL, getStorageMembersResponse);
     if (ret != UTOOLE_OK) {
-        goto done;
+        goto DONE;
     }
     if (getStorageMembersResponse->httpStatusCode >= 400) {
         ret = UtoolResolveFailureResponse(getStorageMembersResponse, result);
-        goto done;
+        goto DONE;
     }
 
     // process get storage members response
     storageMembersJson = cJSON_Parse(getStorageMembersResponse->content);
     ret = UtoolAssetParseJsonNotNull(storageMembersJson);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     cJSON *storageMember = NULL;
@@ -190,7 +190,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         cJSON *storageLinkNode = cJSON_GetObjectItem(storageMember, "@odata.id");
         ret = UtoolAssetJsonNodeNotNull(storageLinkNode, "/Members/*/@odata.id");
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         // try to load volume members
@@ -199,19 +199,19 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         snprintf(volumesUrl, MAX_URL_LEN, "%s/Volumes", url);
         ret = UtoolMakeCurlRequest(server, volumesUrl, HTTP_GET, NULL, NULL, getVolumesResponse);
         if (ret != UTOOLE_OK) {
-            goto done;
+            goto DONE;
         }
 
         if (getVolumesResponse->httpStatusCode >= 400) {
             ret = UtoolResolveFailureResponse(getVolumesResponse, result);
-            goto done;
+            goto DONE;
         }
 
         // process get storage members response
         volumeMembersJson = cJSON_Parse(getVolumesResponse->content);
         ret = UtoolAssetParseJsonNotNull(volumeMembersJson);
         if (ret != UTOOLE_OK) {
-            goto failure;
+            goto FAILURE;
         }
 
         //int health = 1;
@@ -221,17 +221,17 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
             cJSON *volumeUrl = cJSON_GetObjectItem(volumeMember, "@odata.id");
             ret = UtoolAssetJsonNodeNotNull(volumeUrl, "/Members/*/@odata.id");
             if (ret != UTOOLE_OK) {
-                goto failure;
+                goto FAILURE;
             }
 
             ret = UtoolMakeCurlRequest(server, volumeUrl->valuestring, HTTP_GET, NULL, NULL, getVolumeResponse);
             if (ret != UTOOLE_OK) {
-                goto done;
+                goto DONE;
             }
 
             if (getVolumeResponse->httpStatusCode >= 400) {
                 ret = UtoolResolveFailureResponse(getVolumeResponse, result);
-                goto done;
+                goto DONE;
             }
 
 
@@ -239,19 +239,19 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
             volumeJson = cJSON_Parse(getVolumeResponse->content);
             ret = UtoolAssetParseJsonNotNull(volumeJson);
             if (ret != UTOOLE_OK) {
-                goto failure;
+                goto FAILURE;
             }
 
             volume = cJSON_CreateObject();
             ret = UtoolAssetCreatedJsonNotNull(volume);
             if (ret != UTOOLE_OK) {
-                goto failure;
+                goto FAILURE;
             }
 
             // create volume item and add it to array
             ret = UtoolMappingCJSONItems(volumeJson, volume, getVolumeMappings);
             if (ret != UTOOLE_OK) {
-                goto failure;
+                goto FAILURE;
             }
             cJSON_AddItemToArray(volumes, volume);
 
@@ -275,7 +275,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
     cJSON *maximum = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(volumes));
     ret = UtoolAssetCreatedJsonNotNull(maximum);
     if (ret != UTOOLE_OK) {
-        goto failure;
+        goto FAILURE;
     }
 
     //cJSON_AddStringToObject(output, "OverallHealth", cJSON_GetArraySize(volumes));
@@ -283,18 +283,18 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    goto done;
+    goto DONE;
 
-failure:
+FAILURE:
     FREE_CJSON(volume)
     FREE_CJSON(output)
     FREE_CJSON(volumeJson)
     FREE_CJSON(volumeMembersJson)
     UtoolFreeCurlResponse(getVolumeResponse);
     UtoolFreeCurlResponse(getVolumesResponse);
-    goto done;
+    goto DONE;
 
-done:
+DONE:
     FREE_CJSON(storageMembersJson)
     FREE_CJSON(volumeJson)
     UtoolFreeCurlResponse(getStorageMembersResponse);

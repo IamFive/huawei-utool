@@ -18,21 +18,21 @@
 
 
 static const char *const usage[] = {
-        "utool mountvmm -o OperatorType [-i Image]",
+        "utool resetbmc",
         NULL,
 };
 
+static cJSON *BuildPayload(UtoolResult *result);
 
 /**
-* restore BIOS setup factory configuration, command handler for `restorebios`
+* cold reset BMC, command handler for `resetbmc`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdResetBMC(UtoolCommandOption *commandOption, char **outputStr)
 {
-
     cJSON *payload = NULL;
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -53,20 +53,19 @@ int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
+    // build payload
+    payload = BuildPayload(result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto FAILURE;
+        goto DONE;
     }
 
-    payload = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
-    UtoolRedfishPost(server, url, payload, NULL, NULL, result);
+    UtoolRedfishPost(server, "/Managers/%s/Actions/Manager.Reset", payload, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
     }
@@ -87,3 +86,25 @@ DONE:
     return result->code;
 }
 
+
+static cJSON *BuildPayload(UtoolResult *result)
+{
+    cJSON *payload = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    cJSON *node = cJSON_AddStringToObject(payload, "ResetType", "ForceRestart");
+    result->code = UtoolAssetCreatedJsonNotNull(node);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    return payload;
+
+FAILURE:
+    FREE_CJSON(payload)
+    result->interrupt = 1;
+    return NULL;
+}

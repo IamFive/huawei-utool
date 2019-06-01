@@ -14,40 +14,36 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
-#include "string_utils.h"
 
 
 static const char *const usage[] = {
-        "utool mountvmm -o OperatorType [-i Image]",
+        "utool waittask -i TaskId",
         NULL,
 };
 
 
-/**
-* restore BIOS setup factory configuration, command handler for `restorebios`
-*
-* @param commandOption
-* @param result
-* @return
-* */
-int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
 {
-
-    cJSON *payload = NULL;
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    char *taskId = NULL;
+    cJSON *output = NULL, *cJSONTask = NULL;
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_END()
+            OPT_STRING ('i', "ID", &(taskId), "specifies the task id", NULL, 0, 0),
+            OPT_END(),
     };
 
-    // validation
+    // validation sub command options
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
+    // validation connection options
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
@@ -59,31 +55,34 @@ int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    payload = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    char url[MAX_URL_LEN];
+    snprintf(url, MAX_URL_LEN, "/TaskService/Tasks/%s", taskId);
+    UtoolRedfishGet(server, url, NULL, NULL, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+
+    UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
+    cJSONTask = result->data;
+
+    // output to result
+    output = cJSON_CreateObject();
+    result->code = UtoolMappingCJSONItems(result->data, output, utoolGetTaskMappings);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
-    UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
-        goto FAILURE;
-    }
-    FREE_CJSON(result->data)
-
-    // output to outputStr
-    UtoolBuildDefaultSuccessResult(&(result->desc));
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
     goto DONE;
 
 DONE:
-    FREE_CJSON(payload)
+    FREE_CJSON(cJSONTask)
     UtoolFreeRedfishServer(server);
+    UtoolFreeCurlResponse(response);
 
     *outputStr = result->desc;
     return result->code;
 }
-
