@@ -31,17 +31,17 @@ static const char *const usage[] = {
         NULL,
 };
 
-typedef struct _UpdateServiceOption
+typedef struct _UpdateTrapNotifyDestOption
 {
     int id;
     char *address;
     char *enabled;
     int portNumber;
-} UtoolUpdateServiceOption;
+} UtoolUpdateTrapNotifyDestOption;
 
-static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolUpdateTrapNotifyDestOption *option, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolUpdateTrapNotifyDestOption *option, UtoolResult *result);
 
 /**
 * set SNMP trap destination, command handler for `settrapdest`
@@ -56,7 +56,7 @@ int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char 
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolUpdateServiceOption *option = &(UtoolUpdateServiceOption) {.id=DEFAULT_INT_V, .portNumber=DEFAULT_INT_V};
+    UtoolUpdateTrapNotifyDestOption *option = &(UtoolUpdateTrapNotifyDestOption) {.id=DEFAULT_INT_V, .portNumber=DEFAULT_INT_V};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -129,7 +129,7 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolUpdateTrapNotifyDestOption *option, UtoolResult *result)
 {
     if (option->id != DEFAULT_INT_V) {
         if (option->id < 1 || option->id > 4) {
@@ -172,7 +172,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result)
+static cJSON *BuildPayload(UtoolUpdateTrapNotifyDestOption *option, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);

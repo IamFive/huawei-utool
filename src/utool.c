@@ -76,6 +76,8 @@ UtoolCommand utoolCommands[] = {
         {.name = "setvnc", .pFuncExecute = UtoolCmdSetVNCSettings, .type = SET},
         {.name = "setsysboot", .pFuncExecute = UtoolCmdSetBootSourceOverride, .type = SET},
         {.name = "delvncsession", .pFuncExecute = UtoolCmdDeleteVNCSession, .type = SET},
+        {.name = "setadaptiveport", .pFuncExecute = UtoolCmdSetAdaptivePort, .type = SET},
+
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},

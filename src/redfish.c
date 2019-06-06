@@ -770,7 +770,6 @@ FAILURE:
     goto DONE;
 
 DONE:
-    FREE_CJSON(result->data)  /** make sure result cJSON data is freed */
     return;
 }
 
