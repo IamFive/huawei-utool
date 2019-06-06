@@ -16,45 +16,41 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_VLAN_ID_ILLEGAL = "Error: option `VLANID` is illegal, value range should be: 1~4094";
 
 static const char *const usage[] = {
-        "utool setvlan [-e Enabled] [-v VLANID]",
+        "utool setadaptiveport -p PortList",
         NULL,
 };
 
-typedef struct _SetVlanOption
+typedef struct _SetAdaptivePortOption
 {
-    char *state;
-    int frequency;
-} UtoolSetVlanOption;
+    char *adaptivePortListStr;
+} UtoolSetAdaptivePortOption;
 
-static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolSetAdaptivePortOption *option, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolSetVlanOption *option, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result);
 
 /**
-* set BMC NCSI port  VLAN, command handler for `setvlan`
+* set adaptive port for management port, command handler for `setadaptiveport`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *payload = NULL, *getEthernetInterfacesRespJson = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolSetVlanOption *option = &(UtoolSetVlanOption) {.frequency = DEFAULT_INT_V};
+    UtoolSetAdaptivePortOption *option = &(UtoolSetAdaptivePortOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->state),
-                        "specifies whether VLAN is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('v', "VLANID", &(option->frequency),
-                        "specifies VLAN Id if enabled, range: 1~4094", NULL, 0, 0),
+            OPT_STRING ('p', "PortList", &(option->adaptivePortListStr),
+                        "specifies adaptive port list in JSON format, "
+                        "example: [{NIC=Dedicated,Port=0},{NIC=MEZZ,Port=1}]", NULL, 0, 0),
             OPT_END()
     };
 
@@ -95,6 +91,8 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
     cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
     char *url = linkNode->valuestring;
 
+
+    // TODO build payload
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
@@ -125,29 +123,28 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolSetVlanOption *option, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
-
-    if (!UtoolStringIsEmpty(option->state)) {
-        if (!UtoolStringInArray(option->state, UTOOL_ENABLED_CHOICES)) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
-                                                  &(result->desc));
-            goto FAILURE;
-        }
-    }
-
-    if (option->frequency != DEFAULT_INT_V) {
-        if (option->frequency < 1 || option->frequency > 4094) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_VLAN_ID_ILLEGAL),
-                                                  &(result->desc));
-            goto FAILURE;
-        }
-    }
-
-    if (UtoolStringIsEmpty(option->state) && option->frequency == DEFAULT_INT_V) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
+    if (UtoolStringIsEmpty(option->adaptivePortListStr)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(PortList)),
+                                              &(result->desc));
         goto FAILURE;
     }
+
+    cJSON *adaptivePortArray = cJSON_Parse(option->adaptivePortListStr);
+    if (adaptivePortArray != NULL && cJSON_IsArray(adaptivePortArray)) {
+        if (cJSON_GetArraySize(adaptivePortArray) > 0) {
+            cJSON *adaptivePort = NULL;
+            cJSON_ArrayForEach(adaptivePort, adaptivePortArray) {
+                cJSON *nicNode = cJSON_GetObjectItem(adaptivePort, "NIC");
+                nicNode->string = "Type";
+                //cJSON_HasObjectItem(adaptivePort, "Port");
+            }
+        }
+    }
+
+    //fprintf(stdout, "%s", cJSON_Print(adaptivePortArray));
+    //result->code = UtoolAssetParseJsonNotNull(node);
 
     return;
 
@@ -156,7 +153,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result)
+static cJSON *BuildPayload(UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
@@ -170,25 +167,26 @@ static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result)
         goto FAILURE;
     }
 
-    if (!UtoolStringIsEmpty(option->state)) {
-        cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
-        result->code = UtoolAssetCreatedJsonNotNull(node);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-    }
-
-    if (option->frequency != DEFAULT_INT_V) {
-        cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->frequency);
-        result->code = UtoolAssetCreatedJsonNotNull(node);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-    }
+    //if (!UtoolStringIsEmpty(option->state)) {
+    //    cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
+    //    result->code = UtoolAssetCreatedJsonNotNull(node);
+    //    if (result->code != UTOOLE_OK) {
+    //        goto FAILURE;
+    //    }
+    //}
+    //
+    //if (option->frequency != DEFAULT_INT_V) {
+    //    cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->frequency);
+    //    result->code = UtoolAssetCreatedJsonNotNull(node);
+    //    if (result->code != UTOOLE_OK) {
+    //        goto FAILURE;
+    //    }
+    //}
 
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }
