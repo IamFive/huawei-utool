@@ -54,7 +54,6 @@ UtoolCommand utoolCommands[] = {
         //{.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
 
-
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
@@ -87,7 +86,6 @@ UtoolCommand utoolCommands[] = {
         NULL,
 };
 
-
 /**
  * argparse usage description
  */
@@ -95,7 +93,6 @@ static const char *const usage[] = {
         "utool -H HOST [-p PORT] -U USERNAME -P PASSWORD sub-command ...",
         NULL,
 };
-
 
 /**
  *
@@ -133,6 +130,12 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
     argparse_init(&argparse, options, usage, 1);
     argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
     argc = argparse_parse(&argparse, argc, argv);
+    if (argparse.error) {
+        commandOption->flag = ILLEGAL;
+        int ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(argparse.reason), result);
+        FREE_OBJ(argparse.reason);
+        return ret;
+    }
 
     if (!commandOption->port) {
         commandOption->port = HTTPS_PORT
