@@ -113,7 +113,18 @@ static int
 UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct argparse_option *options,
                                     const char *const *usage, char **result)
 {
-    int left_argc = UtoolParseSubCommandArgv(commandOption, options, usage);
+    struct argparse argparse;
+    argparse_init(&argparse, options, usage, 0);
+    argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
+    int left_argc = argparse_parse(&argparse, commandOption->commandArgc, commandOption->commandArgv);
+
+    if (argparse.error) {
+        commandOption->flag = ILLEGAL;
+        int ret = UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(argparse.reason), result);
+        FREE_OBJ(argparse.reason)
+        return ret;
+    }
+
     if (commandOption->flag == FEAT_HELP) {
         ZF_LOGI(LOG_CMD_HELP_ACTION, commandOption->commandArgv[0]);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
