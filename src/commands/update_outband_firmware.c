@@ -135,7 +135,6 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
                 if (UtoolStringEquals(UPGRADE_ACTIVATE_MODE_AUTO, updateFirmwareOption->activateMode)) {
                     ZF_LOGI("Failed to upload file to BMC and activate mode is auto, will try reset BMC now.");
                     // we do not care about whether server is alive?
-                    // TODO
                     // ResetBMCAndWaitingAlive(server);
                 }
             }

@@ -212,6 +212,10 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
                 }
             }
 
+            if (mapping->filter != NULL) {
+
+            }
+
             const UtoolOutputMapping *nestMapping = mapping->nestMapping;
             cJSON *element = NULL;
             cJSON_ArrayForEach(element, ref) {

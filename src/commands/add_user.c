@@ -30,7 +30,8 @@ static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `Password` is
 static const char *const OPTION_ROlEID_REQUIRED = "Error: option `RoleId` is required.";
 static const char *const OPTION_ROlEID_ILLEGAL = "Error: option `RoleId` is illegal, available choices: "
                                                  "Administrator, Operator, Commonuser, Noaccess.";
-static const char *const OPTION_PRIVILEGE_REQUIRED = "Error: option `Privilege` is required.";
+static const char *const OPTION_PRIVILEGE_ILLEGAL = "Error: option `Privilege` is illegal, "
+                                                    "only `None` is support for now.";
 
 static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
 
@@ -41,7 +42,7 @@ static const char *const usage[] = {
 };
 
 
-static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **result);
+static int ValidateAddUserOptions(UtoolAddUserOption *option, char **result);
 
 static cJSON *BuildPayload(UtoolAddUserOption *addUserOption);
 
@@ -62,14 +63,14 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "Username", &(addUserOption->username), "new user name", NULL, 0, 0),
-            OPT_STRING ('p', "Password", &(addUserOption->password), "new user password", NULL, 0, 0),
+            OPT_STRING ('n', "Username", &(addUserOption->username), "new user name.", NULL, 0, 0),
+            OPT_STRING ('p', "Password", &(addUserOption->password), "new user password.", NULL, 0, 0),
             OPT_STRING ('r', "RoleId", &(addUserOption->roleId),
-                        "new user role, choices: {Administrator,Operator,Commonuser,Noaccess}",
+                        "new user role, choices: {Administrator,Operator,Commonuser,Noaccess}.",
                         NULL, 0, 0),
             OPT_STRING ('l', "Privilege", &(addUserOption->privilege),
-                        "new user privilege, choices: {None,KVM,VMM,SOL}. Multiple choices is supported by use comma.",
-                        NULL, 0, 0),
+                        "new user privilege, choices: {None, KVM, VMM, SOL}. "
+                        "Multiple choices is supported by use comma.", NULL, 0, 0),
             OPT_END(),
     };
 
@@ -129,40 +130,44 @@ DONE:
 /**
 * validate user input options for adduser command
 *
-* @param addUserOption
+* @param option
 * @param result
 * @return
 */
-static int ValidateAddUserOptions(UtoolAddUserOption *addUserOption, char **result)
+static int ValidateAddUserOptions(UtoolAddUserOption *option, char **result)
 {
     int ret = UTOOLE_OK;
-    if (addUserOption->username == NULL) {
+    if (UtoolStringIsEmpty(option->username)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_USERNAME_REQUIRED), result);
         goto FAILURE;
     }
 
-    if (addUserOption->password == NULL) {
+    if (UtoolStringIsEmpty(option->password)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PASSWORD_REQUIRED), result);
         goto FAILURE;
     }
 
-    if (addUserOption->roleId == NULL) {
+    if (UtoolStringIsEmpty(option->roleId)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_ROlEID_REQUIRED), result);
         goto FAILURE;
     }
 
-    if (!UtoolStringInArray(addUserOption->roleId, ROLES)) {
+    if (!UtoolStringInArray(option->roleId, ROLES)) {
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_ROlEID_ILLEGAL), result);
         goto FAILURE;
     }
 
-//if (ret == UTOOLE_OK && privileges == NULL) {
-//    ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PRIVILEGE_REQUIRED), result);
-//}
+    if (!UtoolStringIsEmpty(option->privilege)) {
+        if (!UtoolStringEquals(option->privilege, "None")) {
+            ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_PRIVILEGE_ILLEGAL), result);
+            goto FAILURE;
+        }
+    }
+
     goto DONE;
 
 FAILURE:
-    addUserOption->flag = ILLEGAL;
+    option->flag = ILLEGAL;
     goto DONE;
 
 DONE:

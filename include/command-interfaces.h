@@ -71,6 +71,8 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **outputStr);

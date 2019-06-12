@@ -135,7 +135,7 @@ extern "C" {
 #define OPT_REQUIRED(OPT_NAME) "Error: option `"#OPT_NAME"` is required."
 #define OPT_ILLEGAL(OPT_NAME) "Error: option `"#OPT_NAME"` is illegal."
 #define OPT_NOT_IN_CHOICE(OPT_NAME, CHOICES) "Error: option `"#OPT_NAME"` is illegal, available choices: "CHOICES"."
-#define OPT_NOT_IN_RANGE(OPT_NAME, RANGE) "Error: option `"#OPT_NAME"` is illegal, available value range:"RANGE"."
+#define OPT_NOT_IN_RANGE(OPT_NAME, RANGE) "Error: option `"#OPT_NAME"` is illegal, available value range: "RANGE"."
 
 typedef enum _Code
 {

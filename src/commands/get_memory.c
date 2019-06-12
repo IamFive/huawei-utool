@@ -20,6 +20,12 @@ static const char *const usage[] = {
         NULL,
 };
 
+static const UtoolOutputMapping getPowerWattsMapping[] = {
+        {.sourceXpath = "/PowerControl/0/Oem/Huawei/PowerMetricsExtended/CurrentMemoryPowerWatts",
+                .targetKeyValue="TotalPowerWatts"},
+        NULL
+};
+
 static const UtoolOutputMapping getMemorySummaryMapping[] = {
         {.sourceXpath = "/MemorySummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
         {.sourceXpath = "/MemorySummary/TotalSystemMemoryGiB", .targetKeyValue="TotalSystemMemoryGiB"},
@@ -53,133 +59,108 @@ static const UtoolOutputMapping getAbsentMemoryMappings[] = {
 
 
 /**
- * command handler of `getfan`
+ * command handler of `getmemory`
  *
  * @param commandOption
- * @param result
+ * @param outputStr
  * @return
  */
-int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
-
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getSystemResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getMemoryViewResp = &(UtoolCurlResponse) {0};
 
     // initialize output objects
     cJSON *output = NULL,                   // output result json
             *memories = NULL,               // output memory array
             *memory = NULL,                 // output memory item
-            *systemJson = NULL,             // curl get system response as json
             *memoryViewJson = NULL;         // curl get memory view response as json
 
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // curl request get system
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResp);
-    if (ret != UTOOLE_OK) {
+    UtoolRedfishGet(server, "/Systems/%s", output, getMemorySummaryMapping, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
-    if (getSystemResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getSystemResp, result);
-        goto FAILURE;
-    }
+    FREE_CJSON(result->data)
 
-    // process get system response
-    systemJson = cJSON_Parse(getSystemResp->content);
-    ret = UtoolAssetParseJsonNotNull(systemJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
 
-    // mapping response json to output
-    ret = UtoolMappingCJSONItems(systemJson, output, getMemorySummaryMapping);
-    if (ret != UTOOLE_OK) {
+    UtoolRedfishGet(server, "/Systems/%s/MemoryView", NULL, NULL, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
-
-    // curl request get memory view
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/MemoryView", HTTP_GET, NULL, NULL, getMemoryViewResp);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-    if (getMemoryViewResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getMemoryViewResp, result);
-        goto FAILURE;
-    }
-
-    // process get memory view response
-    memoryViewJson = cJSON_Parse(getMemoryViewResp->content);
-    ret = UtoolAssetParseJsonNotNull(memoryViewJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
+    memoryViewJson = result->data;
 
     // mapping response json to output
     cJSON *member;
     cJSON *members = cJSON_GetObjectItem(memoryViewJson, "Information");
     cJSON *maximumNode = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(members));
-    ret = UtoolAssetCreatedJsonNotNull(maximumNode);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(maximumNode);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
+    UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerWattsMapping, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    FREE_CJSON(result->data)
+
     // initialize output memory array
     memories = cJSON_AddArrayToObject(output, "Information");
-    ret = UtoolAssetCreatedJsonNotNull(memories);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(memories);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
     cJSON_ArrayForEach(member, members) {
         memory = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(memory);
-        if (ret != UTOOLE_OK) {
+        result->code = UtoolAssetCreatedJsonNotNull(memory);
+        if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
 
         cJSON *stateNode = cJSONUtils_GetPointer(member, "/Status/State");
         if (stateNode != NULL && UtoolStringEquals(MEMORY_STATE_ENABLED, stateNode->valuestring)) {
-            ret = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
+            result->code = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
         }
         else {
-            ret = UtoolMappingCJSONItems(member, memory, getAbsentMemoryMappings);
+            result->code = UtoolMappingCJSONItems(member, memory, getAbsentMemoryMappings);
         }
 
-        if (ret != UTOOLE_OK) {
+        if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
         cJSON_AddItemToArray(memories, memory);
     }
 
     // output to result
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
@@ -188,10 +169,9 @@ FAILURE:
     goto DONE;
 
 DONE:
-    FREE_CJSON(systemJson)
     FREE_CJSON(memoryViewJson)
-    UtoolFreeCurlResponse(getSystemResp);
-    UtoolFreeCurlResponse(getMemoryViewResp);
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }

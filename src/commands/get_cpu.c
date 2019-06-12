@@ -19,6 +19,13 @@ static const char *const usage[] = {
         NULL,
 };
 
+static const UtoolOutputMapping getPowerWattsMapping[] = {
+        {.sourceXpath = "/PowerControl/0/Oem/Huawei/PowerMetricsExtended/CurrentCPUPowerWatts",
+                .targetKeyValue="TotalPowerWatts"},
+        NULL
+};
+
+
 static const UtoolOutputMapping getProcessorSummaryMapping[] = {
         {.sourceXpath = "/ProcessorSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
         {.sourceXpath = "/ProcessorSummary/Count", .targetKeyValue="Maximum"},
@@ -96,6 +103,12 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", output, getProcessorSummaryMapping, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    FREE_CJSON(result->data)
+
+    UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerWattsMapping, result);
     if (result->interrupt) {
         goto FAILURE;
     }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -19,9 +20,37 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int AdaptivePortFilter(cJSON *node)
+{
+    if (cJSON_IsNull(node)) {
+        return 0;
+    }
+
+    cJSON *flag = cJSON_GetObjectItem(node, "AdaptiveFlag");
+    return cJSON_IsTrue(flag) ? 1 : 0;
+}
+
+
+static const UtoolOutputMapping getAllowableValuesNestMappings[] = {
+        {.sourceXpath = "/Type", .targetKeyValue="Type"},
+        {.sourceXpath = "/PortNumber", .targetKeyValue = "PortNumber"},
+        {.sourceXpath = "/LinkStatus", .targetKeyValue = "LinkStatus"},
+        {.sourceXpath = "/Null", .targetKeyValue = "Location"},
+        NULL
+};
+
+static const UtoolOutputMapping getAdaptivePortMappings[] = {
+        {.sourceXpath = "/Type", .targetKeyValue="Type"},
+        {.sourceXpath = "/PortNumber", .targetKeyValue = "PortNumber"},
+        {.sourceXpath = "/Null", .targetKeyValue = "Location"},
+        NULL
+};
+
 static const UtoolOutputMapping getMgmtPortMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/AdaptivePort", .targetKeyValue="AdaptivePort"},
-        {.sourceXpath = "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues", .targetKeyValue="AllowablePorts"},
+        {.sourceXpath = "/Oem/Huawei/AdaptivePort", .targetKeyValue="AdaptivePort",
+                .filter=AdaptivePortFilter, .nestMapping = getAdaptivePortMappings},
+        {.sourceXpath = "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues",
+                .targetKeyValue = "AllowablePorts", .nestMapping = getAllowableValuesNestMappings},
         NULL
 };
 
