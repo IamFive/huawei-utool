@@ -19,10 +19,18 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int EmptyPrivilegeHandler(cJSON *target, const char *key, cJSON *node)
+{
+    FREE_CJSON(node)
+    cJSON *newNode = cJSON_AddArrayToObject(target, key);
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
 static const UtoolOutputMapping getUserMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="UserId"},
         {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
         {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
+        {.sourceXpath = "/Null", .targetKeyValue="Privilege", .handle=EmptyPrivilegeHandler},
         {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
         {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
         NULL

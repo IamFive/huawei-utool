@@ -34,7 +34,7 @@ static const UtoolOutputMapping getFanMappings[] = {
         {.sourceXpath = "/MemberId", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
-        {.sourceXpath = "/Model", .targetKeyValue="Model"},
+        {.sourceXpath = "/Null", .targetKeyValue="Model"},
         {.sourceXpath = "/MaxReadingRange", .targetKeyValue="RatedSpeedRPM"},
         {.sourceXpath = "/Reading", .targetKeyValue="SpeedRPM"},
         {.sourceXpath = "/MinReadingRange", .targetKeyValue="LowerThresholdRPM"},

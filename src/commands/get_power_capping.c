@@ -19,8 +19,16 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int CalculateEnabledHandler(cJSON *target, const char *key, cJSON *node)
+{
+    cJSON *newNode = cJSON_AddStringToObject(target, key, cJSON_IsNull(node) ? DISABLED : ENABLED);
+    FREE_CJSON(node)
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
 static const UtoolOutputMapping getPowerCappingMappings[] = {
-        // Enabled
+        {.sourceXpath = "/PowerControl/0/PowerLimit/LimitInWatts", .targetKeyValue="Enabled",
+                .handle=CalculateEnabledHandler},
         {.sourceXpath = "/PowerControl/0/PowerLimit/LimitInWatts", .targetKeyValue="LimitInWatts"},
         {.sourceXpath = "/PowerControl/0/PowerLimit/LimitException", .targetKeyValue="LimitException"},
         NULL
@@ -72,6 +80,7 @@ int UtoolCmdGetPowerCapping(UtoolCommandOption *commandOption, char **outputStr)
     if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
     // mapping result to output json
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));

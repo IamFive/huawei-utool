@@ -66,6 +66,7 @@ static const UtoolOutputMapping getControllerMapping[] = {
 static const UtoolOutputMapping getNetworkPortMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/AssociatedNetworkAddresses/0", .targetKeyValue="MACAddress"},
+        {.sourceXpath = "/Oem/Huawei/PortType", .targetKeyValue="PortType"},
         {.sourceXpath = "/LinkStatus", .targetKeyValue="LinkStatus"},
         NULL
 };
@@ -82,8 +83,6 @@ static int LoadNetworkController(cJSON *output, cJSON *networkAdapterJson, cJSON
  */
 int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
-
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
@@ -91,33 +90,30 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getChassisResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getNetworkAdaptersResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getNetworkAdapterResp = &(UtoolCurlResponse) {0};
 
 
     /** initialize output objects */
     cJSON *networkAdapterMembersJson, *networkAdapterJson = NULL, *chassisJson = NULL;
     cJSON *output = NULL, *networkAdapterArray = NULL, *networkAdapter = NULL;
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, &(result->desc));
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolGetRedfishServer(commandOption, server, &(result->desc));
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
@@ -134,8 +130,8 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
     networkAdapterMembersJson = result->data;
 
     networkAdapterArray = cJSON_AddArrayToObject(output, "NIC");
-    ret = UtoolAssetCreatedJsonNotNull(networkAdapterArray);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(networkAdapterArray);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
@@ -204,8 +200,6 @@ FAILURE:
 DONE:
     FREE_CJSON(chassisJson)
     FREE_CJSON(networkAdapterMembersJson)
-    UtoolFreeCurlResponse(getChassisResp);
-    UtoolFreeCurlResponse(getNetworkAdapterResp);
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;

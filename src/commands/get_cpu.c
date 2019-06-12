@@ -26,15 +26,15 @@ static const UtoolOutputMapping getProcessorSummaryMapping[] = {
 };
 
 static const UtoolOutputMapping getProcessorMappings[] = {
-        {.sourceXpath = "/DeviceLocator", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/Huawei/DeviceLocator", .targetKeyValue="CommonName"},
+        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/L1CacheKiB", .targetKeyValue="L1CacheKiB"},
-        {.sourceXpath = "/L2CacheKiB", .targetKeyValue="L2CacheKiB"},
-        {.sourceXpath = "/L3CacheKiB", .targetKeyValue="L3CacheKiB"},
-        {.sourceXpath = "/Temperature", .targetKeyValue="Temperature"},
-        {.sourceXpath = "/EnabledSetting", .targetKeyValue="EnabledSetting"},
+        {.sourceXpath = "/Oem/Huawei/L1CacheKiB", .targetKeyValue="L1CacheKiB"},
+        {.sourceXpath = "/Oem/Huawei/L2CacheKiB", .targetKeyValue="L2CacheKiB"},
+        {.sourceXpath = "/Oem/Huawei/L3CacheKiB", .targetKeyValue="L3CacheKiB"},
+        {.sourceXpath = "/Oem/Huawei/Temperature", .targetKeyValue="Temperature"},
+        {.sourceXpath = "/Oem/Huawei/EnabledSetting", .targetKeyValue="EnabledSetting"},
         {.sourceXpath = "/ProcessorType", .targetKeyValue="ProcessorType"},
         {.sourceXpath = "/ProcessorArchitecture", .targetKeyValue="ProcessorArchitecture"},
         {.sourceXpath = "/InstructionSet", .targetKeyValue="InstructionSet"},
@@ -42,7 +42,7 @@ static const UtoolOutputMapping getProcessorMappings[] = {
         {.sourceXpath = "/TotalCores", .targetKeyValue="TotalCores"},
         {.sourceXpath = "/TotalThreads", .targetKeyValue="TotalThreads"},
         {.sourceXpath = "/Socket", .targetKeyValue="Socket"},
-        {.sourceXpath = "/IdentificationRegisters", .targetKeyValue="PPIN"},
+        {.sourceXpath = "/Oem/Huawei/SerialNumber", .targetKeyValue="PPIN"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL
@@ -50,13 +50,13 @@ static const UtoolOutputMapping getProcessorMappings[] = {
 
 
 /**
- * command handler of `getfan`
+ * command handler of `getcpu`
  *
  * @param commandOption
- * @param result
+ * @param outputStr
  * @return
  */
-int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **outputStr)
 {
     int ret;
 
@@ -65,30 +65,27 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
             OPT_END(),
     };
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getSystemResp = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getProcessorViewResp = &(UtoolCurlResponse) {0};
 
     // initialize output objects
-    cJSON *output = NULL,                   // output result json
-            *processors = NULL,             // output processor array
-            *processor = NULL,              // output processor item
-            *systemJson = NULL,             // curl get system response as json
-            *processorViewJson = NULL;      // curl get processor view response as json
+    cJSON *output = NULL,                   // output outputStr json
+            *processorMembers = NULL,
+            *processors = NULL;             // output processor array
 
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
@@ -98,85 +95,44 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    // curl request get system
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResp);
-    if (ret != UTOOLE_OK) {
+    UtoolRedfishGet(server, "/Systems/%s", output, getProcessorSummaryMapping, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
-    if (getSystemResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getSystemResp, result);
-        goto FAILURE;
-    }
+    FREE_CJSON(result->data)
 
-    // process get system response
-    systemJson = cJSON_Parse(getSystemResp->content);
-    ret = UtoolAssetParseJsonNotNull(systemJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    // mapping response json to output
-    ret = UtoolMappingCJSONItems(systemJson, output, getProcessorSummaryMapping);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
 
     // initialize output processor array
-    processors = cJSON_AddArrayToObject(output, "Information");
+    processors = cJSON_AddArrayToObject(output, "CPU");
     ret = UtoolAssetCreatedJsonNotNull(processors);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // curl request get processor view
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/ProcessorView", HTTP_GET, NULL, NULL, getProcessorViewResp);
-    if (ret != UTOOLE_OK) {
+    UtoolRedfishGet(server, "/Systems/%s/Processors", NULL, NULL, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
-    if (getProcessorViewResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getProcessorViewResp, result);
-        goto FAILURE;
-    }
+    processorMembers = result->data;
 
-    // process get processor view response
-    processorViewJson = cJSON_Parse(getProcessorViewResp->content);
-    ret = UtoolAssetParseJsonNotNull(processorViewJson);
-    if (ret != UTOOLE_OK) {
+    /** load all network ports */
+    UtoolRedfishGetMemberResources(server, processorMembers, processors, getProcessorMappings, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
 
-    // mapping response json to output
-    cJSON *member;
-    cJSON *members = cJSON_GetObjectItem(processorViewJson, "Information");
-    cJSON_ArrayForEach(member, members) {
-        processor = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(processor);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        // create processor item and add it to array
-        ret = UtoolMappingCJSONItems(member, processor, getProcessorMappings);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-        cJSON_AddItemToArray(processors, processor);
-    }
-
-    // output to result
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    // output to outputStr
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(processor)
     FREE_CJSON(output)
     goto DONE;
 
 DONE:
-    FREE_CJSON(systemJson)
-    FREE_CJSON(processorViewJson)
-    UtoolFreeCurlResponse(getSystemResp);
-    UtoolFreeCurlResponse(getProcessorViewResp);
+    FREE_CJSON(processorMembers)
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }

@@ -220,6 +220,16 @@ cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result);
 
 
 /**
+* calculate overall health from item health state
+*
+* @param items
+* @param xpath
+* @return
+*/
+char *UtoolGetOverallHealth(cJSON *items, const char *xpath);
+
+
+/**
 * get string error of UtoolCode
 *
 * @param code

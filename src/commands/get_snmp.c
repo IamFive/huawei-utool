@@ -19,19 +19,45 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int SNMPSeverityMappingHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsNull(node)) {
+        cJSON_AddItemToObject(target, key, node);
+        return UTOOLE_OK;
+    }
+
+    cJSON *newNode = NULL;
+    if (UtoolStringEquals(node->valuestring, SEVERITY_CRITICAL)) {
+        newNode = cJSON_AddStringToObject(target, key, "Critical");
+    }
+    else if (UtoolStringEquals(node->valuestring, SEVERITY_MAJOR) ||
+             UtoolStringEquals(node->valuestring, SEVERITY_MINOR)) {
+        newNode = cJSON_AddStringToObject(target, key, "WarningAndCritical");
+    }
+    else if (UtoolStringEquals(node->valuestring, SEVERITY_NORMAL)) {
+        newNode = cJSON_AddStringToObject(target, key, "All");
+    }
+    FREE_CJSON(node)
+
+    int ret = UtoolAssetCreatedJsonNotNull(newNode);
+    return ret;
+}
+
 static const UtoolOutputMapping getTrapServerMappings[] = {
         {.sourceXpath = "/MemberId", .targetKeyValue="Id"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled", .handle=UtoolBoolToEnabledPropertyHandler},
         {.sourceXpath = "/TrapServerAddress", .targetKeyValue="Address"},
         {.sourceXpath = "/TrapServerPort", .targetKeyValue="Port"},
         NULL
 };
 
 static const UtoolOutputMapping getTrapNotificationMappings[] = {
-        {.sourceXpath = "/SnmpTrapNotification/ServiceEnabled", .targetKeyValue="Enabled"},
+        {.sourceXpath = "/SnmpTrapNotification/ServiceEnabled", .targetKeyValue="Enabled",
+                .handle=UtoolBoolToEnabledPropertyHandler},
         {.sourceXpath = "/SnmpTrapNotification/TrapVersion", .targetKeyValue="TrapVersion"},
         {.sourceXpath = "/SnmpTrapNotification/CommunityName", .targetKeyValue="Community"},
-        {.sourceXpath = "/SnmpTrapNotification/AlarmSeverity", .targetKeyValue="Severity"},
+        {.sourceXpath = "/SnmpTrapNotification/AlarmSeverity", .targetKeyValue="Severity",
+                .handle=SNMPSeverityMappingHandler},
         {.sourceXpath = "/SnmpTrapNotification/TrapServer", .targetKeyValue="Destination",
                 .nestMapping=getTrapServerMappings},
         NULL
@@ -83,6 +109,7 @@ int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr)
     if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
     // mapping result to output json
     result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));

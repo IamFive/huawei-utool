@@ -127,7 +127,8 @@ UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct ar
 
     if (commandOption->flag == FEAT_HELP) {
         ZF_LOGI(LOG_CMD_HELP_ACTION, commandOption->commandArgv[0]);
-        return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
+        //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
+        return UTOOLE_OK;
     }
 
     if (left_argc != 0) {

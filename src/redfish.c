@@ -637,7 +637,7 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
     (double) dltotal;
     (double) dlnow;
     if (ultotal > 0 && ulnow > 0) {
-        fprintf(stdout, "Uploading file... Progress: %.0f%%. \r", (ulnow * 100) / ultotal);
+        fprintf(stdout, "\33[2K\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
         fflush(stdout);
     }
 
@@ -918,19 +918,19 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         if (task->taskPercentage == NULL) { /** try to print message if task has not started */
             if (task->message->message != NULL) {
                 // main task has not start, we need to load percent from message args
-                fprintf(stdout, "%s\r", task->message->message);
+                fprintf(stdout, "\33[2K\r%s", task->message->message);
                 fflush(stdout);
             }
         }
         else {
             char *taskName = task->message->message == NULL ? task->name : task->message->message;
-            fprintf(stdout, "%s Progress: %s complete.\r", taskName, task->taskPercentage);
+            fprintf(stdout, "\33[2K\r%s Progress: %s complete.", taskName, task->taskPercentage);
             fflush(stdout);
         }
 
         /** if task is processed */
         if (UtoolStringInArray(task->taskState, redfishTaskFinishedStatus)) {
-            fprintf(stdout, "\r");
+            fprintf(stdout, "\33[2K\r");
             fflush(stdout);
             goto DONE;
         }
@@ -944,7 +944,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         jsonTask = result->data;
 
         UtoolFreeRedfishTask(task); /** free task structure */
-        sleep(3); /** next task query interval */
+        sleep(1); /** next task query interval */
     }
 
 FAILURE:

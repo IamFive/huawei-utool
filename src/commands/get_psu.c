@@ -20,8 +20,8 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getPowerSummaryMapping[] = {
-        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Count", .targetKeyValue="Maximum"},
         {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Count", .targetKeyValue="Maximum"},
         NULL
 };
 
@@ -31,6 +31,14 @@ static const UtoolOutputMapping getPowerSupplyMapping[] = {
         {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
+        {.sourceXpath = "/Oem/Huawei/Protocol", .targetKeyValue="Protocol"},
+        {.sourceXpath = "/Oem/Huawei/PowerOutputWatts", .targetKeyValue="PowerOutputWatts"},
+        {.sourceXpath = "/Oem/Huawei/InputAmperage", .targetKeyValue="InputAmperage"},
+        {.sourceXpath = "/Oem/Huawei/ActiveStandby", .targetKeyValue="ActiveStandby"},
+        {.sourceXpath = "/Oem/Huawei/OutputVoltage", .targetKeyValue="OutputVoltage"},
+        {.sourceXpath = "/Oem/Huawei/PowerInputWatts", .targetKeyValue="PowerInputWatts"},
+        {.sourceXpath = "/Oem/Huawei/OutputAmperage", .targetKeyValue="OutputAmperage"},
+
         {.sourceXpath = "/PartNumber", .targetKeyValue="PartNumber"},
         {.sourceXpath = "/PowerSupplyType", .targetKeyValue="PowerSupplyType"},
         {.sourceXpath = "/LineInputVoltage", .targetKeyValue="LineInputVoltage"},
@@ -41,13 +49,7 @@ static const UtoolOutputMapping getPowerSupplyMapping[] = {
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
 
-        {.sourceXpath = "/Oem/Huawei/Protocol", .targetKeyValue="Protocol"},
-        {.sourceXpath = "/Oem/Huawei/PowerOutputWatts", .targetKeyValue="PowerOutputWatts"},
-        {.sourceXpath = "/Oem/Huawei/InputAmperage", .targetKeyValue="InputAmperage"},
-        {.sourceXpath = "/Oem/Huawei/ActiveStandby", .targetKeyValue="ActiveStandby"},
-        {.sourceXpath = "/Oem/Huawei/OutputVoltage", .targetKeyValue="OutputVoltage"},
-        {.sourceXpath = "/Oem/Huawei/PowerInputWatts", .targetKeyValue="PowerInputWatts"},
-        {.sourceXpath = "/Oem/Huawei/OutputAmperage", .targetKeyValue="OutputAmperage"},
+
         NULL
 };
 

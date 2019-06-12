@@ -16,11 +16,7 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *SEVERITY_CHOICES[] = {"All", "WarningAndCritical", "Critical", NULL};
 static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_SEVERITY_ILLEGAL = "Error: option `Severity` is illegal, "
-                                          "available choices: All, WarningAndCritical, Critical";
-
 static const char *OPT_ID_REQUIRED = "Error: option `DestinationId` is required";
 static const char *OPT_ID_ILLEGAL = "Error: option `DestinationId` is illegal, available value range is: 1~4";
 

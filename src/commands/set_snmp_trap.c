@@ -188,7 +188,7 @@ static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult 
             node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_CRITICAL);
         }
         else if (UtoolStringEquals("WarningAndCritical", option->bootMode)) {
-            node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_MAJOR);
+            node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_MINOR);
         }
         else if (UtoolStringEquals("All", option->bootMode)) {
             node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_NORMAL);

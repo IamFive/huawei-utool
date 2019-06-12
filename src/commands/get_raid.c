@@ -41,8 +41,11 @@ static int SupportedRAIDLevelsHandler(cJSON *target, const char *key, cJSON *nod
         cJSON *newNode = cJSON_AddStringToObject(target, key, buffer);
         return UtoolAssetCreatedJsonNotNull(newNode);
     }
+    else {
+        FREE_CJSON(node)
+        return UTOOLE_UNKNOWN_JSON_FORMAT;
+    }
 
-    return UTOOLE_UNKNOWN_JSON_FORMAT;
 }
 
 static const UtoolOutputMapping getRAIDControllerMappings[] = {

@@ -142,12 +142,11 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
             goto FAILURE;
         }
 
-        cJSON_AddRawToObject(firmware, "SupportActivateType", "[\"automatic\"]");
-        //cJSON *supportActivateTypes = cJSON_AddArrayToObject(firmware, "SupportActivateType");
-        //ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
-        //if (ret != UTOOLE_OK) {
-        //    goto FAILURE;
-        //}
+        cJSON *supportActivateTypes = cJSON_AddRawToObject(firmware, "SupportActivateType", "[\"automatic\"]");
+        ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
+        if (ret != UTOOLE_OK) {
+            goto FAILURE;
+        }
 
         // create firmware item and add it to array
         ret = UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);

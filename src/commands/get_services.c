@@ -13,6 +13,7 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 static const char *const usage[] = {
         "utool getservice",
@@ -22,6 +23,16 @@ static const char *const usage[] = {
 static const UtoolOutputMapping getProtocolMappings[] = {
         {.sourceXpath = "/ProtocolEnabled", .targetKeyValue="Enabled", .handle=UtoolBoolToEnabledPropertyHandler},
         {.sourceXpath = "/Port", .targetKeyValue="Port"},
+        NULL
+};
+
+static const UtoolOutputMapping getKVMIPSslEnabledMappings[] = {
+        {.sourceXpath = "/EncryptionEnabled", .targetKeyValue="SSLEnabled", .handle=UtoolBoolToEnabledPropertyHandler},
+        NULL
+};
+
+static const UtoolOutputMapping getVMSslEnabledMappings[] = {
+        {.sourceXpath = "/Oem/Huawei/EncryptionEnabled", .targetKeyValue="SSLEnabled", .handle=UtoolBoolToEnabledPropertyHandler},
         NULL
 };
 
@@ -99,6 +110,37 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
     result->code = walkThoughNodeToFindService(serviceArray, oem->child);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
+    }
+
+    /** process special properties */
+    cJSON *service = NULL;
+    cJSON_ArrayForEach(service, serviceArray) {
+        cJSON *name = cJSON_GetObjectItem(service, "Name");
+
+        /** IPMI has port2 property */
+        if (UtoolStringEquals(name->valuestring, "IPMI")) {
+            cJSON *ipmiPort2Node = cJSONUtils_GetPointer(oem, "/IPMI/Port2");
+            cJSON_AddItemReferenceToObject(service, "Port2", ipmiPort2Node);
+            continue;
+        }
+
+        /** KVMIP should Load ssl-enabled through another API */
+        if (UtoolStringEquals(name->valuestring, "KVMIP")) {
+            UtoolRedfishGet(server, "/Managers/%s/KvmService", service, getKVMIPSslEnabledMappings, result);
+            if (result->interrupt) {
+                goto FAILURE;
+            }
+            FREE_CJSON(result->data)
+        }
+
+        /** VirtualMedia should Load ssl-enabled through another API */
+        if (UtoolStringEquals(name->valuestring, "VirtualMedia")) {
+            UtoolRedfishGet(server, "/Managers/%s/VirtualMedia/CD", service, getVMSslEnabledMappings, result);
+            if (result->interrupt) {
+                goto FAILURE;
+            }
+            FREE_CJSON(result->data)
+        }
     }
 
     /** add SSDP node */

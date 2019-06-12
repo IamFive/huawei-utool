@@ -19,7 +19,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static const UtoolOutputMapping getTemperatureMappings[] = {
+static const UtoolOutputMapping getThresholdSensorNestMappings[] = {
         {.sourceXpath = "/SensorNumber", .targetKeyValue="SensorNumber"}, // ?
         {.sourceXpath = "/Name", .targetKeyValue="SensorName"},
         {.sourceXpath = "/ReadingValue", .targetKeyValue="Reading"},
@@ -36,106 +36,129 @@ static const UtoolOutputMapping getTemperatureMappings[] = {
 };
 
 
+static const UtoolOutputMapping getThresholdSensorMappings[] = {
+        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getThresholdSensorNestMappings}, // ?
+        NULL
+};
+
+
+static int StatusToReadingHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsNull(node)) {
+        cJSON_AddItemToObjectCS(target, key, node);
+        return UTOOLE_OK;
+    }
+
+    cJSON *newNode = NULL;
+    if (node->valuestring != NULL) {
+        int reading = strtod(node->valuestring, NULL);
+        newNode = cJSON_AddNumberToObject(target, key, reading);
+    }
+    else {
+        newNode = cJSON_AddNullToObject(target, key);
+    }
+
+    FREE_CJSON(node)
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
+static const UtoolOutputMapping getDiscreteSensorsNestMappings[] = {
+        {.sourceXpath = "/Null", .targetKeyValue="SensorNumber"},
+        {.sourceXpath = "/Name", .targetKeyValue="SensorName"},
+        {.sourceXpath = "/Status", .targetKeyValue="Reading", .handle=StatusToReadingHandler},
+        {.sourceXpath = "/Null", .targetKeyValue="Unit"},
+        {.sourceXpath = "/Null", .targetKeyValue="Status"},
+        {.sourceXpath = "/Null", .targetKeyValue="unc"},
+        {.sourceXpath = "/Null", .targetKeyValue="uc"},
+        {.sourceXpath = "/Null", .targetKeyValue="unr"},
+        {.sourceXpath = "/Null", .targetKeyValue="lnc"},
+        {.sourceXpath = "/Null", .targetKeyValue="lc"},
+        {.sourceXpath = "/Null", .targetKeyValue="lnr"},
+        NULL
+};
+
+
+static const UtoolOutputMapping getDiscreteSensorsMappings[] = {
+        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getDiscreteSensorsNestMappings}, // ?
+        NULL
+};
+
+
 /**
- * command handler of `getfw`
+ * command handler of `getsensor`
  *
  * @param commandOption
- * @param result
+ * @param outputStr
  * @return
  */
-int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
-
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
     // initialize output objects
-    cJSON *output = NULL,       // output result json
-            *sensors = NULL, // output sensor array
-            *sensor = NULL,    // output sensor
-            *sensorsJson = NULL;    // curl response thermal as json
+    cJSON *output = NULL;
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
-
-    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/ThresholdSensors", HTTP_GET, NULL, NULL, response);
-    if (ret != UTOOLE_OK) {
-        goto DONE;
-    }
-    if (response->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(response, result);
-        goto DONE;
-    }
-
 
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // initialize output sensors array
-    sensors = cJSON_AddArrayToObject(output, "Sensor");
-    ret = UtoolAssetCreatedJsonNotNull(sensors);
-    if (ret != UTOOLE_OK) {
+    cJSON *maximum = cJSON_AddNumberToObject(output, "Maximum", 0);
+    result->code = UtoolAssetCreatedJsonNotNull(maximum);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // process response
-    sensorsJson = cJSON_Parse(response->content);
-    ret = UtoolAssetParseJsonNotNull(sensorsJson);
-    if (ret != UTOOLE_OK) {
+    /** get threshold sensors */
+    UtoolRedfishGet(server, "/Chassis/%s/ThresholdSensors", output, getThresholdSensorMappings, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
-    cJSON *member = NULL;
-    cJSON *members = cJSON_GetObjectItem(sensorsJson, "Sensors");
-    cJSON_ArrayForEach(member, members) {
-        sensor = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(sensor);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        // create sensor item and add it to array
-        ret = UtoolMappingCJSONItems(member, sensor, getTemperatureMappings);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        cJSON_AddItemToArray(sensors, sensor);
+    /** get threshold sensors */
+    UtoolRedfishGet(server, "/Chassis/%s/DiscreteSensors", output, getDiscreteSensorsMappings, result);
+    if (result->interrupt) {
+        goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
-    // output to result
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    cJSON *sensors = cJSON_GetObjectItem(output, "Sensors");
+    maximum->valuedouble = cJSON_GetArraySize(sensors);
+
+    // output to outputStr
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(sensor)
     FREE_CJSON(output)
     goto DONE;
 
 DONE:
-    FREE_CJSON(sensorsJson)
-    UtoolFreeCurlResponse(response);
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }

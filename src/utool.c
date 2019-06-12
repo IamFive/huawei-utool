@@ -51,7 +51,7 @@ UtoolCommand utoolCommands[] = {
         {.name = "getbios", .pFuncExecute = UtoolCmdGetBiosSettings, .type = GET},
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
-        //{.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
+        {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
@@ -156,7 +156,8 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     }
     else if (commandOption->flag == FEAT_HELP) {
-        return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
+        //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
+        return UTOOLE_OK;
     }
     else if (argc == 0) {
         ZF_LOGW("Option input error : sub-command is required.");
