@@ -11,43 +11,44 @@
 
 int run_utool_main()
 {
-    char *result = NULL;
     char *argv2[] = {
             "utool",
             //"--version",
             "-H", "112.93.129.9",
             "-U", "qianbiao",
-            "-P", "*******",
+            "-P", "********",
             //"getproduct",
             //"getfw",
-            //"getcpu",
-            //"getmemory",
             //"getip",
-            //"gettemp",
-            //"getvolt",
             //"getpsu",
             //"getfan",
-            //"getraid",
+            //"getcpu",
+            //"getmemory",
             //"getpdisk",
+            //"getraid",
             //"getldisk",
             //"getnic",
-            //"getservice",
-            //"geteventsub",
-            //"getpwrcap",
-            //"getmgmtport",
-            //"gettrap",
-            //"getvnc",
+            //"gettemp",
+            //"getvolt",
             //"getuser",
-            //"gettaskstate",
+            //"gethealth",
             //"getsysboot",
             //"getsensor",
             //"getbios",
             //"getbiossetting",
             //"gethealthevent",
+            //"getservice",
+            //"geteventsub",
+            //"getpwrcap",
+            "getmgmtport",
+            //"gettrap",
+            //"getvnc",
+            //"gettaskstate",
             //"geteventlog",
-            //"gethealth",
-            //"adduser", "-n", "utool", "-p", "chajian12#$", "-r", "Administrator2",
+
+            //"adduser", "-n", "utool", "-p", "chajian12#$", "-r", "Administrator", "-l", "None",
             //"setpwd", "-n", "utool", "-p", "chajian12#$5",
+            //"setpriv", "-n", "utool", "-r", "Administrator",
             //"deluser", "-n", "utool",
             //"upload",
             //"download",
@@ -66,14 +67,19 @@ int run_utool_main()
             //"setservice", "-s", "VNC", "-e", "Enabled", "-p", "10086",
             //"setvlan", "-e", "Enabled", "-v", "100",
             //"resetbmc",
+            //"restorebios",
             //"settrapcom", "-c", "huawei123$%^", "-e", "Enabled", "-s", "WarningAndCritical",
-            "settrapdest", "-d", "4", "-e", "Disabled", "-a", "10.1.1.4", "-p", "200",
+            //"settrapdest", "-d", "4", "-e", "Disabled", "-a", "10.1.1.4", "-p", "200",
             //"setvnc", "-e", "Disabled", "-t", "100", "-p", "p",
             //"setsysboot", "-d", "HDD", "-e", "Once", "-m", "UEFI",
             //"collect", "-u", "/data/nfs/collect1.tar.gz",
             //"locateserver", "-s", "Blink", "-f", "2",
+            //"delvncsession",
+            //"setip", "-v", "4",
+            //"setadaptiveport", "-p", "[{\"NIC\":\"Dedicated\",\"Port\":0},{\"NIC\":\"MEZZ\",\"Port\":1}]",
             NULL
     };
+    char *result = NULL;
 
     int argc2 = sizeof(argv2) / sizeof(char *);
     int ret = utool_main(argc2 - 1, (void *) argv2, &result);
@@ -86,14 +92,21 @@ int run_utool_main()
 
 int debug(UtoolResult *result)
 {
-    strcpy(result->desc, "this is desc");
+    char str[30] = "0x8100";
+    char *ptr;
+    double ret;
+
+    ret = strtod(str, NULL);
+    printf("The number(double) is %lf\n", ret);
+    printf("String part is |%s|", ptr);
+
 }
 
 
 int main(int argc, const char **argv)
 {
     int ret = 0;
-    //debug(result);
+    //debug(NULL);
     ret = run_utool_main();
     return ret;
 }

@@ -56,6 +56,7 @@ UtoolCommand utoolCommands[] = {
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
+        {.name = "setpriv", .pFuncExecute = UtoolCmdSetUserPriv, .type = SET},
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
         {.name = "mountvmm", .pFuncExecute = UtoolCmdMountVMM, .type = SET},
         {.name = "clearsel", .pFuncExecute = UtoolCmdClearSEL, .type = SET},

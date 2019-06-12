@@ -88,7 +88,7 @@ int UtoolCmdSetVNCSettings(UtoolCommandOption *commandOption, char **outputStr)
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
+        goto FAILURE;
     }
 
     UtoolRedfishPatch(server, "/Managers/%s/VNCService", payload, NULL, NULL, NULL, result);

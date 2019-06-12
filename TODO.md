@@ -262,3 +262,24 @@ RedundantType
 ### getip
 
 - IpMode 也是必填项？
+
+"Message":	["[Warning] A file transfer task is being performed or an upgrade operation is in progress. Resolution: Wait until the upgrade is complete."]
+
+/tmp/web/xxx
+
+// http upload file
+
+0. // 打印正在重启 (重启限时?)
+1. 已启动
+1. 前后的版本号
+2. 等到重启后再返回.
+
+
+
+
+
+
+
+
+
+

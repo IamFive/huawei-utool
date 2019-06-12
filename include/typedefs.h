@@ -8,6 +8,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include "cJSON.h"
 
 
@@ -125,6 +126,7 @@ typedef struct _OutputMapping
     const char *const targetKeyValue;
     const struct _OutputMapping *nestMapping;
 
+    int (*filter)(cJSON *);                            // whether this property should output
     int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;
 
