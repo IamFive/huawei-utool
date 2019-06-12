@@ -48,6 +48,11 @@ extern "C" {
 //Success: successfully completed request
 /** //UTOOL response json constants */
 
+/** //Redfish health rollup state */
+#define HEALTH_ROLLUP_CRITICAL "Critical"
+#define HEALTH_ROLLUP_WARNING "Warning"
+#define HEALTH_ROLLUP_OK "OK"
+/** Redfish health rollup state// */
 
 /** Redfish message severity level// */
 

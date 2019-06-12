@@ -5,6 +5,7 @@
 #include <constants.h>
 #include <typedefs.h>
 #include <command-interfaces.h>
+#include "string_utils.h"
 
 const char *UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
 
@@ -202,10 +203,13 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
             }
         }
         else { /** nest array mapping */
-            cJSON *array = cJSON_AddArrayToObject(target, mapping->targetKeyValue);
-            ret = UtoolAssetCreatedJsonNotNull(array);
-            if (ret != UTOOLE_OK) {
-                return ret;
+            cJSON *array = cJSON_GetObjectItem(target, mapping->targetKeyValue);
+            if (array == NULL) {
+                array = cJSON_AddArrayToObject(target, mapping->targetKeyValue);
+                ret = UtoolAssetCreatedJsonNotNull(array);
+                if (ret != UTOOLE_OK) {
+                    return ret;
+                }
             }
 
             const UtoolOutputMapping *nestMapping = mapping->nestMapping;
@@ -278,6 +282,48 @@ FAILURE:
     FREE_CJSON(wrapped)
     result->interrupt = 1;
     return NULL;
+}
+
+
+static int HEALTH_ROLLUP_LEVEL_OK = 0;
+static int HEALTH_ROLLUP_LEVEL_WARNING = 1;
+static int HEALTH_ROLLUP_LEVEL_CRITICAL = 2;
+static char *HEALTH_ROLLUP_LIST[] = {HEALTH_ROLLUP_OK, HEALTH_ROLLUP_WARNING, HEALTH_ROLLUP_CRITICAL};
+
+/**
+* calculate overall health from item health state
+*
+* @param items
+* @param xpath
+* @return
+*/
+char *UtoolGetOverallHealth(cJSON *items, const char *xpath)
+{
+    int level = 0;
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, items) {
+        cJSON *healthNode = cJSONUtils_GetPointer(item, xpath);
+        if (healthNode != NULL && healthNode->valuestring != NULL) {
+            if (UtoolStringEquals(HEALTH_ROLLUP_OK, healthNode->valuestring) && level < HEALTH_ROLLUP_LEVEL_OK) {
+                level = HEALTH_ROLLUP_LEVEL_OK;
+                continue;
+            }
+
+            if (UtoolStringEquals(HEALTH_ROLLUP_WARNING, healthNode->valuestring) &&
+                level < HEALTH_ROLLUP_LEVEL_WARNING) {
+                level = HEALTH_ROLLUP_LEVEL_OK;
+                continue;
+            }
+
+            if (UtoolStringEquals(HEALTH_ROLLUP_CRITICAL, healthNode->valuestring) &&
+                level < HEALTH_ROLLUP_LEVEL_CRITICAL) {
+                level = HEALTH_ROLLUP_LEVEL_CRITICAL;
+                break;
+            }
+        }
+    }
+
+    return HEALTH_ROLLUP_LIST[level];
 }
 
 /**

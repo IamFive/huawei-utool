@@ -161,7 +161,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
     }
 
     // initialize output memory array
-    volumes = cJSON_AddArrayToObject(output, "LogicDisk");
+    volumes = cJSON_CreateArray();
     ret = UtoolAssetCreatedJsonNotNull(volumes);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
@@ -255,12 +255,6 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
             }
             cJSON_AddItemToArray(volumes, volume);
 
-            //
-            //cJSON *healthNode = cJSON_GetObjectItem(volume, "Health");
-            //if (cJSON_IsString(healthNode) && healthNode->valuestring != NULL) {
-            //
-            //}
-
             // free memory
             FREE_CJSON(volumeJson)
             UtoolFreeCurlResponse(getVolumeResponse);
@@ -278,8 +272,13 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    //cJSON_AddStringToObject(output, "OverallHealth", cJSON_GetArraySize(volumes));
+    cJSON *overallHealth = cJSON_AddStringToObject(output, "OverallHealth", UtoolGetOverallHealth(volumes, "/Health"));
+    ret = UtoolAssetCreatedJsonNotNull(overallHealth);
+    if (ret != UTOOLE_OK) {
+        goto FAILURE;
+    }
 
+    cJSON_AddItemToObject(output, "LogicDisk", volumes);
 
     // output to result
     ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
@@ -287,6 +286,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
 
 FAILURE:
     FREE_CJSON(volume)
+    FREE_CJSON(volumes)
     FREE_CJSON(output)
     FREE_CJSON(volumeJson)
     FREE_CJSON(volumeMembersJson)

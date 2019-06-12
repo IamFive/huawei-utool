@@ -19,8 +19,43 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int CalculateTotalPowerWattsHandler(cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsNull(node)) { // should not happen
+        cJSON_AddItemToObjectCS(target, key, node);
+        return UTOOLE_OK;
+    }
+
+    if (cJSON_IsArray(node)) {
+        int total = 0;
+        cJSON *ps = NULL;
+        cJSON_ArrayForEach(ps, node) {
+            cJSON *input = cJSONUtils_GetPointer(ps, "/Oem/Huawei/PowerInputWatts");
+            if (input != NULL && input->valueint != NULL) {
+                total += input->valueint;
+            }
+        }
+
+        FREE_CJSON(node)
+        cJSON *newNode;
+        if (total > 0) {
+            newNode = cJSON_AddNumberToObject(target, key, total);
+        }
+        else {
+            newNode = cJSON_AddNullToObject(target, key);
+        }
+
+        return UtoolAssetCreatedJsonNotNull(newNode);
+    }
+    else {
+        FREE_CJSON(node)
+        return UTOOLE_UNKNOWN_JSON_FORMAT;
+    }
+
+}
+
 static const UtoolOutputMapping getPowerMappings[] = {
-        {.sourceXpath = "/PowerControl/0/PowerConsumedWatts", .targetKeyValue="TotalPowerWatts"},
+        {.sourceXpath = "/PowerSupplies", .targetKeyValue="TotalPowerWatts", .handle=CalculateTotalPowerWattsHandler},
         NULL
 };
 
@@ -29,6 +64,7 @@ static const UtoolOutputMapping getProductMappings[] = {
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
         {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
+        {.sourceXpath = "/HostingRole", .targetKeyValue="HostingRole"},
         {.sourceXpath = "/Oem/Huawei/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
         {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
         {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},
@@ -43,87 +79,52 @@ static const UtoolOutputMapping getProductMappings[] = {
  * @param option
  * @return
  */
-int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetProduct(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
-
     cJSON *output = NULL;
-    cJSON *getSystemJson = NULL, *getChassisPowerJson = NULL;
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getSystemResponse = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getChassisPowerResponse = &(UtoolCurlResponse) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // process get system response
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s", HTTP_GET, NULL, NULL, getSystemResponse);
-    if (ret != UTOOLE_OK) {
-        goto DONE;
+    UtoolRedfishGet(server, "/Systems/%s", output, getProductMappings, result);
+    if (result->interrupt) {
+        goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
-    if (getSystemResponse->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getSystemResponse, result);
+    UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerMappings, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
-    getSystemJson = cJSON_Parse(getSystemResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getSystemJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-    ret = UtoolMappingCJSONItems(getSystemJson, output, getProductMappings);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    // process get chassis power response
-    ret = UtoolMakeCurlRequest(server, "/Chassis/%s/Power", HTTP_GET, NULL, NULL, getChassisPowerResponse);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    if (getChassisPowerResponse->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getChassisPowerResponse, result);
-        goto FAILURE;
-    }
-
-    getChassisPowerJson = cJSON_Parse(getChassisPowerResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getChassisPowerJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-    ret = UtoolMappingCJSONItems(getChassisPowerJson, output, getPowerMappings);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-    // mapping result to output json
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
@@ -131,10 +132,8 @@ FAILURE:
     goto DONE;
 
 DONE:
-    FREE_CJSON(getSystemJson)
-    FREE_CJSON(getChassisPowerJson)
     UtoolFreeRedfishServer(server);
-    UtoolFreeCurlResponse(getSystemResponse);
-    UtoolFreeCurlResponse(getChassisPowerResponse);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }
