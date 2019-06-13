@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <sys/stat.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -21,45 +22,44 @@
 #include "url_parser.h"
 
 static const char *PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "NFS", NULL};
-static const char *OPT_FILE_URL_REQUIRED = "Error: opt `FileURI` is required.";
-static const char *OPT_FILE_URL_ILLEGAL = "Error: option `FileURI` is illegal.";
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `FileURI` is illegal. Protocol is not supported.";
 
 static const char *const usage[] = {
-        "utool collect -u FileURI",
+        "utool importbmccfg -u FILEURI",
         NULL,
 };
 
 
-typedef struct _CollectBoardInfoOption
+typedef struct _ImportBMCCfgOption
 {
-    char *exportToFileUrl;
+    char *importFileUrl;
     char *bmcTempFileUrl;
     int isLocalFile;
 
-} UtoolCollectBoardInfoOption;
+} UtoolImportBMCCfgOption;
 
-static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *opt, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult *result);
 
 /**
-* collect diagnostic information with one click, command handler for `collect`
+* import BMC configuration, command handler for `importbmccfg`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson = NULL;
+    cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCollectBoardInfoOption *opt = &(UtoolCollectBoardInfoOption) {0};
+    UtoolImportBMCCfgOption *opt = &(UtoolImportBMCCfgOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('u', "FileURI", &(opt->exportToFileUrl), "specifies path to the collect file", NULL, 0, 0),
+            OPT_STRING ('u', "FileURI", &(opt->importFileUrl), "specifies path to BMC config file", NULL, 0, 0),
             OPT_END()
     };
 
@@ -78,20 +78,20 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
         goto DONE;
     }
 
-    // build payload
-    payload = BuildPayload(opt, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.Dump";
+    // build payload
+    payload = BuildPayload(server, opt, result);
+    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ImportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
@@ -108,15 +108,6 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     // if task is successfully complete
     if (taskState != NULL && UtoolStringInArray(taskState->valuestring, UtoolRedfishTaskSuccessStatus)) {
         ZF_LOGI("collect diagnostic information task finished successfully");
-        // download file to local if necessary
-        if (opt->isLocalFile) {
-            ZF_LOGI("Try to download collect file from BMC now.");
-            UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
-            if (result->interrupt) {
-                goto FAILURE;
-            }
-        }
-
         // output to outputStr
         UtoolBuildDefaultSuccessResult(&(result->desc));
         goto DONE;
@@ -162,22 +153,23 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult *result)
 {
-    ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
     UtoolParsedUrl *parsedUrl = NULL;
+    FILE *uploadFileFp = NULL;
+    ZF_LOGI("Import file URI is %s.", opt->importFileUrl);
 
-    if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_REQUIRED),
+    if (UtoolStringIsEmpty(opt->importFileUrl)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(FileURI)),
                                               &(result->desc));
         goto FAILURE;
     }
 
     /** parse url */
-    parsedUrl = UtoolParseURL(opt->exportToFileUrl);
+    parsedUrl = UtoolParseURL(opt->importFileUrl);
     if (parsedUrl) {
         opt->isLocalFile = 0;
-        ZF_LOGI("It seems the export to file URI is a network file. protocol is: %s.", parsedUrl->scheme);
+        ZF_LOGI("It seems the import file URI is a network file. protocol is: %s.", parsedUrl->scheme);
         if (!UtoolStringCaseInArray(parsedUrl->scheme, PROTOCOL_CHOICES)) {
             ZF_LOGI("Network file protocol %s is not supported.", parsedUrl->scheme);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
@@ -186,23 +178,21 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
         }
     }
     else {
-        ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        int fd = open(opt->exportToFileUrl, O_RDWR | O_CREAT, 0664);
-        if (fd == -1) {
-            ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
-                                                  &(result->desc));
+        ZF_LOGI("Could not detect schema from import file URI. Try to treat it as local file.");
+        struct stat fileInfo;
+        uploadFileFp = fopen(opt->importFileUrl, "rb"); /* open file to upload */
+        if (!uploadFileFp) {
+            result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
-        }
-        else {
-            opt->isLocalFile = 1;
-            ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
-            if (close(fd) < 0) {
-                ZF_LOGE("Failed to close fd of %s.", opt->exportToFileUrl);
-                result->code = UTOOLE_INTERNAL;
-                goto FAILURE;
-            }
-        }
+        } /* can't continue */
+
+        ///* get the file size */
+        if (fstat(fileno(uploadFileFp), &fileInfo) != 0) {
+            result->code = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
+            goto FAILURE;
+        } /* can't continue */
+
+        opt->isLocalFile = 1;
     }
 
     goto DONE;
@@ -212,10 +202,13 @@ FAILURE:
     goto DONE;
 
 DONE:
+    if (uploadFileFp) {                  /* close FP */
+        fclose(uploadFileFp);
+    }
     UtoolFreeParsedURL(parsedUrl);
 }
 
-static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *opt, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
@@ -230,31 +223,26 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
     }
 
     if (!opt->isLocalFile) {
-        node = cJSON_AddStringToObject(payload, "Content", opt->exportToFileUrl);
+        node = cJSON_AddStringToObject(payload, "Content", opt->importFileUrl);
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
     else {
-        ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        int fd = open(opt->exportToFileUrl, O_RDWR | O_CREAT, 0644);
-        if (fd == -1) {
-            ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
-                                                  &(result->desc));
+        UtoolUploadFileToBMC(server, opt->importFileUrl, result);
+        if(result->interrupt) {
             goto FAILURE;
         }
-        else {
-            ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
-            char *filename = basename(opt->exportToFileUrl);
-            opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
-            snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
-            node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
-            result->code = UtoolAssetCreatedJsonNotNull(node);
-            if (result->code != UTOOLE_OK) {
-                goto FAILURE;
-            }
+
+        ZF_LOGI("%s is a valid local file.", opt->importFileUrl);
+        char *filename = basename(opt->importFileUrl);
+        opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
+        snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+        node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
+        result->code = UtoolAssetCreatedJsonNotNull(node);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
         }
     }
 

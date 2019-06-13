@@ -18,7 +18,7 @@
 
 
 static const char *const usage[] = {
-        "utool mountvmm -o OperatorType [-i Image]",
+        "utool restorebios",
         NULL,
 };
 
@@ -65,7 +65,7 @@ int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
+    char *url = "/Systems/%s/Bios/Actions/Bios.ResetBios";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;

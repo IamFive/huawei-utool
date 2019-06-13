@@ -31,7 +31,7 @@ static int CalculateTotalPowerWattsHandler(cJSON *target, const char *key, cJSON
         cJSON *ps = NULL;
         cJSON_ArrayForEach(ps, node) {
             cJSON *input = cJSONUtils_GetPointer(ps, "/Oem/Huawei/PowerInputWatts");
-            if (input != NULL && input->valueint != NULL) {
+            if (input != NULL && cJSON_IsNumber(input)) {
                 total += input->valueint;
             }
         }

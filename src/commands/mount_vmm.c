@@ -53,12 +53,11 @@ static cJSON *BuildPayload(UtoolMountVMMOption *option);
 * */
 int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
 {
+    cJSON *payload = NULL;
+
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolMountVMMOption *mountVMMOptions = &(UtoolMountVMMOption) {0};
-
-    // initialize output objects
-    cJSON *output = NULL, *payload = NULL;
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -98,27 +97,28 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-
-    output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
     char *url = "/Managers/%s/VirtualMedia/CD/Oem/Huawei/Actions/VirtualMedia.VmmControl";
-    UtoolRedfishPost(server, url, payload, output, utoolGetTaskMappings, result);
+    UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
     }
-    FREE_CJSON(result->data)
+
+    // waiting util task complete or exception
+    UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
+    if (result->interrupt) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
+    }
+    //FREE_CJSON(result->data)
+
+    result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
 
     // output to outputStr
-    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
+    //result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     //UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(output)
     goto DONE;
 
 DONE:

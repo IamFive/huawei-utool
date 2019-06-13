@@ -14,24 +14,32 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 
 static const char *const usage[] = {
-        "utool uploadfile",
+        "utool restorebmc",
         NULL,
 };
 
 
-int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr)
+/**
+* restore BMC factory configuration, command handler for `restorebios`
+*
+* @param commandOption
+* @param result
+* @return
+* */
+int UtoolCmdRestoreBMC(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
 
+    cJSON *payload = NULL;
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_END(),
+            OPT_END()
     };
 
     // validation
@@ -51,19 +59,31 @@ int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    char *filepath = "/data/nfs/9.xml";
-    UtoolUploadFileToBMC(server, filepath, result);
-    if (result->interrupt) {
+    payload = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    UtoolBuildDefaultSuccessResult(outputStr);
+    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
+    UtoolRedfishPost(server, url, payload, NULL, NULL, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    FREE_CJSON(result->data)
+
+    // output to outputStr
+    UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
 FAILURE:
     goto DONE;
 
 DONE:
+    FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }
+

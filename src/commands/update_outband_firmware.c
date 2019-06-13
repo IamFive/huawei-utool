@@ -295,7 +295,6 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption
 
     struct stat fileInfo;
     UtoolParsedUrl *parsedUrl = NULL;
-    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
     bool isLocalFile = false;
     /** try to treat imageURI as a local file */
@@ -309,15 +308,8 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption
     if (isLocalFile) {  /** if file exists in local machine, try to upload it to BMC */
         ZF_LOGI("Firmware image uri `%s` is a local file.", imageUri);
 
-        result->code = UtoolUploadFileToBMC(server, imageUri, response);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        if (response->httpStatusCode >= 400) {
-            ZF_LOGE("Failed to upload local file `%s` to BMC.", imageUri);
-            result->code = UtoolResolveFailureResponse(response, &(result->desc));
-            result->retryable = 1; // should we only retry when BMC return failure?
+        UtoolUploadFileToBMC(server, imageUri, result);
+        if (result->interrupt) {
             goto FAILURE;
         }
 
@@ -381,6 +373,5 @@ DONE:
         fclose(imageFileFP);
     }
     UtoolFreeParsedURL(parsedUrl);
-    UtoolFreeCurlResponse(response);    /* free response */
     return payload;
 }

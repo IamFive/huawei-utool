@@ -64,6 +64,7 @@ UtoolCommand utoolCommands[] = {
         {.name = "settimezone", .pFuncExecute = UtoolCmdSetTimezone, .type = SET},
         {.name = "powercontrol", .pFuncExecute = UtoolCmdSystemPowerControl, .type = SET},
         {.name = "restorebios", .pFuncExecute = UtoolCmdRestoreBIOS, .type = SET},
+        {.name = "restorebmc", .pFuncExecute = UtoolCmdRestoreBMC, .type = SET},
         {.name = "setservice", .pFuncExecute = UtoolCmdSetService, .type = SET},
         {.name = "setip", .pFuncExecute = UtoolCmdSetIP, .type = SET},
         {.name = "setvlan", .pFuncExecute = UtoolCmdSetVLAN, .type = SET},
@@ -77,7 +78,9 @@ UtoolCommand utoolCommands[] = {
         {.name = "setsysboot", .pFuncExecute = UtoolCmdSetBootSourceOverride, .type = SET},
         {.name = "delvncsession", .pFuncExecute = UtoolCmdDeleteVNCSession, .type = SET},
         {.name = "setadaptiveport", .pFuncExecute = UtoolCmdSetAdaptivePort, .type = SET},
-
+        {.name = "setbios", .pFuncExecute = UtoolCmdSetBIOS, .type = SET},
+        {.name = "importbmccfg", .pFuncExecute = UtoolCmdImportBMCCfg, .type = SET},
+        {.name = "exportbmccfg", .pFuncExecute = UtoolCmdExportBMCCfg, .type = SET},
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
