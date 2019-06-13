@@ -31,12 +31,12 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 
 /**
 * Upload file to BMC temp storage through CURL lib
+*
 * @param server
 * @param uploadFilePath
-* @param response
-* @return
+* @param result
 */
-int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response);
+void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result);
 
 
 /**

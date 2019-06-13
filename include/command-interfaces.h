@@ -105,6 +105,8 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
 
 int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdRestoreBMC(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdSetVNCSettings(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outputStr);
@@ -112,6 +114,12 @@ int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outp
 int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetBIOS(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
 
 
 /** Test purpose **/

@@ -25,41 +25,41 @@ static const char *OPT_FILE_URL_REQUIRED = "Error: opt `FileURI` is required.";
 static const char *OPT_FILE_URL_ILLEGAL = "Error: option `FileURI` is illegal.";
 
 static const char *const usage[] = {
-        "utool collect -u FileURI",
+        "utool exportbmccfg -u FILEURI",
         NULL,
 };
 
 
-typedef struct _CollectBoardInfoOption
+typedef struct _ExportBMCCfg
 {
     char *exportToFileUrl;
     char *bmcTempFileUrl;
     int isLocalFile;
 
-} UtoolCollectBoardInfoOption;
+} UtoolExportBMCCfg;
 
-static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
+static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *result);
 
 /**
-* collect diagnostic information with one click, command handler for `collect`
+* export BMC configuration, command handler for `exportbmccfg`
 *
 * @param commandOption
 * @param result
 * @return
 * */
-int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **outputStr)
+int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCollectBoardInfoOption *opt = &(UtoolCollectBoardInfoOption) {0};
+    UtoolExportBMCCfg *opt = &(UtoolExportBMCCfg) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('u', "FileURI", &(opt->exportToFileUrl), "specifies path to the collect file", NULL, 0, 0),
+            OPT_STRING ('u', "FileURI", &(opt->exportToFileUrl), "specifies path of export file", NULL, 0, 0),
             OPT_END()
     };
 
@@ -91,7 +91,7 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
         goto DONE;
     }
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.Dump";
+    char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ExportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
@@ -107,10 +107,10 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
     // if task is successfully complete
     if (taskState != NULL && UtoolStringInArray(taskState->valuestring, UtoolRedfishTaskSuccessStatus)) {
-        ZF_LOGI("collect diagnostic information task finished successfully");
+        ZF_LOGI("export BMC config xml task finished successfully");
         // download file to local if necessary
         if (opt->isLocalFile) {
-            ZF_LOGI("Try to download collect file from BMC now.");
+            ZF_LOGI("Try to download BMC config xml file from BMC now.");
             UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
             if (result->interrupt) {
                 goto FAILURE;
@@ -122,7 +122,7 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
         goto DONE;
     }
     else {
-        // create output container
+        // if task failed
         output = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(output);
         if (result->code != UTOOLE_OK) {
@@ -159,16 +159,16 @@ DONE:
 * validate user input options for the command
 *
 * @param opt
-* @param result
+* @param resultR
 * @return
 */
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *result)
 {
-    ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
     UtoolParsedUrl *parsedUrl = NULL;
+    ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
 
     if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_REQUIRED),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(FileURI)),
                                               &(result->desc));
         goto FAILURE;
     }
@@ -215,7 +215,7 @@ DONE:
     UtoolFreeParsedURL(parsedUrl);
 }
 
-static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
+static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);

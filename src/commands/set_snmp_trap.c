@@ -22,7 +22,7 @@ static const char *OPT_SEVERITY_ILLEGAL = "Error: option `Severity` is illegal, 
                                           "available choices: All, WarningAndCritical, Critical";
 
 static const char *const usage[] = {
-        "utool setservice -s Service [-e Enabled] [-p Port] [-q PORT2] [-t SSLEnabled]",
+        "utool settrapcom [-c Community] [-e Enabled] [-s Severity]",
         NULL,
 };
 

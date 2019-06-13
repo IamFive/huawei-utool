@@ -12,6 +12,16 @@
 #include "zf_log.h"
 #include "string_utils.h"
 
+//static const char *redfishTaskSuccessStatus[] = {TASK_STATE_OK,
+//                                                 TASK_STATE_COMPLETED,
+//                                                 NULL};
+//
+//static const char *redfishTaskFinishedStatus[] = {TASK_STATE_OK,
+//                                                  TASK_STATE_COMPLETED,
+//                                                  TASK_STATE_EXCEPTION,
+//                                                  TASK_STATE_INTERRUPTED,
+//                                                  TASK_STATE_KILLED,
+//                                                  NULL};
 
 /**
  * Common CURL write data function.
@@ -62,32 +72,34 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 * @param response
 * @return
 */
-int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolCurlResponse *response)
+void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
-    int ret;
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    CURL *curl = NULL;
+    curl_mime *form = NULL;
     struct stat fileInfo;
     struct curl_slist *curlHeaderList = NULL;
 
     FILE *uploadFileFp = fopen(uploadFilePath, "rb"); /* open file to upload */
     if (!uploadFileFp) {
-        return UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
     } /* can't continue */
 
     ///* get the file size */
     if (fstat(fileno(uploadFileFp), &fileInfo) != 0) {
-        ret = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
-        goto return_statement;
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
+        goto FAILURE;
     } /* can't continue */
 
-
-    curl_mime *form = NULL;
     curl_mimepart *field = NULL;
-    CURL *curl = UtoolSetupCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_POST, response);
+    curl = UtoolSetupCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_POST, response);
     if (!curl) {
-        ret = UTOOLE_CURL_INIT_FAILED;
-        goto return_statement;
+        result->code = UTOOLE_CURL_INIT_FAILED;
+        goto FAILURE;
     }
 
     // setup content type
@@ -114,22 +126,31 @@ int UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath,
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     /* Perform the request, res will get the return code */
-    ret = curl_easy_perform(curl);
-    if (ret == CURLE_OK) { /* Check for errors */
+    result->code = curl_easy_perform(curl);
+    if (result->code == CURLE_OK) { /* Check for errors */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
         if (response->httpStatusCode >= 400) {
             ZF_LOGE("Failed to upload local file `%s` to BMC, http status code is %d.",
                     uploadFilePath, response->httpStatusCode);
+            result->code = UtoolResolveFailureResponse(response, &(result->desc));
+            result->retryable = 1; // TODO?? should we only retry when BMC return failure?
+            goto FAILURE;
         }
     }
     else {
-        const char *error = curl_easy_strerror((CURLcode) ret);
-        ZF_LOGE("Failed upload file to BMC, CURL code is %d, error is %s.", ret, error);
+        const char *error = curl_easy_strerror((CURLcode) result->code);
+        ZF_LOGE("Failed upload file to BMC, CURL code is %d, error is %s.", result->code, error);
+        goto FAILURE;
     }
 
-    goto return_statement;
+    goto DONE;
 
-return_statement:
+
+FAILURE:
+    result->interrupt = 1;
+    goto DONE;
+
+DONE:
     if (uploadFileFp) {         /* close FP */
         fclose(uploadFileFp);
     }
@@ -138,7 +159,7 @@ return_statement:
     }
     curl_easy_cleanup(curl);    /* cleanup the curl */
     curl_mime_free(form);       /* cleanup the form */
-    return ret;
+    UtoolFreeCurlResponse(response);
 }
 
 
@@ -163,6 +184,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     FILE *outputFileFP = fopen(localFileUri, "wb");
     if (!outputFileFP) {
+        result->interrupt = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         return;
     }
@@ -171,6 +193,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
     CURL *curl = UtoolSetupCurlRequest(server, url, HTTP_POST, response);
     if (!curl) {
+        result->interrupt = 1;
         result->code = UTOOLE_CURL_INIT_FAILED;
         return;
     }
@@ -206,15 +229,16 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     else {
         const char *error = curl_easy_strerror((CURLcode) result->code);
         ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", result->code, error);
+        goto FAILURE;
     }
 
-    goto return_statement;
+    goto DONE;
 
 FAILURE:
     result->interrupt = 1;
-    goto return_statement;
+    goto DONE;
 
-return_statement:
+DONE:
     if (outputFileFP) {
         fclose(outputFileFP);
     }
@@ -270,7 +294,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
 //                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
             ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
             if (ret != UTOOLE_OK) {
-                goto return_statement;
+                goto DONE;
             }
 
             char ifMatch[MAX_HEADER_LEN];
@@ -295,7 +319,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         payloadContent = cJSON_Print(payload);
         ret = UtoolAssetPrintJsonNotNull(payloadContent);
         if (ret != UTOOLE_OK) {
-            goto return_statement;
+            goto DONE;
         }
         ZF_LOGD("Sending payload: %s", payloadContent);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payloadContent);
@@ -313,9 +337,9 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
     }
 
-    goto return_statement;
+    goto DONE;
 
-return_statement:
+DONE:
     FREE_OBJ(payloadContent)
     curl_easy_cleanup(curl);
     curl_slist_free_all(curlHeaderList);
@@ -509,7 +533,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
     int ret = UtoolMakeCurlRequest(server, resourceUrl, HTTP_GET, NULL, NULL, response);
     if (ret != CURLE_OK) {
-        goto return_statement;
+        goto DONE;
     }
 
     // parse response content and detect redfish-system-id
@@ -517,13 +541,13 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         json = cJSON_Parse(response->content);
         ret = UtoolAssetParseJsonNotNull(json);
         if (ret != UTOOLE_OK) {
-            goto return_statement;
+            goto DONE;
         }
 
         cJSON *node = cJSONUtils_GetPointer(json, "/Members/0/@odata.id");
         ret = UtoolAssetJsonNodeNotNull(node, "/Members/0/@odata.id");
         if (ret != UTOOLE_OK) {
-            goto return_statement;
+            goto DONE;
         }
 
         char *pSystemId = UtoolStringLastSplit(node->valuestring, '/');
@@ -531,7 +555,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         server->systemId = (char *) malloc(strlen(pSystemId) + 1);
         if (server->systemId == NULL) {
             ret = UTOOLE_INTERNAL;
-            goto return_statement;
+            goto DONE;
         }
 
         strncpy(server->systemId, pSystemId, strlen(pSystemId) + 1);
@@ -541,9 +565,9 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         ret = UtoolResolveFailureResponse(response, result);
     }
 
-    goto return_statement;
+    goto DONE;
 
-return_statement:
+DONE:
     FREE_CJSON(json)
     UtoolFreeCurlResponse(response);
     return ret;
@@ -886,13 +910,6 @@ FAILURE:
     return NULL;
 }
 
-
-static const char *redfishTaskFinishedStatus[] = {TASK_STATE_COMPLETED,
-                                                  TASK_STATE_EXCEPTION,
-                                                  TASK_STATE_INTERRUPTED,
-                                                  TASK_STATE_KILLED,
-                                                  NULL};
-
 /**
 * wait redfish task util completed or failed.
 *
@@ -929,7 +946,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         }
 
         /** if task is processed */
-        if (UtoolStringInArray(task->taskState, redfishTaskFinishedStatus)) {
+        if (UtoolStringInArray(task->taskState, UtoolRedfishTaskFinishedStatus)) {
             fprintf(stdout, "\33[2K\r");
             fflush(stdout);
             goto DONE;

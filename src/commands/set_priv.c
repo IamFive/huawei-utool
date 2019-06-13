@@ -198,7 +198,7 @@ DONE:
 static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->username)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(Username)), result);
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(Username)), &(result->desc));
         goto FAILURE;
     }
 

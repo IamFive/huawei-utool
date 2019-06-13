@@ -32,6 +32,17 @@ static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *nod
     return UTOOLE_OK;
 }
 
+const char *UtoolRedfishTaskSuccessStatus[] = {TASK_STATE_OK,
+                                               TASK_STATE_COMPLETED,
+                                               NULL};
+
+const char *UtoolRedfishTaskFinishedStatus[] = {TASK_STATE_OK,
+                                                TASK_STATE_COMPLETED,
+                                                TASK_STATE_EXCEPTION,
+                                                TASK_STATE_INTERRUPTED,
+                                                TASK_STATE_KILLED,
+                                                NULL};
+
 int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsTrue(node)) {
@@ -132,6 +143,58 @@ return_statement:
  * @param result
  * @return
  */
+int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
+{
+    cJSON *output = cJSON_CreateObject();
+    int ret = UtoolAssetCreatedJsonNotNull(output);
+    if (ret != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    // mapping redfish task to output task
+    ret = UtoolMappingCJSONItems(task, output, utoolGetTaskMappings);
+    if (ret != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    cJSON *status = cJSON_GetObjectItem(task, "TaskStatus");
+    ret = UtoolAssetJsonNodeNotNull(status, "/TaskStatus");
+    if (ret != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    /** if task is success */
+    if (UtoolStringInArray(status->valuestring, UtoolRedfishTaskSuccessStatus)) {
+        ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    } else {
+        ret = UtoolBuildOutputResult(STATE_FAILURE, output, result);
+    }
+
+    if (ret != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    goto DONE;
+
+FAILURE:
+    FREE_CJSON(output)
+    goto DONE;
+
+DONE:
+    FREE_CJSON(task)
+    return ret;
+}
+
+/**
+ *
+ * build new json result and assign to (char **) result.
+ * Be aware that messages will be free at last
+ *
+ * @param state
+ * @param messages
+ * @param result
+ * @return
+ */
 int UtoolBuildStringOutputResult(const char *state, const char *messages, char **result)
 {
     int ret = UTOOLE_CREATE_JSON_NULL;
@@ -212,17 +275,22 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
                 }
             }
 
-            if (mapping->filter != NULL) {
-
-            }
-
             const UtoolOutputMapping *nestMapping = mapping->nestMapping;
             cJSON *element = NULL;
             cJSON_ArrayForEach(element, ref) {
+                if (mapping->filter != NULL) {
+                   int accept = mapping->filter(element);
+                   if (!accept) {
+                       continue;
+                   }
+                }
+
                 cJSON *mapped = cJSON_CreateObject();
                 cJSON_AddItemToArray(array, mapped);
-                // TODO
-                UtoolMappingCJSONItems(element, mapped, nestMapping);
+                int ret = UtoolMappingCJSONItems(element, mapped, nestMapping);
+                if (ret != UTOOLE_OK) {
+                    return ret;
+                }
             }
         }
 

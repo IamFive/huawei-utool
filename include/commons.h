@@ -28,6 +28,12 @@ extern const char *UTOOL_ENABLED_CHOICES[];
 */
 extern UtoolCommand utoolCommands[];
 
+
+extern const char *UtoolRedfishTaskSuccessStatus[];
+
+extern const char *UtoolRedfishTaskFinishedStatus[];
+
+
 /**
 * Redfish Async Task output mapping
 */
@@ -191,6 +197,15 @@ int UtoolBuildOutputResult(const char *state, cJSON *messages, char **result);
  * @return
  */
 int UtoolBuildStringOutputResult(const char *state, const char *messages, char **result);
+
+/**
+* build output result according to redfish task and Assign output to result.
+*
+* @param task
+* @param result
+* @return
+*/
+int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result);
 
 /**
  *

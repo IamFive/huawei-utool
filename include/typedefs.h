@@ -126,7 +126,7 @@ typedef struct _OutputMapping
     const char *const targetKeyValue;
     const struct _OutputMapping *nestMapping;
 
-    int (*filter)(cJSON *);                            // whether this property should output
+    int (*filter)(cJSON *);                            // whether this property should output, return 1 if accept, 0 not.
     int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;
 

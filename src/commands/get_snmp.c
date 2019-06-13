@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string_utils.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"

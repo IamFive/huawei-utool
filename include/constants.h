@@ -81,6 +81,7 @@ extern "C" {
 #define TASK_STATE_INTERRUPTED "Interrupted"
 #define TASK_STATE_PENDING "Pending"
 #define TASK_STATE_STOPPING "Stopping"
+#define TASK_STATE_OK "OK"
 #define TASK_STATE_COMPLETED "Completed"
 #define TASK_STATE_KILLED "Killed"
 #define TASK_STATE_EXCEPTION "Exception"
@@ -151,8 +152,6 @@ typedef enum _Code
     UTOOLE_ILLEGAL_LOCAL_FILE_PATH = 141,          /** illegal local upload file path */
     UTOOLE_ILLEGAL_LOCAL_FILE_SIZE = 142,          /** illegal local upload file size */
     UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH = 143,          /** illegal local upload file path */
-
-
 } UtoolCode;
 
 #ifdef __cplusplus

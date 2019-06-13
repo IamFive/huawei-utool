@@ -19,16 +19,26 @@ static const char *const usage[] = {
         NULL,
 };
 
-static const UtoolOutputMapping getHealthEventMappings[] = {
-        {.sourceXpath = "/Null", .targetKeyValue="Id"},
-        {.sourceXpath = "/Severity", .targetKeyValue="Severity"},
-        {.sourceXpath = "/Created", .targetKeyValue="EventTimestamp"},
-        {.sourceXpath = "/EventSubject", .targetKeyValue="Entity"},
-        {.sourceXpath = "/Message", .targetKeyValue="Message"},
-        {.sourceXpath = "/MessageId", .targetKeyValue="MessageId"},
-        {.sourceXpath = "/EventId", .targetKeyValue="EventId"},
+
+static const UtoolOutputMapping getEventMappings[] = {
+        {.sourceXpath = "/eventid", .targetKeyValue="Id"},
+        {.sourceXpath = "/level", .targetKeyValue="Severity"},
+        {.sourceXpath = "/alerttime", .targetKeyValue="EventTimestamp"},
+        {.sourceXpath = "/subjecttype", .targetKeyValue="Entity"},
+        {.sourceXpath = "/Null", .targetKeyValue="EntitySN"},
+        {.sourceXpath = "/eventsubject", .targetKeyValue="Message"},
+        {.sourceXpath = "/NUll", .targetKeyValue="MessageId"},
+        {.sourceXpath = "/eventcode", .targetKeyValue="EventId"},
+        {.sourceXpath = "/status", .targetKeyValue="Status"},
         NULL
 };
+
+static const UtoolOutputMapping getEventArrayMappings[] = {
+        {.sourceXpath = "/error/@Message.ExtendedInfo/0/Oem/Huawei/SelLogEntries", .targetKeyValue="EventLog",
+         .nestMapping=getEventMappings},
+        NULL
+};
+
 
 /**
  * get all event logs. command handler of `geteventlog`
@@ -37,30 +47,38 @@ static const UtoolOutputMapping getHealthEventMappings[] = {
  * @param result
  * @return
  */
-int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **result)
+/**
+* get VNC setting, command handler for `getvnc`.
+*
+* @param commandOption
+* @param outputStr
+* @return
+*/
+int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr)
 {
     int ret;
+    cJSON *output = NULL, *getLogServicesJson = NULL, *payload = NULL;
+
+    UtoolResult *result = &(UtoolResult) {0};
+    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
 
-    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getLogServices = &(UtoolCurlResponse) {0};
-    UtoolCurlResponse *getLogService0Resp = &(UtoolCurlResponse) {0};
-
-    // initialize output objects
-    cJSON *logService0Json = NULL, *logServicesJson = NULL;
-    cJSON *output = NULL, *healthEvents = NULL, *healthEvent = NULL;
-
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
+        goto DONE;
+    }
+
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
     }
 
@@ -70,90 +88,47 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    healthEvents = cJSON_AddArrayToObject(output, "HealthEvents");
-    ret = UtoolAssetCreatedJsonNotNull(healthEvents);
-    if (ret != UTOOLE_OK) {
+    UtoolRedfishGet(server, "/Systems/%s/LogServices", NULL, NULL, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
+    getLogServicesJson = result->data;
 
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
-    }
-
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/LogServices", HTTP_GET, NULL, NULL, getLogServices);
-    if (ret != UTOOLE_OK) {
-        goto DONE;
-    }
-    if (getLogServices->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getLogServices, result);
-        goto DONE;
-    }
-
-    // process get log services response
-    logServicesJson = cJSON_Parse(getLogServices->content);
-    ret = UtoolAssetParseJsonNotNull(logServicesJson);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    cJSON *logService0 = cJSONUtils_GetPointer(logServicesJson, "/Members/0/@odata.id");
+    cJSON *logService0 = cJSONUtils_GetPointer(getLogServicesJson, "/Members/0/@odata.id");
     ret = UtoolAssetJsonNodeNotNull(logService0, "/Members/0/@odata.id");
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
 
     // get log service 0
-    char *url = logService0->valuestring;
-    ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, getLogService0Resp);
-    if (ret != UTOOLE_OK) {
+    char querySelLogUrl[MAX_URL_LEN];
+    char *log0Url = logService0->valuestring;
+    snprintf(querySelLogUrl, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.QuerySelLogEntries", log0Url);
+
+    /** query sel */
+    int currentEntryId = 1;
+    payload = cJSON_CreateObject();
+    cJSON_AddNumberToObject(payload, "StartEntryId", currentEntryId);
+    cJSON_AddNumberToObject(payload, "EntriesCount", 32);
+    UtoolRedfishPost(server, querySelLogUrl, payload, output, getEventArrayMappings, result);
+    if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
-    if (getLogService0Resp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getLogServices, result);
-        goto FAILURE;
-    }
-
-    // process get log services response
-    logService0Json = cJSON_Parse(getLogService0Resp->content);
-    ret = UtoolAssetParseJsonNotNull(logService0Json);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-
-    cJSON *member = NULL;
-    cJSON *members = cJSONUtils_GetPointer(logService0Json, "/Oem/Huawei/HealthEvent");
-    cJSON_ArrayForEach(member, members) {
-        healthEvent = cJSON_CreateObject();
-        ret = UtoolAssetCreatedJsonNotNull(healthEvent);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        // create healthEvent item and add it to array
-        ret = UtoolMappingCJSONItems(member, healthEvent, getHealthEventMappings);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-        cJSON_AddItemToArray(healthEvents, healthEvent);
-    }
-
-    // output to result
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+    // mapping result to output json
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(healthEvent)
     FREE_CJSON(output)
     goto DONE;
 
 DONE:
-    FREE_CJSON(logServicesJson)
-    FREE_CJSON(logService0Json)
-    UtoolFreeCurlResponse(getLogServices);
-    UtoolFreeCurlResponse(getLogService0Resp);
+    FREE_CJSON(payload)
+    FREE_CJSON(getLogServicesJson)
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }
