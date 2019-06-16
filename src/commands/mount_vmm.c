@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `mountvmm`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,12 +34,12 @@ typedef struct _MountVMMOption
 
 static const char *TYPE_CHOICES[] = {OP_MOUNT, OP_UNMOUNT, NULL};
 
-static const char *OPT_OP_TYPE_REQUIRED = "Error: option `OperatorType` is required.";
-static const char *OPT_OP_ILLEGAL = "Error: option `OperatorType` is illegal, available choices: Mount, Unmount.";
-static const char *const OPT_IMAGE_REQUIRED = "Error: option `Image` is required when `OperatorType` is Mount.";
+static const char *OPT_OP_TYPE_REQUIRED = "Error: option `operator-type` is required.";
+static const char *OPT_OP_ILLEGAL = "Error: option `operator-type` is illegal, available choices: Mount, Unmount.";
+static const char *const OPT_IMAGE_REQUIRED = "Error: option `image` is required when `operator-type` is Mount.";
 
 static const char *const usage[] = {
-        "utool mountvmm -o OperatorType [-i Image]",
+        "mountvmm -o operator-type [-i image]",
         NULL,
 };
 
@@ -61,9 +65,9 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('o', "OperatorType", &(mountVMMOptions->operatorType),
+            OPT_STRING ('o', "operator-type", &(mountVMMOptions->operatorType),
                         "specifies the operation type, choices: {Mount, Unmount}", NULL, 0, 0),
-            OPT_STRING ('i', "Image", &(mountVMMOptions->image),
+            OPT_STRING ('i', "image", &(mountVMMOptions->image),
                         "specifies the VRI of the virtual media image", NULL, 0, 0),
             OPT_END()
     };

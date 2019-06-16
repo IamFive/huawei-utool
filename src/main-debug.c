@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: main debug script
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,13 +47,14 @@ int run_utool_main()
             //"getservice",
             //"geteventsub",
             //"getpwrcap",
-            "getmgmtport",
+            //"getmgmtport",
             //"gettrap",
             //"getvnc",
             //"gettaskstate",
             //"geteventlog",
+            "getpcie",
 
-            //"adduser", "-n", "utool", "-p", "chajian12#$", "-r", "Administrator", "-l", "None",
+            //"adduser", "-n", "utool", "-p", "chajian12#$", "--role-id", "Administrator", "-l", "None",
             //"setpwd", "-n", "utool", "-p", "chajian12#$5",
             //"setpriv", "-n", "utool", "-r", "Administrator",
             //"deluser", "-n", "utool",
@@ -61,10 +69,11 @@ int run_utool_main()
             //"-u", "/data/nfs/ubuntu-iso.zip",
             //"-u", "nfs://112.93.129.100/data/nfs/cpldimage.hpm",
             //"mountvmm", "-o", "Mount", "-i", "nfs://112.93.129.100/data/nfs/mini.iso",
+            //"mountvmm", "-o", "Unmount",
             //"clearsel",
             //"settimezone", "-z", "+08:00",
             //"powercontrol", "-t", "On",
-            //"setservice", "-s", "VNC", "-e", "Enabled", "-p", "10086",
+            //"setservice", "-s", "VirtualMedia", "-e", "Enabled", "-p", "10086", "-t", "Enabled",
             //"setvlan", "-e", "Enabled", "-v", "100",
             //"resetbmc",
             //"restorebios",
@@ -75,8 +84,13 @@ int run_utool_main()
             //"collect", "-u", "/data/nfs/collect1.tar.gz",
             //"locateserver", "-s", "Blink", "-f", "2",
             //"delvncsession",
-            //"setip", "-v", "4",
+            //"setip", "-v", "4", "-m", "Static", "-a", "112.93.129.9", "-g", "112.93.129.1", "-s", "255.255.255.0",
+            //"setip", "-v", "6", "-m", "Static", "-a", "2000::2000", "-g", "2000::2100", "-s", "16",
             //"setadaptiveport", "-p", "[{\"NIC\":\"Dedicated\",\"Port\":0},{\"NIC\":\"MEZZ\",\"Port\":1}]",
+
+            //"exportbmccfg", "-u", "/data/nfs/utool_bmc_9.xml",
+            //"importbmccfg", "-u", "/data/nfs/utool_bmc_9.xml",
+            //"setbios", "-a", "BootRetry", "-v", "Enabled", "-f", "/data/nfs/bios.json",
             NULL
     };
     char *result = NULL;
@@ -84,7 +98,7 @@ int run_utool_main()
     int argc2 = sizeof(argv2) / sizeof(char *);
     int ret = utool_main(argc2 - 1, (void *) argv2, &result);
     if (result != NULL) {
-        fprintf(ret == 0 ? stdout : stderr, "%s", result);
+        fprintf(ret == 0 ? stdout : stderr, "%s\n", result);
         free(result);
     }
     return ret;

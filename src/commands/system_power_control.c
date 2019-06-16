@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `powercontrol`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,12 +23,12 @@
 static const char *RESET_TYPE_CHOICES[] = {"On", "ForceOff", "GracefulShutdown", "ForceReset", "Nmi",
                                            "ForcePowerCycle", NULL};
 
-static const char *OPT_RESET_TYPE_REQUIRED = "Error: option `ResetType` is required.";
-static const char *OPT_RESET_TYPE_ILLEGAL = "Error: option `ResetType` is illegal, available choices: "
+static const char *OPT_RESET_TYPE_REQUIRED = "Error: option `reset-type` is required.";
+static const char *OPT_RESET_TYPE_ILLEGAL = "Error: option `reset-type` is illegal, available choices: "
                                             "On, ForceOff, GracefulShutdown, ForceReset, Nmi, ForcePowerCycle.";
 
 static const char *const usage[] = {
-        "utool powercontrol -t ResetType",
+        "powercontrol -t reset-type",
         NULL,
 };
 
@@ -50,7 +54,7 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('t', "ResetType", &resetType,
+            OPT_STRING ('t', "reset-type", &resetType,
                         "specifies the system reset type, "
                         "choices: {On, ForceOff, GracefulShutdown, ForceReset, Nmi, ForcePowerCycle}",
                         NULL, 0, 0),

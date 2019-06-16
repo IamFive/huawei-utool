@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setip`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,22 +20,30 @@
 #include "redfish.h"
 #include "string_utils.h"
 
+#define IP_VER_4 "4"
+#define IP_VER_6 "6"
 #define IP_MODE_DHCP "DHCP"
+#define IP_MODE_DHCPV6 "DHCPv6"
 #define IP_MODE_STATIC "Static"
 
-static const char *IP_VERSION_CHOICES[] = {"4", "6", "4+6", NULL};
+static const char *IP_VERSION_CHOICES[] = {IP_VER_4, IP_VER_6, NULL};
 static const char *IP_MODE_CHOICES[] = {IP_MODE_STATIC, IP_MODE_DHCP, NULL};
 
-static const char *OPT_NO_EFFECT_WHEN_DHCP = "Error: when IP mode is DHCP, "
-                                             "options `Address`, `Gateway`, `SubnetMask` has no effect.";
+static const char *OPT_PREFIX_LENGTH_ILLEGAL = "Error: prefix-length must be an integer between 1 and 128.";
 
-//static const char *OPT_IP_VERSION_REQUIRED = "Error: option `IpVersion` is required.";
-//static const char *OPT_IP_VERSION_ILLEGAL = "Error: option `IpVersion` is illegal, available choices: 4, 6, 4+6.";
-//static const char *OPT_IP_MODE_REQUIRED = "Error: option `IpMode` is required.";
-//static const char *OPT_IP_MODE_ILLEGAL = "Error: option `IpMode` is illegal, available choices: Static, DHCP.";
+static const char *OPT_NO_EFFECT_WHEN_DHCP = "Error: when IP mode is DHCP, "
+                                             "options `address`, `gateway`, `subnet-mask/prefix-length` has no effect.";
+
+static const char *OPT_REQUIRED_WHEN_STATIC = "Error: when IP mode is Static, options `address`, `gateway`, "
+                                              "`subnet-mask/prefix-length` should not all be empty.";
+
+//static const char *OPT_IP_VERSION_REQUIRED = "Error: option `ip-version` is required.";
+//static const char *OPT_IP_VERSION_ILLEGAL = "Error: option `ip-version` is illegal, available choices: 4, 6, 4+6.";
+//static const char *OPT_IP_MODE_REQUIRED = "Error: option `ip-mode` is required.";
+//static const char *OPT_IP_MODE_ILLEGAL = "Error: option `ip-mode` is illegal, available choices: Static, DHCP.";
 
 static const char *const usage[] = {
-        "utool setip -v IpVersion -m IpMode [-a Address] [-g Gateway] [-s SubnetMask/PrefixLength]",
+        "setip -v ip-version -m ip-mode [-a address] [-g gateway] [-s subnet-mask/prefix-length]",
         NULL,
 };
 
@@ -42,6 +54,7 @@ typedef struct _SetIPOption
     char *mode;
     char *gataway;
     char *subneMask;
+    int prefixLength;
 } UtoolSetIPOption;
 
 static cJSON *BuildPayload(UtoolSetIPOption *option, UtoolResult *result);
@@ -65,16 +78,16 @@ int UtoolCmdSetIP(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('v', "IPVersion", &(option->version),
-                        "specifies enabled IP version, available choices: {4, 6, 4+6}", NULL, 0, 0),
-            OPT_STRING ('m', "IPMode", &(option->mode),
+            OPT_STRING ('v', "ip-version", &(option->version),
+                        "specifies enabled IP version, available choices: {4, 6}", NULL, 0, 0),
+            OPT_STRING ('m', "ip-mode", &(option->mode),
                         "specifies how IP address is allocated, available choices: {Static, DHCP}", NULL, 0, 0),
-            OPT_STRING ('a', "Address", &(option->address),
+            OPT_STRING ('a', "address", &(option->address),
                         "specifies IP address when IP mode is Static", NULL, 0, 0),
-            OPT_STRING ('g', "Gateway", &(option->gataway),
+            OPT_STRING ('g', "gateway", &(option->gataway),
                         "specifies gateway IP address when IP mode is Static", NULL, 0, 0),
-            OPT_STRING ('s', "SubnetMask", &(option->subneMask),
-                        "specifies subnet mask of IPv4 address", NULL, 0, 0),
+            OPT_STRING ('s', "subnet-mask", &(option->subneMask),
+                        "specifies subnet mask of IPv4 address or prefix length of IPv6 address.", NULL, 0, 0),
             OPT_END()
     };
 
@@ -150,7 +163,7 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
 {
 
     if (UtoolStringIsEmpty(option->version)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(IPVersion)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(ip - version)),
                                               &(result->desc));
         goto FAILURE;
     }
@@ -158,27 +171,42 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
     if (!UtoolStringIsEmpty(option->version)) {
         if (!UtoolStringInArray(option->version, IP_VERSION_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(IPVersion, "4, 6, 4+6")),
+                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(ip - version, "4, 6")),
                                                   &(result->desc));
             goto FAILURE;
         }
-    }
-
-    if (UtoolStringIsEmpty(option->mode)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(IPMode)),
-                                              &(result->desc));
-        goto FAILURE;
     }
 
     if (!UtoolStringIsEmpty(option->mode)) {
         if (!UtoolStringInArray(option->mode, IP_MODE_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(IPVersion, "Static, DHCP")),
+                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(ip - mode, "Static, DHCP")),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
+    bool isIPV4 = UtoolStringEquals(option->version, IP_VER_4);
+    if (!isIPV4) { /** IPV6 */
+        if (!UtoolStringIsEmpty(option->subneMask)) {
+            if (!UtoolStringIsNumeric(option->subneMask)) {
+                result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PREFIX_LENGTH_ILLEGAL),
+                                                      &(result->desc));
+                goto FAILURE;
+            }
+
+            long len = strtol(option->subneMask, NULL, 0);
+            if (len < 1 || len > 128) {
+                result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PREFIX_LENGTH_ILLEGAL),
+                                                      &(result->desc));
+                goto FAILURE;
+            }
+
+            option->prefixLength = len;
+        }
+    }
+
+    /**
     if (UtoolStringEquals(IP_MODE_DHCP, option->mode)) {
         if (!UtoolStringIsEmpty(option->address) || !UtoolStringIsEmpty(option->gataway) ||
             !UtoolStringIsEmpty(option->subneMask)) {
@@ -186,6 +214,20 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
                                                   &(result->desc));
             goto FAILURE;
         }
+    }
+    else {
+        if (UtoolStringIsEmpty(option->address) || UtoolStringIsEmpty(option->gataway) ||
+            UtoolStringIsEmpty(option->subneMask)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED_WHEN_STATIC),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+    } */
+
+    if (UtoolStringIsEmpty(option->mode) && UtoolStringIsEmpty(option->address) &&
+        UtoolStringIsEmpty(option->gataway) && UtoolStringIsEmpty(option->subneMask)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
+        goto FAILURE;
     }
 
     return;
@@ -197,17 +239,99 @@ FAILURE:
 
 static cJSON *BuildPayload(UtoolSetIPOption *option, UtoolResult *result)
 {
+    cJSON *wrapped = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(wrapped);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    bool isIPV4 = UtoolStringEquals(option->version, IP_VER_4);
+    cJSON *array = cJSON_AddArrayToObject(wrapped, isIPV4 ? "IPv4Addresses" : "IPv6Addresses");
+    result->code = UtoolAssetCreatedJsonNotNull(array);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
+    cJSON_AddItemToArray(array, payload);
 
-    cJSON *vlan = cJSON_AddObjectToObject(payload, "VLAN");
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
+
+    if (isIPV4) {
+        if (!UtoolStringIsEmpty(option->mode)) {
+            cJSON *addressOrigin = cJSON_AddStringToObject(payload, "AddressOrigin", option->mode);
+            result->code = UtoolAssetCreatedJsonNotNull(addressOrigin);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->address)) {
+            cJSON *address = cJSON_AddStringToObject(payload, "Address", option->address);
+            result->code = UtoolAssetCreatedJsonNotNull(address);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->subneMask)) {
+            cJSON *subneMask = cJSON_AddStringToObject(payload, "SubnetMask", option->subneMask);
+            result->code = UtoolAssetCreatedJsonNotNull(subneMask);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->gataway)) {
+            cJSON *subneMask = cJSON_AddStringToObject(payload, "Gateway", option->gataway);
+            result->code = UtoolAssetCreatedJsonNotNull(subneMask);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
     }
+    else {
+
+        if (!UtoolStringIsEmpty(option->mode)) {
+            char *mode = UtoolStringEquals(option->mode, IP_MODE_STATIC) ? IP_MODE_STATIC : IP_MODE_DHCPV6;
+            cJSON *addressOrigin = cJSON_AddStringToObject(payload, "AddressOrigin", mode);
+            result->code = UtoolAssetCreatedJsonNotNull(addressOrigin);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->address)) {
+            cJSON *address = cJSON_AddStringToObject(payload, "Address", option->address);
+            result->code = UtoolAssetCreatedJsonNotNull(address);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->subneMask)) {
+            cJSON *prefixLength = cJSON_AddNumberToObject(payload, "PrefixLength", option->prefixLength);
+            result->code = UtoolAssetCreatedJsonNotNull(prefixLength);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (!UtoolStringIsEmpty(option->gataway)) {
+            cJSON *subneMask = cJSON_AddStringToObject(wrapped, "IPv6DefaultGateway", option->gataway);
+            result->code = UtoolAssetCreatedJsonNotNull(subneMask);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+
+    }
+
 
     //if (!UtoolStringIsEmpty(option->version)) {
     //    cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
@@ -225,9 +349,10 @@ static cJSON *BuildPayload(UtoolSetIPOption *option, UtoolResult *result)
     //    }
     //}
 
-    return payload;
+    return wrapped;
 
 FAILURE:
-    FREE_CJSON(payload)
+    result->interrupt = 1;
+    FREE_CJSON(wrapped)
     return NULL;
 }

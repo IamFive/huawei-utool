@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `gettaskstate`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,12 +19,12 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool gettaskstate",
+        "gettaskstate",
         NULL,
 };
 
 /**
- * command handler of `getfw`
+ * get tasks information, command handler of `gettaskstate`
  *
  * @param commandOption
  * @param result
@@ -115,7 +119,7 @@ int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **result)
         }
 
         // create task item and add it to array
-        ret = UtoolMappingCJSONItems(taskJson, task, utoolGetTaskMappings);
+        ret = UtoolMappingCJSONItems(taskJson, task, g_UtoolGetTaskMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

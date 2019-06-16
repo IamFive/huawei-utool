@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: common utilities
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <string.h>
 #include <stdlib.h>
 #include <commons.h>
@@ -7,12 +14,12 @@
 #include <command-interfaces.h>
 #include "string_utils.h"
 
-const char *UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
+const char *g_UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
 
 static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node);
 
 /** Redfish Rsync Task Mapping define */
-const UtoolOutputMapping utoolGetTaskMappings[] = {
+const UtoolOutputMapping g_UtoolGetTaskMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="TaskId"},
         {.sourceXpath = "/Name", .targetKeyValue="TaskDesc"},
         {.sourceXpath = "/Name", .targetKeyValue="TaskType"},
@@ -32,16 +39,20 @@ static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *nod
     return UTOOLE_OK;
 }
 
-const char *UtoolRedfishTaskSuccessStatus[] = {TASK_STATE_OK,
-                                               TASK_STATE_COMPLETED,
-                                               NULL};
+const char *g_UtoolRedfishTaskSuccessStatus[] = {
+        TASK_STATE_OK,
+        TASK_STATE_COMPLETED,
+        NULL
+};
 
-const char *UtoolRedfishTaskFinishedStatus[] = {TASK_STATE_OK,
-                                                TASK_STATE_COMPLETED,
-                                                TASK_STATE_EXCEPTION,
-                                                TASK_STATE_INTERRUPTED,
-                                                TASK_STATE_KILLED,
-                                                NULL};
+const char *g_UtoolRedfishTaskFinishedStatus[] = {
+        TASK_STATE_OK,
+        TASK_STATE_COMPLETED,
+        TASK_STATE_EXCEPTION,
+        TASK_STATE_INTERRUPTED,
+        TASK_STATE_KILLED,
+        NULL
+};
 
 int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
 {
@@ -152,7 +163,7 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
     }
 
     // mapping redfish task to output task
-    ret = UtoolMappingCJSONItems(task, output, utoolGetTaskMappings);
+    ret = UtoolMappingCJSONItems(task, output, g_UtoolGetTaskMappings);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -164,9 +175,10 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
     }
 
     /** if task is success */
-    if (UtoolStringInArray(status->valuestring, UtoolRedfishTaskSuccessStatus)) {
+    if (UtoolStringInArray(status->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
         ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
-    } else {
+    }
+    else {
         ret = UtoolBuildOutputResult(STATE_FAILURE, output, result);
     }
 
@@ -279,10 +291,10 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
             cJSON *element = NULL;
             cJSON_ArrayForEach(element, ref) {
                 if (mapping->filter != NULL) {
-                   int accept = mapping->filter(element);
-                   if (!accept) {
-                       continue;
-                   }
+                    int accept = mapping->filter(element);
+                    if (!accept) {
+                        continue;
+                    }
                 }
 
                 cJSON *mapped = cJSON_CreateObject();

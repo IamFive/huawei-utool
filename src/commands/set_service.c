@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setservice`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,16 +28,16 @@ static const char *SERVICE_CHOICES[] = {"HTTP", "HTTPS", "SNMP", "VirtualMedia",
                                         "Video", "NAT", "SSDP", NULL};
 static const char *SUPPORT_SSL_SERVICES[] = {SERVICE_KVMIP, SERVICE_VM, NULL};
 
-static const char *OPT_SERVICE_REQUIRED = "Error: option `Service` is required.";
-static const char *OPT_SERVICE_ILLEGAL = "Error: option `Service` is illegal, available choices: "
+static const char *OPT_SERVICE_REQUIRED = "Error: option `service` is required.";
+static const char *OPT_SERVICE_ILLEGAL = "Error: option `service` is illegal, available choices: "
                                          "HTTP, HTTPS, SNMP, VirtualMedia, IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP.";
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_PORT_ILLEGAL = "Error: option `Port` is illegal, value range should be: 1~65535";
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_PORT_ILLEGAL = "Error: option `port` is illegal, value range should be: 1~65535";
 
-static const char *OPT_SSL_NOT_SUPPORT = "Error: setting `SSLEnabled` is only support for service `KVMIP` and 'Vedio`.";
+static const char *OPT_SSL_NOT_SUPPORT = "Error: setting `ssl-enabled` is only support for service `KVMIP` and 'Vedio`.";
 
 static const char *const usage[] = {
-        "utool setservice -s Service [-e Enabled] [-p Port] [-t SSLEnabled]",
+        "setservice -s service [-e enabled] [-p port] [-t ssl-enabled]",
         NULL,
 };
 
@@ -72,13 +76,13 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('s', "Service", &(option->service),
+            OPT_STRING ('s', "service", &(option->service),
                         "specifies service to update, available choices: {HTTP, HTTPS, SNMP, VirtualMedia, "
                         "IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP}", NULL, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->enabled),
+            OPT_STRING ('e', "enabled", &(option->enabled),
                         "specifies whether the service is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('p', "Port", &(option->port), "specifies service port, value range: 1~65535", NULL, 0, 0),
-            OPT_STRING ('t', "SSLEnabled", &(option->sslEnabled),
+            OPT_INTEGER('p', "port", &(option->port), "specifies service port, value range: 1~65535", NULL, 0, 0),
+            OPT_STRING ('t', "ssl-enabled", &(option->sslEnabled),
                         "specifies whether SSL is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
             OPT_END()
     };
@@ -237,7 +241,7 @@ static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolRes
     }
 
     if (!UtoolStringIsEmpty(option->enabled)) {
-        if (!UtoolStringInArray(option->enabled, UTOOL_ENABLED_CHOICES)) {
+        if (!UtoolStringInArray(option->enabled, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
@@ -245,8 +249,8 @@ static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolRes
     }
 
     if (!UtoolStringIsEmpty(option->sslEnabled)) {
-        if (!UtoolStringInArray(option->sslEnabled, UTOOL_ENABLED_CHOICES)) {
-            char *message = OPT_NOT_IN_CHOICE(SSLEnabled, "Enabled, Disabled");
+        if (!UtoolStringInArray(option->sslEnabled, g_UTOOL_ENABLED_CHOICES)) {
+            char *message = OPT_NOT_IN_CHOICE(ssl-enabled, "Enabled, Disabled");
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message), &(result->desc));
             goto FAILURE;
         }

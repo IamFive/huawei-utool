@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/10/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: redfish utilities header
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_REDFISH_H
 #define UTOOL_REDFISH_H
 /* For c++ compatibility */
@@ -9,6 +12,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include "typedefs.h"
 #include "zf_log.h"
 
@@ -185,8 +189,32 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
 */
 UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result);
 
+/**
+* Wait a redfish task finished (completed or exception/failed)
+*
+* @param server
+* @param cJSONTask
+* @param result
+*/
 void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result);
 
+/**
+*  Wait a redfish task util it starts.
+*
+*   - result->data will carry the last success response of "get-task" request, caller should free it themself.
+*
+* @param server
+* @param cJSONTask
+* @param result
+*/
+void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result);
+
+/**
+*  check whether a redfish task is success
+* @param task
+* @return true if success else false
+*/
+bool UtoolIsRedfishTaskSuccess(cJSON *task);
 
 #ifdef __cplusplus
 }

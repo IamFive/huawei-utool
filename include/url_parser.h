@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: URL parser header file
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef _URL_PARSER_H
 #define _URL_PARSER_H
 
@@ -20,8 +27,17 @@ typedef struct ParsedUrl
 extern "C" {
 #endif
 
+/**
+* parsing a string into structured URL
+*
+* @return
+*/
 UtoolParsedUrl *UtoolParseURL(const char *);
 
+/**
+* Free a structured URL
+* @param purl
+*/
 void UtoolFreeParsedURL(UtoolParsedUrl *purl);
 
 #ifdef __cplusplus

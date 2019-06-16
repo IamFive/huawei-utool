@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: utool API implementation
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +30,7 @@ static pthread_mutex_t mutex;
 /**
  * All support commands
  */
-UtoolCommand utoolCommands[] = {
+UtoolCommand g_UtoolCommands[] = {
         {.name = "getcapabilities", .pFuncExecute=UtoolCmdGetCapabilities, .type=GET},
         {.name = "getproduct", .pFuncExecute=UtoolCmdGetProduct, .type=GET},
         {.name = "getfw", .pFuncExecute=UtoolCmdGetFirmware, .type=GET},
@@ -53,6 +60,7 @@ UtoolCommand utoolCommands[] = {
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
         {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
+        {.name = "getpcie", .pFuncExecute = UtoolCmdGetPCIe, .type = GET},
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},
@@ -155,8 +163,8 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
      */
 
     if (commandOption->flag == FEAT_VERSION) {
-        char buff[100] = {0};
-        snprintf(buff, 100, "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
+        char buff[MAX_FAILURE_MSG_LEN] = {0};
+        snprintf(buff, MAX_FAILURE_MSG_LEN, "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     }
     else if (commandOption->flag == FEAT_HELP) {
@@ -255,7 +263,7 @@ int utool_main(int argc, char *argv[], char **result)
 
     UtoolCommand *targetCommand = NULL;
     for (int idx = 0;; idx++) {
-        UtoolCommand *_command = utoolCommands + idx;
+        UtoolCommand *_command = g_UtoolCommands + idx;
         if (_command->name != NULL) {
             if (strncasecmp(commandName, _command->name, MAX_COMMAND_NAME_LEN * sizeof(char)) == 0) {
                 targetCommand = _command;

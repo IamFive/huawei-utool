@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: redfish API abstract
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <typedefs.h>
 #include <constants.h>
 #include <stdlib.h>
@@ -400,7 +407,9 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
 
 
 /**
- * resolve redfish failures response
+ * resolve redfish failures response,
+ *
+ * For new implemation, use UtoolResolvePartialFailureResponse. This function is for backword compatible.
  *
  * @param response
  * @param result
@@ -437,6 +446,64 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     }
 
     return UtoolBuildOutputResult(STATE_FAILURE, failures, result);
+}
+
+
+/**
+* resolve redfish response
+*  - failed response
+*  - partial failed response
+*
+* @param response
+* @param result
+* @return true if resolved else false
+*/
+bool UtoolResolvePartialFailureResponse(UtoolCurlResponse *response, UtoolResult *result)
+{
+    int code = response->httpStatusCode;
+    ZF_LOGI("Try to resolve partial failure, http code -> %d", code);
+    ZF_LOGI("Try to resolve partial failure, http response -> %s", response->content);
+
+    // handle standard internet errors
+    if (403 == code) {
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NO_PRIVILEGE, &(result->desc));
+        goto RESOLVED;
+    }
+    else if (412 == code) {
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, &(result->desc));
+        goto RESOLVED;
+    }
+    else if (413 == code) {
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_ENTITY_TOO_LARGE, &(result->desc));
+        goto RESOLVED;
+    }
+    else if (code == 500) {
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, &(result->desc));
+        goto RESOLVED;
+    }
+    else if (code == 501) {
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NOT_SUPPORT, &(result->desc));
+        goto RESOLVED;
+    }
+
+    cJSON *failures = cJSON_CreateArray();
+    result->code = UtoolGetFailuresFromResponse(response, failures);
+    if (result->code != UTOOLE_OK) {
+        FREE_CJSON(failures)
+        goto RESOLVED;
+    }
+
+    if (cJSON_GetArraySize(failures) > 0) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, failures, &(result->desc));
+        goto RESOLVED;
+    }
+
+    FREE_CJSON(failures)
+    return false;
+
+RESOLVED:
+    result->interrupt = 1;
+    return true;
 }
 
 /**
@@ -496,10 +563,6 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
             }
         }
     }
-    else {
-        ret = UTOOLE_UNKNOWN_JSON_FORMAT;
-    }
-
 
     goto DONE;
 
@@ -557,7 +620,6 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
             ret = UTOOLE_INTERNAL;
             goto DONE;
         }
-
         strncpy(server->systemId, pSystemId, strlen(pSystemId) + 1);
     }
     else {
@@ -662,6 +724,9 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
     (double) dlnow;
     if (ultotal > 0 && ulnow > 0) {
         fprintf(stdout, "\33[2K\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
+        if (ultotal == ulnow) {
+            fprintf(stdout, "\n");
+        }
         fflush(stdout);
     }
 
@@ -684,8 +749,13 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
         goto FAILURE;
     }
 
-    if (response->httpStatusCode >= 400) {
-        result->code = UtoolResolveFailureResponse(response, &(result->desc));
+    //if (response->httpStatusCode >= 400) {
+    //    result->code = UtoolResolveFailureResponse(response, &(result->desc));
+    //    goto FAILURE;
+    //}
+
+    bool resolved = UtoolResolvePartialFailureResponse(response, result);
+    if (resolved || result->interrupt) {
         goto FAILURE;
     }
 
@@ -758,7 +828,17 @@ void UtoolRedfishDelete(UtoolRedfishServer *server, char *url, cJSON *output, co
     UtoolRedfishProcessRequest(server, url, HTTP_DELETE, NULL, NULL, output, outputMapping, result);
 }
 
-
+/**
+* Get All Redfish member resources
+*
+* all result->data created by this function will be auto freed.
+*
+* @param server
+* @param owner
+* @param memberArray
+* @param memberMapping
+* @param result
+*/
 void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJSON *memberArray,
                                     const UtoolOutputMapping *memberMapping, UtoolResult *result)
 {
@@ -911,7 +991,7 @@ FAILURE:
 }
 
 /**
-* wait redfish task util completed or failed.
+* wait redfish task util completed or failed. If task has sub task, it will wait sub task finished first.
 *
 *  - result->data will carry the last success response of "get-task" request, caller should free it themself.
 *
@@ -946,8 +1026,9 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         }
 
         /** if task is processed */
-        if (UtoolStringInArray(task->taskState, UtoolRedfishTaskFinishedStatus)) {
-            fprintf(stdout, "\33[2K\r");
+        if (UtoolStringInArray(task->taskState, g_UtoolRedfishTaskFinishedStatus)) {
+            // fprintf(stdout, "\33[2K\r");
+            fprintf(stdout, "\n");
             fflush(stdout);
             goto DONE;
         }
@@ -970,3 +1051,91 @@ FAILURE:
 DONE:
     UtoolFreeRedfishTask(task);
 }
+
+
+/**
+*  Wait a redfish task util it really starts.
+*  For example: update firmware with remote network file will download file before it starts update firmware.
+*
+*  If task failed, result->interupt will be set 1,
+*
+*   - result->data will carry the last success response of "get-task" request, caller should free it themself.
+*
+* @param server
+* @param cJSONTask
+* @param result
+*/
+void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result)
+{
+    // waiting util task complete or exception
+    UtoolRedfishTask *task = NULL;
+    cJSON *jsonTask = cJSONTask;
+
+    while (true) {
+        task = UtoolRedfishMapTaskFromJson(jsonTask, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+
+        // print task progress to stdout
+        if (task->taskPercentage == NULL) { /** try to print message if task has not started */
+            if (task->message->message != NULL) {
+                // main task has not start, we need to load percent from message args
+                fprintf(stdout, "\33[2K\r%s", task->message->message);
+                fflush(stdout);
+            }
+        }
+
+        /** if task is processed or task percent is not NULL */
+        if (UtoolStringInArray(task->taskState, g_UtoolRedfishTaskFinishedStatus) || task->taskPercentage != NULL) {
+            // fprintf(stdout, "\33[2K\r");
+            fprintf(stdout, "\n");
+            fflush(stdout);
+            goto DONE;
+        }
+
+        /** if task is still processing */
+        UtoolRedfishGet(server, task->url, NULL, NULL, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+        FREE_CJSON(jsonTask)        /** free last json TASK */
+        jsonTask = result->data;
+
+        /* if task failed, we build output directly */
+        if (!UtoolIsRedfishTaskSuccess(result->data)) {
+            result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
+            goto FAILURE;
+        }
+
+        /* we need to */
+
+        UtoolFreeRedfishTask(task); /** free task structure */
+        sleep(1); /** next task query interval */
+    }
+
+FAILURE:
+    result->interrupt = 1;
+    goto DONE;
+
+DONE:
+    UtoolFreeRedfishTask(task);
+}
+
+
+/**
+*  check whether a redfish task is success
+* @param task
+* @return true if success else false
+*/
+bool UtoolIsRedfishTaskSuccess(cJSON *task)
+{
+    cJSON *status = cJSON_GetObjectItem(task, "TaskStatus");
+    int ret = UtoolAssetJsonNodeNotNull(status, "/TaskStatus");
+    if (ret != UTOOLE_OK) {
+        return false;
+    }
+
+    return UtoolStringInArray(status->valuestring, g_UtoolRedfishTaskSuccessStatus);
+}
+

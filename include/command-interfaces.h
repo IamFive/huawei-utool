@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/15/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: command interfaces
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_COMMAND_INTERFACES_H
 #define UTOOL_COMMAND_INTERFACES_H
 /* For c++ compatibility */
@@ -64,6 +67,8 @@ int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr);
 int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **outputStr);
 

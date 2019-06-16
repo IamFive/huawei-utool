@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: URL parser
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

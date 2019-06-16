@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: get capabilities command handler
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,17 +19,17 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getcapabilities",
+        "getcapabilities",
         NULL,
 };
 
 /**
- * argparse get capabilities action callback
- *
- * @param self
- * @param option
- * @return
- */
+* get capabilities command handler
+*
+* @param commandOption
+* @param result
+* @return
+*/
 int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
@@ -63,7 +67,7 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 
 
     for (int idx = 0;; idx++) {
-        UtoolCommand *command = utoolCommands + idx;
+        UtoolCommand *command = g_UtoolCommands + idx;
         if (command->name != NULL) {
             switch (command->type) {
                 case GET:

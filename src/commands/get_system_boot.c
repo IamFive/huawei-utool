@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `getsysboot`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +19,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getsysboot",
+        "getsysboot",
         NULL,
 };
 
@@ -28,12 +32,12 @@ static const UtoolOutputMapping getProductMappings[] = {
 
 
 /**
- * argparse get version action callback
- *
- * @param self
- * @param option
- * @return
- */
+* get system boot up settings, command handler for `getsysboot`.
+*
+* @param commandOption
+* @param result
+* @return
+*/
 int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result)
 {
     int ret;

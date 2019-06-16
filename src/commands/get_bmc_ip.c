@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command hander for `getip`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,10 +18,8 @@
 #include "argparse.h"
 #include "redfish.h"
 
-//get BMC IP and VLAN information
-
 static const char *const usage[] = {
-        "utool getip",
+        "getip",
         NULL,
 };
 
@@ -58,9 +60,7 @@ static const UtoolOutputMapping getEthernetMappings[] = {
 
 
 /**
- * command handler of `getip`
- *
- * Get BMC IP and VLAN information
+ * Get BMC IP and VLAN information, command handler of `getip`
  *
  * @param commandOption
  * @param result

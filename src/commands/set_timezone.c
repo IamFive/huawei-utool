@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `settimezone`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,10 +20,10 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_TIMEZONE_REQUIRED = "Error: option `DateTimeLocalOffset` is required.";
+static const char *OPT_TIMEZONE_REQUIRED = "Error: option `datetime-local-offset` is required.";
 
 static const char *const usage[] = {
-        "utool settimezone -z DateTimeLocalOffset",
+        "settimezone -z datetime-local-offset",
         NULL,
 };
 
@@ -45,7 +49,7 @@ int UtoolCmdSetTimezone(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('z', "DateTimeLocalOffset", &timezone,
+            OPT_STRING ('z', "datetime-local-offset", &timezone,
                         "specifies the timezone(-12:00~+14:00) of the manager resource", NULL, 0, 0),
             OPT_END()
     };

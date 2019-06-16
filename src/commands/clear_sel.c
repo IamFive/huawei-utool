@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: command hander for `clearsel`
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,7 +21,7 @@
 #include "string_utils.h"
 
 static const char *const usage[] = {
-        "utool clearsel",
+        "clearsel",
         NULL,
 };
 

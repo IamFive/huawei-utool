@@ -1,0 +1,275 @@
+diff --git a/argparse.c b/argparse.c
+index a9e00db..211904d 100644
+--- a/argparse.c
++++ b/argparse.c
+@@ -37,13 +37,13 @@ static void
+ argparse_error(struct argparse *self, const struct argparse_option *opt,
+                const char *reason, int flags)
+ {
+-    (void)self;
++    self->error = 1;
++    self->reason = (char *) malloc(128);
+     if (flags & OPT_LONG) {
+-        fprintf(stderr, "error: option `--%s` %s\n", opt->long_name, reason);
++        sprintf(self->reason, "Error: option `--%s` %s.", opt->long_name, reason);
+     } else {
+-        fprintf(stderr, "error: option `-%c` %s\n", opt->short_name, reason);
++        sprintf(self->reason, "Error: option `-%c` %s.", opt->short_name, reason);
+     }
+-    exit(1);
+ }
+ 
+ static int
+@@ -54,68 +54,88 @@ argparse_getvalue(struct argparse *self, const struct argparse_option *opt,
+     if (!opt->value)
+         goto skipped;
+     switch (opt->type) {
+-    case ARGPARSE_OPT_BOOLEAN:
+-        if (flags & OPT_UNSET) {
+-            *(int *)opt->value = *(int *)opt->value - 1;
+-        } else {
+-            *(int *)opt->value = *(int *)opt->value + 1;
+-        }
+-        if (*(int *)opt->value < 0) {
+-            *(int *)opt->value = 0;
+-        }
+-        break;
+-    case ARGPARSE_OPT_BIT:
+-        if (flags & OPT_UNSET) {
+-            *(int *)opt->value &= ~opt->data;
+-        } else {
+-            *(int *)opt->value |= opt->data;
+-        }
+-        break;
+-    case ARGPARSE_OPT_STRING:
+-        if (self->optvalue) {
+-            *(const char **)opt->value = self->optvalue;
+-            self->optvalue             = NULL;
+-        } else if (self->argc > 1) {
+-            self->argc--;
+-            *(const char **)opt->value = *++self->argv;
+-        } else {
+-            argparse_error(self, opt, "requires a value", flags);
+-        }
+-        break;
+-    case ARGPARSE_OPT_INTEGER:
+-        errno = 0; 
+-        if (self->optvalue) {
+-            *(int *)opt->value = strtol(self->optvalue, (char **)&s, 0);
+-            self->optvalue     = NULL;
+-        } else if (self->argc > 1) {
+-            self->argc--;
+-            *(int *)opt->value = strtol(*++self->argv, (char **)&s, 0);
+-        } else {
+-            argparse_error(self, opt, "requires a value", flags);
+-        }
+-        if (errno) 
+-            argparse_error(self, opt, strerror(errno), flags);
+-        if (s[0] != '\0')
+-            argparse_error(self, opt, "expects an integer value", flags);
+-        break;
+-    case ARGPARSE_OPT_FLOAT:
+-        errno = 0; 
+-        if (self->optvalue) {
+-            *(float *)opt->value = strtof(self->optvalue, (char **)&s);
+-            self->optvalue     = NULL;
+-        } else if (self->argc > 1) {
+-            self->argc--;
+-            *(float *)opt->value = strtof(*++self->argv, (char **)&s);
+-        } else {
+-            argparse_error(self, opt, "requires a value", flags);
+-        }
+-        if (errno) 
+-            argparse_error(self, opt, strerror(errno), flags);
+-        if (s[0] != '\0')
+-            argparse_error(self, opt, "expects a numerical value", flags);
+-        break;
+-    default:
+-        assert(0);
++        case ARGPARSE_OPT_BOOLEAN:
++            if (flags & OPT_UNSET) {
++                *(int *) opt->value = *(int *) opt->value - 1;
++            }
++            else {
++                *(int *) opt->value = *(int *) opt->value + 1;
++            }
++            if (*(int *) opt->value < 0) {
++                *(int *) opt->value = 0;
++            }
++            break;
++        case ARGPARSE_OPT_BIT:
++            if (flags & OPT_UNSET) {
++                *(int *) opt->value &= ~opt->data;
++            }
++            else {
++                *(int *) opt->value |= opt->data;
++            }
++            break;
++        case ARGPARSE_OPT_STRING:
++            if (self->optvalue) {
++                *(const char **) opt->value = self->optvalue;
++                self->optvalue = NULL;
++            }
++            else if (self->argc > 1) {
++                self->argc--;
++                *(const char **) opt->value = *++self->argv;
++            }
++            else {
++                argparse_error(self, opt, "requires a value", flags);
++                goto error;
++            }
++            break;
++        case ARGPARSE_OPT_INTEGER:
++            errno = 0;
++            if (self->optvalue) {
++                *(int *) opt->value = strtol(self->optvalue, (char **) &s, 0);
++                self->optvalue = NULL;
++            }
++            else if (self->argc > 1) {
++                self->argc--;
++                *(int *) opt->value = strtol(*++self->argv, (char **) &s, 0);
++            }
++            else {
++                argparse_error(self, opt, "requires a value", flags);
++                goto error;
++            }
++            if (errno) {
++                argparse_error(self, opt, strerror(errno), flags);
++                goto error;
++            }
++
++            if (s[0] != '\0') {
++                argparse_error(self, opt, "expects an integer value", flags);
++                goto error;
++            }
++            break;
++        case ARGPARSE_OPT_FLOAT:
++            errno = 0;
++            if (self->optvalue) {
++                *(float *) opt->value = strtof(self->optvalue, (char **) &s);
++                self->optvalue = NULL;
++            }
++            else if (self->argc > 1) {
++                self->argc--;
++                *(float *) opt->value = strtof(*++self->argv, (char **) &s);
++            }
++            else {
++                argparse_error(self, opt, "requires a value", flags);
++                goto error;
++            }
++            if (errno) {
++                argparse_error(self, opt, strerror(errno), flags);
++                goto error;
++            }
++            if (s[0] != '\0') {
++                argparse_error(self, opt, "expects a numerical value", flags);
++                goto error;
++            }
++            break;
++        default:
++            assert(0);
+     }
+ 
+ skipped:
+@@ -124,6 +144,12 @@ skipped:
+     }
+ 
+     return 0;
++
++error:
++    if (opt->callback) {
++        return opt->callback(self, opt);
++    }
++    return -3;
+ }
+ 
+ static void
+@@ -241,17 +267,21 @@ argparse_parse(struct argparse *self, int argc, const char **argv)
+         if (arg[1] != '-') {
+             self->optvalue = arg + 1;
+             switch (argparse_short_opt(self, self->options)) {
+-            case -1:
+-                break;
+-            case -2:
+-                goto unknown;
+-            }
+-            while (self->optvalue) {
+-                switch (argparse_short_opt(self, self->options)) {
+                 case -1:
+                     break;
+                 case -2:
+                     goto unknown;
++                case -3:
++                    goto end;
++            }
++            while (self->optvalue) {
++                switch (argparse_short_opt(self, self->options)) {
++                    case -1:
++                        break;
++                    case -2:
++                        goto unknown;
++                    case -3:
++                        goto end;
+                 }
+             }
+             continue;
+@@ -264,17 +294,23 @@ argparse_parse(struct argparse *self, int argc, const char **argv)
+         }
+         // long option
+         switch (argparse_long_opt(self, self->options)) {
+-        case -1:
+-            break;
+-        case -2:
+-            goto unknown;
++            case -1:
++                break;
++            case -2:
++                goto unknown;
++            case -3:
++                goto end;
+         }
+         continue;
+ 
+ unknown:
+-        fprintf(stderr, "error: unknown option `%s`\n", self->argv[0]);
+-        argparse_usage(self);
+-        exit(1);
++        self->error = 1;
++        self->reason = (char *) malloc(128);
++        sprintf(self->reason, "Error: unknown option `%s` present in command %s.", self->argv[0], argv[0]);
++        return self->cpidx + self->argc;
++        //fprintf(stderr, "error: unknown option `%s`\n", self->argv[0]);
++        //argparse_usage(self);
++        //exit(1);
+     }
+ 
+ end:
+@@ -321,7 +357,7 @@ argparse_usage(struct argparse *self)
+         }
+         if (options->type == ARGPARSE_OPT_INTEGER) {
+             len += strlen("=<int>");
+-		  }
++        }
+         if (options->type == ARGPARSE_OPT_FLOAT) {
+             len += strlen("=<flt>");
+         } else if (options->type == ARGPARSE_OPT_STRING) {
+@@ -381,5 +417,5 @@ argparse_help_cb(struct argparse *self, const struct argparse_option *option)
+ {
+     (void)option;
+     argparse_usage(self);
+-    exit(0);
++    //exit(0);
+ }
+diff --git a/argparse.h b/argparse.h
+index 7fff31d..e0e92e5 100644
+--- a/argparse.h
++++ b/argparse.h
+@@ -98,6 +98,8 @@ struct argparse {
+     const char **out;
+     int cpidx;
+     const char *optvalue;       // current option value
++    int error;                  // error flag, (1) failed, (0) success.
++    char *reason;               // reason when failed
+ };
+ 
+ // built-in callbacks

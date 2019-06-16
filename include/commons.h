@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/9/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: common utilities header
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_COMMONS_H
 #define UTOOL_COMMONS_H
 /* For c++ compatibility */
@@ -21,23 +24,23 @@ extern "C" {
 /**
 * choices: Enabled, Disabled
 */
-extern const char *UTOOL_ENABLED_CHOICES[];
+extern const char *g_UTOOL_ENABLED_CHOICES[];
 
 /**
 *   All command metadata define
 */
-extern UtoolCommand utoolCommands[];
+extern UtoolCommand g_UtoolCommands[];
 
 
-extern const char *UtoolRedfishTaskSuccessStatus[];
+extern const char *g_UtoolRedfishTaskSuccessStatus[];
 
-extern const char *UtoolRedfishTaskFinishedStatus[];
+extern const char *g_UtoolRedfishTaskFinishedStatus[];
 
 
 /**
 * Redfish Async Task output mapping
 */
-extern const UtoolOutputMapping utoolGetTaskMappings[];
+extern const UtoolOutputMapping g_UtoolGetTaskMappings[];
 
 extern int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
 

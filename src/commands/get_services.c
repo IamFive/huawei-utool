@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `getservice`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,7 +20,7 @@
 #include "string_utils.h"
 
 static const char *const usage[] = {
-        "utool getservice",
+        "getservice",
         NULL,
 };
 
@@ -39,9 +43,7 @@ static const UtoolOutputMapping getVMSslEnabledMappings[] = {
 int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode);
 
 /**
- * command handler of `getservice`
- *
- * get BMC network protocol services
+ * get BMC network protocol services, command handler of `getservice`
  *
  * @param commandOption
  * @param outputStr

@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: zf-log initialize
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #if defined(_WIN32) || defined(_WIN64)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -37,13 +44,3 @@ void UtoolSetLogFilePath(const char *const log_file_path)
         ZF_LOGI("Log to file %s initialize succeed.", log_file_path);
     }
 }
-
-//int main(int argc, char *argv[])
-//{
-//    UtoolSetLogFilePath("example.log");
-//
-//    ZF_LOGI("Writing number of arguments to log file: %i", argc);
-//    ZF_LOGI_MEM(argv, argc * sizeof(*argv), "argv pointers:");
-//
-//    return 0;
-//}

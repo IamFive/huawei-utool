@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command hander for `deluser`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,20 +20,21 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *const OPTION_USERNAME_REQUIRED = "Error: option `Username` is required.";
+static const char *const OPTION_USERNAME_REQUIRED = "Error: option `username` is required.";
 
 static const char *const usage[] = {
-        "utool deluser -n Username",
+        "deluser -n username",
         NULL,
 };
 
 
 /**
- *
- * @param self
- * @param option
- * @return
- */
+* Delete user, command handler for `deluser`
+*
+* @param commandOption
+* @param result
+* @return
+*/
 int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
 {
     int ret = UTOOLE_OK;
@@ -46,9 +51,7 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "Username", &username,
-                        "specifies the user to delete",
-                        NULL, 0, 0),
+            OPT_STRING ('n', "username", &username, "specifies the user to delete", NULL, 0, 0),
             OPT_END(),
     };
 

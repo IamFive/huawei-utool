@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `getpdisk`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +19,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getpdisk",
+        "getpdisk",
         NULL,
 };
 
@@ -114,7 +118,7 @@ static const UtoolOutputMapping getDriveMappings[] = {
 
 
 /**
- * command handler of `getpdisk`
+ * get physical disk information, command handler of `getpdisk`
  *
  * @param commandOption
  * @param result

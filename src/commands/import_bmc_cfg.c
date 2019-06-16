@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `importbmccfg`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -22,10 +26,10 @@
 #include "url_parser.h"
 
 static const char *PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "NFS", NULL};
-static const char *OPT_FILE_URL_ILLEGAL = "Error: option `FileURI` is illegal. Protocol is not supported.";
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal. Protocol is not supported.";
 
 static const char *const usage[] = {
-        "utool importbmccfg -u FILEURI",
+        "importbmccfg -u file-uri",
         NULL,
 };
 
@@ -59,7 +63,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('u', "FileURI", &(opt->importFileUrl), "specifies path to BMC config file", NULL, 0, 0),
+            OPT_STRING ('u', "file-uri", &(opt->importFileUrl), "specifies path to BMC config file", NULL, 0, 0),
             OPT_END()
     };
 
@@ -106,7 +110,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
     // if task is successfully complete
-    if (taskState != NULL && UtoolStringInArray(taskState->valuestring, UtoolRedfishTaskSuccessStatus)) {
+    if (taskState != NULL && UtoolStringInArray(taskState->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
         ZF_LOGI("collect diagnostic information task finished successfully");
         // output to outputStr
         UtoolBuildDefaultSuccessResult(&(result->desc));
@@ -120,7 +124,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
             goto FAILURE;
         }
 
-        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, utoolGetTaskMappings);
+        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, g_UtoolGetTaskMappings);
         FREE_CJSON(result->data)
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
@@ -160,7 +164,7 @@ static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult 
     ZF_LOGI("Import file URI is %s.", opt->importFileUrl);
 
     if (UtoolStringIsEmpty(opt->importFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(FileURI)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(file-uri)),
                                               &(result->desc));
         goto FAILURE;
     }

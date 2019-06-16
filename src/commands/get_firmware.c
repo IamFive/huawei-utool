@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `getfw`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +19,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getfw",
+        "getfw",
         NULL,
 };
 
@@ -47,7 +51,7 @@ static const UtoolOutputMapping getFwMappings[] = {
 
 
 /**
- * command handler of `getfw`
+ * Get outband firmware information, command handler of `getfw`
  *
  * @param commandOption
  * @param result

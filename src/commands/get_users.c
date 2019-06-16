@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `getuser`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +19,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool getuser",
+        "getuser",
         NULL,
 };
 
@@ -37,8 +41,7 @@ static const UtoolOutputMapping getUserMappings[] = {
 };
 
 /**
- * command handler of `getuser`
- * get BMC user information
+ * get BMC user information, command handler of `getuser`
  *
  * @param commandOption
  * @param outputStr
