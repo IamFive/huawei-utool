@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setadaptiveport`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +22,7 @@
 
 
 static const char *const usage[] = {
-        "utool setadaptiveport -p PortList",
+        "setadaptiveport -p port-list",
         NULL,
 };
 
@@ -48,7 +52,7 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('p', "PortList", &(option->adaptivePortListStr),
+            OPT_STRING ('p', "port-list", &(option->adaptivePortListStr),
                         "specifies adaptive port list in JSON format, "
                         "example: [{NIC=Dedicated,Port=0},{NIC=MEZZ,Port=1}]", NULL, 0, 0),
             OPT_END()
@@ -126,7 +130,7 @@ DONE:
 static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->adaptivePortListStr)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(PortList)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(port-list)),
                                               &(result->desc));
         goto FAILURE;
     }

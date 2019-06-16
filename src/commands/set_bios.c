@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setbios`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,13 +23,13 @@
 
 #define MB 1024 * 1024
 
-static const char *OPT_VALUE_REQUIRED = "Error: option `Value` is required when `Attribute` option present.";
-static const char *OPT_ATTR_REQUIRED = "Error: option `Attribute` is required when `Value` option present.";
+static const char *OPT_VALUE_REQUIRED = "Error: option `value` is required when `attribute` option present.";
+static const char *OPT_ATTR_REQUIRED = "Error: option `attribute` is required when `value` option present.";
 static const char *OPT_FILE_TOO_LARGE = "Error: input JSON file should not large than 1 MB.";
 static const char *OPT_JSON_FILE_ILLEGAL = "Error: input file is not well JSON formatted.";
 
 static const char *const usage[] = {
-        "utool setbios [-a Attribute] [-v Value] [-f FileURI]",
+        "setbios [-a attribute] [-v value] [-f file-uri]",
         NULL,
 };
 
@@ -57,11 +61,11 @@ int UtoolCmdSetBIOS(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('a', "Attribute", &(option->attr),
+            OPT_STRING ('a', "attribute", &(option->attr),
                         "specifies the BIOS attribute to update", NULL, 0, 0),
-            OPT_STRING ('v', "Value", &(option->value),
+            OPT_STRING ('v', "value", &(option->value),
                         "specifies the value of BIOS attribute to update", NULL, 0, 0),
-            OPT_STRING ('f', "FileURI", &(option->fileURI),
+            OPT_STRING ('f', "file-uri", &(option->fileURI),
                         "specifies JSON file URI which indicates BIOS attribute and value pairs to update.", NULL, 0,
                         0),
             OPT_END()

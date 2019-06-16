@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `settrapdest`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,14 +20,14 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_ID_REQUIRED = "Error: option `DestinationId` is required";
-static const char *OPT_ID_ILLEGAL = "Error: option `DestinationId` is illegal, available value range is: 1~4";
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_ID_REQUIRED = "Error: option `destination-id` is required";
+static const char *OPT_ID_ILLEGAL = "Error: option `destination-id` is illegal, available value range is: 1~4";
 
-static const char *OPT_PORT_NUMBER_ILLEGAL = "Error: option `PortNumber` is illegal, available value range is: 1~65535";
+static const char *OPT_PORT_NUMBER_ILLEGAL = "Error: option `port-number` is illegal, available value range is: 1~65535";
 
 static const char *const usage[] = {
-        "utool settrapdest -d DestinationId [-a Address] [-p PortNumber] [-e Enabled]",
+        "settrapdest -d destination-id [-a address] [-p port-number] [-e enabled]",
         NULL,
 };
 
@@ -56,13 +60,13 @@ int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char 
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_INTEGER('d', "DestinationId", &(option->id),
+            OPT_INTEGER('d', "destination-id", &(option->id),
                         "specifies trap server ID, value range: 1~4", NULL, 0, 0),
-            OPT_STRING ('a', "Address", &(option->address),
+            OPT_STRING ('a', "address", &(option->address),
                         "specifies trap server address", NULL, 0, 0),
-            OPT_INTEGER('p', "PortNumber", &(option->portNumber),
+            OPT_INTEGER('p', "port-number", &(option->portNumber),
                         "specifies trap server port number, value range: 1~65535", NULL, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->enabled),
+            OPT_STRING ('e', "enabled", &(option->enabled),
                         "specifies whether this trap server is enabled, available choices: {Enabled, Disabled}",
                         NULL, 0, 0),
             OPT_END()
@@ -148,7 +152,7 @@ static void ValidateSubcommandOptions(UtoolUpdateTrapNotifyDestOption *option, U
     }
 
     if (!UtoolStringIsEmpty(option->enabled)) {
-        if (!UtoolStringInArray(option->enabled, UTOOL_ENABLED_CHOICES)) {
+        if (!UtoolStringInArray(option->enabled, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;

@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler of `geteventlog`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,7 +19,7 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "utool geteventlog",
+        "geteventlog",
         NULL,
 };
 
@@ -47,13 +51,6 @@ static const UtoolOutputMapping getEventArrayMappings[] = {
  * @param result
  * @return
  */
-/**
-* get VNC setting, command handler for `getvnc`.
-*
-* @param commandOption
-* @param outputStr
-* @return
-*/
 int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr)
 {
     int ret;

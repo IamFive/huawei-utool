@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `locateserver`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,13 +25,13 @@
 #define STATE_BLINK "Blink"
 
 static const char *INDICATOR_STATE_CHOICES[] = {STATE_ON, STATE_OFF, STATE_BLINK, NULL};
-static const char *OPT_STATE_REQUIRED = "Error: option `LEDState` is required.";
-static const char *OPT_STATE_ILLEGAL = "Error: option `LEDState` is illegal, available choices: On, Off, Blink.";
-static const char *OPT_FEQ_ILLEGAL = "Error: option `Frequency` is illegal, value range should be: 1~255.";
-static const char *OPT_FEQ_NO_USE = "Error: option `Frequency` should not be set when state is not Blink.";
+static const char *OPT_STATE_REQUIRED = "Error: option `led-state` is required.";
+static const char *OPT_STATE_ILLEGAL = "Error: option `led-state` is illegal, available choices: On, Off, Blink.";
+static const char *OPT_FEQ_ILLEGAL = "Error: option `frequency` is illegal, value range should be: 1~255.";
+static const char *OPT_FEQ_NO_USE = "Error: option `frequency` should not be set when state is not Blink.";
 
 static const char *const usage[] = {
-        "utool locateserver -s LedState [-f Frequency]",
+        "locateserver -s led-state [-f frequency]",
         NULL,
 };
 
@@ -59,9 +63,9 @@ int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('s', "LEDState", &(option->state),
+            OPT_STRING ('s', "led-state", &(option->state),
                         "specifies indicator LED state, available choices: {On, Off, Blink}", NULL, 0, 0),
-            OPT_INTEGER('f', "Frequency", &(option->frequency),
+            OPT_INTEGER('f', "frequency", &(option->frequency),
                         "specifies blink period (in seconds) when state is blink, value range: 1~255.",
                         NULL, 0, 0),
             OPT_END()

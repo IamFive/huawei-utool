@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/11/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: String utilities
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <ctype.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,9 +12,10 @@
 
 
 /**
+* check whether a string is empty
 *
 * @param str
-* @return
+* @return true if empty else false
 */
 bool UtoolStringIsEmpty(char *str)
 {
@@ -166,6 +171,13 @@ char *UtoolStringLastSplit(char *source, char split)
     return pLastSplit;
 }
 
+/**
+* find a string in an array ignore case
+*
+* @param str
+* @param array
+* @return the element in array if found else NULL
+*/
 char *UtoolStringCaseFindInArray(const char *str, const char **array)
 {
     if (str == NULL) {
@@ -184,3 +196,21 @@ char *UtoolStringCaseFindInArray(const char *str, const char **array)
 
     return NULL;
 }
+
+/**
+* check whether a string is numeric
+*
+* @param str
+* @return
+*/
+bool UtoolStringIsNumeric(const char *str)
+{
+    while(*str != '\0')
+    {
+        if(*str < '0' || *str > '9')
+            return false;
+        str++;
+    }
+    return true;
+}
+

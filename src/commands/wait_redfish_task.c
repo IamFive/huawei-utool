@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for ``
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,11 +21,17 @@
 
 
 static const char *const usage[] = {
-        "utool waittask -i TaskId",
+        "waittask -i TaskId",
         NULL,
 };
 
-
+/**
+* test purpose
+*
+* @param commandOption
+* @param outputStr
+* @return
+*/
 int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
 {
     UtoolResult *result = &(UtoolResult) {0};
@@ -67,7 +77,7 @@ int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
 
     // output to result
     output = cJSON_CreateObject();
-    result->code = UtoolMappingCJSONItems(result->data, output, utoolGetTaskMappings);
+    result->code = UtoolMappingCJSONItems(result->data, output, g_UtoolGetTaskMappings);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }

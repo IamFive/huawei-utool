@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setvlan`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,11 +20,11 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_VLAN_ID_ILLEGAL = "Error: option `VLANID` is illegal, value range should be: 1~4094";
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_VLAN_ID_ILLEGAL = "Error: option `vlan-id` is illegal, value range should be: 1~4094";
 
 static const char *const usage[] = {
-        "utool setvlan [-e Enabled] [-v VLANID]",
+        "setvlan [-e enabled] [-v vlan-id]",
         NULL,
 };
 
@@ -35,7 +39,7 @@ static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result);
 static void ValidateSubcommandOptions(UtoolSetVlanOption *option, UtoolResult *result);
 
 /**
-* set BMC NCSI port  VLAN, command handler for `setvlan`
+* set BMC NCSI port VLAN, command handler for `setvlan`
 *
 * @param commandOption
 * @param result
@@ -51,9 +55,9 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->state),
+            OPT_STRING ('e', "enabled", &(option->state),
                         "specifies whether VLAN is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_INTEGER('v', "VLANID", &(option->frequency),
+            OPT_INTEGER('v', "vlan-id", &(option->frequency),
                         "specifies VLAN Id if enabled, range: 1~4094", NULL, 0, 0),
             OPT_END()
     };
@@ -129,7 +133,7 @@ static void ValidateSubcommandOptions(UtoolSetVlanOption *option, UtoolResult *r
 {
 
     if (!UtoolStringIsEmpty(option->state)) {
-        if (!UtoolStringInArray(option->state, UTOOL_ENABLED_CHOICES)) {
+        if (!UtoolStringInArray(option->state, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;

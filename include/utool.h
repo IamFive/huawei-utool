@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/7/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: utool header
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_UTOOL_H
 #define UTOOL_UTOOL_H
 

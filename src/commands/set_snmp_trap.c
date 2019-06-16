@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `settrapcom`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,12 +21,12 @@
 #include "string_utils.h"
 
 static const char *SEVERITY_CHOICES[] = {"All", "WarningAndCritical", "Critical", NULL};
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `Enabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_SEVERITY_ILLEGAL = "Error: option `Severity` is illegal, "
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_SEVERITY_ILLEGAL = "Error: option `severity` is illegal, "
                                           "available choices: All, WarningAndCritical, Critical";
 
 static const char *const usage[] = {
-        "utool settrapcom [-c Community] [-e Enabled] [-s Severity]",
+        "settrapcom [-c community] [-e enabled] [-s severity]",
         NULL,
 };
 
@@ -54,11 +58,11 @@ int UtoolCmdSetSNMPTrapNotification(UtoolCommandOption *commandOption, char **ou
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('c', "Community", &(option->bootDevice),
+            OPT_STRING ('c', "community", &(option->bootDevice),
                         "specifies community name", NULL, 0, 0),
-            OPT_STRING ('e', "Enabled", &(option->effective),
+            OPT_STRING ('e', "enabled", &(option->effective),
                         "specifies whether trap is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_STRING ('s', "Severity", &(option->bootMode),
+            OPT_STRING ('s', "severity", &(option->bootMode),
                         "specifies level of alarm to sent, available choices: {All, WarningAndCritical, Critical}",
                         NULL, 0, 0),
             OPT_END()
@@ -124,7 +128,7 @@ DONE:
 static void ValidateSubcommandOptions(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result)
 {
     if (!UtoolStringIsEmpty(option->effective)) {
-        if (!UtoolStringInArray(option->effective, UTOOL_ENABLED_CHOICES)) {
+        if (!UtoolStringInArray(option->effective, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;

@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/11/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: string utilities header
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_STRING_UTILS_H
 #define UTOOL_STRING_UTILS_H
 /* For c++ compatibility */
@@ -89,18 +92,27 @@ void UtoolStringToUpper(char *str);
 *
 * @param source
 * @param split
-* @return
+* @return the last split string segment
 */
 char *UtoolStringLastSplit(char *source, char split);
 
 /**
-* find a given string in array while ignoring differences in case
+* find a string in an array ignore case
 *
 * @param str
 * @param array
-* @return
+* @return the element in array if found else NULL
 */
 char *UtoolStringCaseFindInArray(const char *str, const char **array);
+
+
+/**
+* check whether a string is numeric
+*
+* @param str
+* @return
+*/
+bool UtoolStringIsNumeric(const char *str);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setvnc`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,11 +20,11 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_ENABLED_ILLEGAL = "Error: option `SSLEnabled` is illegal, available choices: Enabled, Disabled";
-static const char *OPT_TIMEOUT_ILLEGAL = "Error: option `Timeout` is illegal, available value range: 0~480.";
+static const char *OPT_ENABLED_ILLEGAL = "Error: option `ssl-enabled` is illegal, available choices: Enabled, Disabled";
+static const char *OPT_TIMEOUT_ILLEGAL = "Error: option `timeout` is illegal, available value range: 0~480.";
 
 static const char *const usage[] = {
-        "utool setvnc [-e SSLEnabled] [-t Timeout] [-p Password]",
+        "setvnc [-e ssl-enabled] [-t timeout] [-p password]",
         NULL,
 };
 
@@ -52,12 +56,12 @@ int UtoolCmdSetVNCSettings(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('e', "SSLEnabled", &(option->sslEnabled),
+            OPT_STRING ('e', "ssl-enabled", &(option->sslEnabled),
                         "specifies Whether SSL encryption is enabled, available choices: {Enabled, Disabled}",
                         NULL, 0, 0),
-            OPT_INTEGER('t', "Timeout", &(option->timeout),
+            OPT_INTEGER('t', "timeout", &(option->timeout),
                         "specifies VNC session timeout period in minute, value range: 0~480.", NULL, 0, 0),
-            OPT_STRING ('p', "Password", &(option->password),
+            OPT_STRING ('p', "password", &(option->password),
                         "specifies VNC password.",
                         NULL, 0, 0),
             OPT_END()
@@ -123,7 +127,7 @@ DONE:
 static void ValidateSubcommandOptions(UtoolUpdateVNCSettings *option, UtoolResult *result)
 {
     if (!UtoolStringIsEmpty(option->sslEnabled)) {
-        if (!UtoolStringInArray(option->sslEnabled, UTOOL_ENABLED_CHOICES)) {
+        if (!UtoolStringInArray(option->sslEnabled, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;

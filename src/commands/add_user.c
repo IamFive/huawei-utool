@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: Command Handler for `getuser`
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,18 +29,18 @@ typedef struct _AddUserOption
     UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
 } UtoolAddUserOption;
 
-static const char *const OPTION_USERNAME_REQUIRED = "Error: option `Username` is required.";
-static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `Password` is required.";
-static const char *const OPTION_ROlEID_REQUIRED = "Error: option `RoleId` is required.";
-static const char *const OPTION_ROlEID_ILLEGAL = "Error: option `RoleId` is illegal, available choices: "
+static const char *const OPTION_USERNAME_REQUIRED = "Error: option `username` is required.";
+static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `password` is required.";
+static const char *const OPTION_ROlEID_REQUIRED = "Error: option `role-id` is required.";
+static const char *const OPTION_ROlEID_ILLEGAL = "Error: option `role-id` is illegal, available choices: "
                                                  "Administrator, Operator, Commonuser, Noaccess.";
-static const char *const OPTION_PRIVILEGE_ILLEGAL = "Error: option `Privilege` is illegal, "
+static const char *const OPTION_PRIVILEGE_ILLEGAL = "Error: option `privilege` is illegal, "
                                                     "only `None` is support for now.";
 
 static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
 
 static const char *const usage[] = {
-        "utool adduser -n USERNAME -p PASSWORD -r {Administrator,Operator,Commonuser,NoAccess} "
+        "adduser -n USERNAME -p PASSWORD -r {Administrator,Operator,Commonuser,NoAccess} "
         "-l PRIVILEGE1,PRIVILEGE2",
         NULL,
 };
@@ -47,11 +51,13 @@ static int ValidateAddUserOptions(UtoolAddUserOption *option, char **result);
 static cJSON *BuildPayload(UtoolAddUserOption *addUserOption);
 
 /**
- *
- * @param self
- * @param option
- * @return
- */
+*
+* add user command
+*
+* @param commandOption
+* @param result
+* @return
+*/
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
 {
     int ret = UTOOLE_OK;
@@ -63,12 +69,12 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "Username", &(addUserOption->username), "new user name.", NULL, 0, 0),
-            OPT_STRING ('p', "Password", &(addUserOption->password), "new user password.", NULL, 0, 0),
-            OPT_STRING ('r', "RoleId", &(addUserOption->roleId),
-                        "new user role, choices: {Administrator,Operator,Commonuser,Noaccess}.",
+            OPT_STRING ('n', "username", &(addUserOption->username), "new user name.", NULL, 0, 0),
+            OPT_STRING ('p', "password", &(addUserOption->password), "new user password.", NULL, 0, 0),
+            OPT_STRING ('r', "role-id", &(addUserOption->roleId),
+                        "new user role, choices: {Administrator, Operator, Commonuser, Noaccess}.",
                         NULL, 0, 0),
-            OPT_STRING ('l', "Privilege", &(addUserOption->privilege),
+            OPT_STRING ('l', "privilege", &(addUserOption->privilege),
                         "new user privilege, choices: {None, KVM, VMM, SOL}. "
                         "Multiple choices is supported by use comma.", NULL, 0, 0),
             OPT_END(),

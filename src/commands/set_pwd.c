@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setpwd`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,11 +27,11 @@ typedef struct _SetPasswordOption
     UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
 } UtoolSetPasswordOption;
 
-static const char *const OPTION_USERNAME_REQUIRED = "Error: option `Username` is required.";
-static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `Password` is required.";
+static const char *const OPTION_USERNAME_REQUIRED = "Error: option `username` is required.";
+static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `new-password` is required.";
 
 static const char *const usage[] = {
-        "utool setpwd -n Username -p NewPassword",
+        "setpwd -n username -p new-password",
         NULL,
 };
 
@@ -36,12 +40,14 @@ static int ValidateSetPasswordOptions(UtoolSetPasswordOption *option, char **res
 
 static cJSON *BuildPayload(UtoolSetPasswordOption *option);
 
+
 /**
- *
- * @param self
- * @param option
- * @return
- */
+* set user password, command handler for `setpwd`
+*
+* @param commandOption
+* @param result
+* @return
+* */
 int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
@@ -59,11 +65,8 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "Username", &(setPasswordOption->username),
-                        "specifies the user to be modified",
-                        NULL, 0, 0),
-            OPT_STRING ('p', "NewPassword", &(setPasswordOption->password),
-                        "new password of user", NULL, 0, 0),
+            OPT_STRING ('n', "username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0, 0),
+            OPT_STRING ('p', "new-password", &(setPasswordOption->password), "new password of user", NULL, 0, 0),
             OPT_END(),
     };
 

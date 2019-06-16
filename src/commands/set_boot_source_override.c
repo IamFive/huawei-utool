@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setsysboot`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,15 +27,15 @@ static const char *BOOT_EFFECTIVE_CHOICES[] = {"Disabled", "Once", "Continuous",
 static const char *IBMC_BOOT_DEVICE_CHOICES[] = {BOOT_DEVICE_NONE, BOOT_DEVICE_PXE, BOOT_DEVICE_FLOPPY,
                                                  BOOT_DEVICE_CD, BOOT_DEVICE_HDD, BOOT_DEVICE_BIOSSETUP, NULL};
 
-static const char *OPT_BOOT_DEVICE_ILLEGAL = "Error: option `BootDevice` is illegal, "
+static const char *OPT_BOOT_DEVICE_ILLEGAL = "Error: option `boot-device` is illegal, "
                                              "available choices: none, HDD, PXE, CD, BIOSSETUP.";
-static const char *OPT_EFFECTIVE_ILLEGAL = "Error: option `Effective` is illegal, "
+static const char *OPT_EFFECTIVE_ILLEGAL = "Error: option `effective` is illegal, "
                                            "available choices: Disabled, Once, Continuous.";
-static const char *OPT_BOOT_MODE_ILLEGAL = "Error: option `BootMode` is illegal, available choices: Legacy, UEFI.";
+static const char *OPT_BOOT_MODE_ILLEGAL = "Error: option `boot-mode` is illegal, available choices: Legacy, UEFI.";
 
 
 static const char *const usage[] = {
-        "utool setsysboot [-d BootDevice] [-e Effective] [-m BootMode]",
+        "setsysboot [-d boot-device] [-e effective] [-m boot-mode]",
         NULL,
 };
 
@@ -42,16 +46,13 @@ typedef struct _SetBootSourceOverrideOption
     char *bootMode;
 } UtoolSetBootSourceOverrideOption;
 
-//BOOTDEVICE: 启动设备,取值范围：none/HDD/PXE/CD/BIOSSETUP。
-//EFFECTIVE: 有效性,取值范围：Once/Continuous 。
-//BOOTMODE: BIOS启动模式,取值范围： Legacy/UEFI。
 
 static cJSON *BuildPayload(UtoolSetBootSourceOverrideOption *option, UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolSetBootSourceOverrideOption *option, UtoolResult *result);
 
 /**
-* set SNMP trap common configuration, enable,community etc, command handler for `settrapcom`
+* set system boot up override settings, command handler for `setsysboot`
 *
 * @param commandOption
 * @param result
@@ -67,13 +68,13 @@ int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outp
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('d', "BootDevice", &(option->bootDevice),
+            OPT_STRING ('d', "boot-device", &(option->bootDevice),
                         "specifies boot source override target device,"
                         "available choices: {none, HDD, PXE, CD, BIOSSETUP}", NULL, 0, 0),
-            OPT_STRING ('e', "Effective", &(option->effective),
+            OPT_STRING ('e', "effective", &(option->effective),
                         "specifies Whether the boot settings are effective,"
                         "available choices: {Disabled, Once,Continuous}", NULL, 0, 0),
-            OPT_STRING ('m', "BootMode", &(option->bootMode),
+            OPT_STRING ('m', "boot-mode", &(option->bootMode),
                         "specifies level of alarm to sent, available choices: {Legacy, UEFI}",
                         NULL, 0, 0),
             OPT_END()

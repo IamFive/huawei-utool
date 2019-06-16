@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command handler for `setpriv`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -22,13 +26,11 @@ typedef struct _SetUserOption
     char *roleId;
 } UtoolSetUserOption;
 
-static const char *const OPTION_USERNAME_REQUIRED = "Error: option `Username` is required.";
-static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `Password` is required.";
 
 static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
 
 static const char *const usage[] = {
-        "utool setpriv -n Username -r RoleId",
+        "setpriv -n username -r role-id",
         NULL,
 };
 
@@ -60,9 +62,9 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "Username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0,
+            OPT_STRING ('n', "username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0,
                         0),
-            OPT_STRING ('r', "RoleId", &(setPasswordOption->roleId),
+            OPT_STRING ('r', "role-id", &(setPasswordOption->roleId),
                         "new role, choices: {Administrator, Operator, Commonuser, Noaccess}.", NULL, 0, 0),
             OPT_END(),
     };
@@ -198,18 +200,18 @@ DONE:
 static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->username)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(Username)), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(username)), &(result->desc));
         goto FAILURE;
     }
 
     if (UtoolStringIsEmpty(option->roleId)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(RoleId)), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(role-id)), &(result->desc));
         goto FAILURE;
     }
 
     if (!UtoolStringInArray(option->roleId, ROLES)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(
-                OPT_NOT_IN_CHOICE(RoleId, "Administrator, Operator, Commonuser, Noaccess")), &(result->desc));
+                OPT_NOT_IN_CHOICE(role-id, "Administrator, Operator, Commonuser, Noaccess")), &(result->desc));
         goto FAILURE;
     }
 

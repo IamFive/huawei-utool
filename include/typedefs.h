@@ -1,3 +1,10 @@
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: common typedef
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_TYPEDEFS_H
 #define UTOOL_TYPEDEFS_H
 
@@ -78,6 +85,7 @@ typedef struct _RedfishServer
     char *username;
     char *password;
     char *systemId;
+    char *psn;
 } UtoolRedfishServer;
 
 

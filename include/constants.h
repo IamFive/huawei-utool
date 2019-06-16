@@ -1,7 +1,10 @@
-//
-// Created by qianbiao on 5/9/19.
-//
-
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Description: constants define
+* Author:
+* Create: 2019-06-16
+* Notes:
+*/
 #ifndef UTOOL_CONSTANTS_H
 #define UTOOL_CONSTANTS_H
 /* For c++ compatibility */
@@ -120,7 +123,7 @@ extern "C" {
 #define HELP_SUB_COMMAND_DESC "Show help message for this sub-command."
 #define OPTIONAL_ARG_GROUP_TITLE "Optional arguments:"
 #define LOG_CMD_HELP_ACTION "Help action for command %s detected, output help info now."
-#define HELP_ACTION_OUTPUT_MESSAGE "please read help info from command line"
+#define HELP_ACTION_OUTPUT_MESSAGE "Please read help info from command line"
 #define TOO_MANY_ARGUMENTS "Too many arguments is provided."
 
 

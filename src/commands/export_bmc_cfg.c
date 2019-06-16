@@ -1,6 +1,10 @@
-//
-// Created by qianbiao on 5/8/19.
-//
+/*
+* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Description: command hander for `exportbmccfg`
+* Author:
+* Create: 2019-06-14
+* Notes:
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,11 +25,11 @@
 #include "url_parser.h"
 
 static const char *PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "NFS", NULL};
-static const char *OPT_FILE_URL_REQUIRED = "Error: opt `FileURI` is required.";
-static const char *OPT_FILE_URL_ILLEGAL = "Error: option `FileURI` is illegal.";
+static const char *OPT_FILE_URL_REQUIRED = "Error: opt `file-uri` is required.";
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal.";
 
 static const char *const usage[] = {
-        "utool exportbmccfg -u FILEURI",
+        "exportbmccfg -u file-uri",
         NULL,
 };
 
@@ -59,7 +63,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('u', "FileURI", &(opt->exportToFileUrl), "specifies path of export file", NULL, 0, 0),
+            OPT_STRING ('u', "file-uri", &(opt->exportToFileUrl), "specifies path of export file", NULL, 0, 0),
             OPT_END()
     };
 
@@ -106,7 +110,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
     // if task is successfully complete
-    if (taskState != NULL && UtoolStringInArray(taskState->valuestring, UtoolRedfishTaskSuccessStatus)) {
+    if (taskState != NULL && UtoolStringInArray(taskState->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
         ZF_LOGI("export BMC config xml task finished successfully");
         // download file to local if necessary
         if (opt->isLocalFile) {
@@ -129,7 +133,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
             goto FAILURE;
         }
 
-        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, utoolGetTaskMappings);
+        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, g_UtoolGetTaskMappings);
         FREE_CJSON(result->data)
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
@@ -168,7 +172,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
     ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
 
     if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(FileURI)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(file-uri)),
                                               &(result->desc));
         goto FAILURE;
     }
