@@ -55,7 +55,7 @@ static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult 
 * */
 int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson;
+    cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -103,15 +103,21 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    lastSuccessTaskJson = result->data;
+    // lastSuccessTaskJson = result->data;
     if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
+    /* When task success */
+    UtoolBuildDefaultSuccessResult(&(result->desc));
+    goto DONE;
+
+    /**
     cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
     // if task is successfully complete
     if (taskState != NULL && UtoolStringInArray(taskState->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
-        ZF_LOGI("collect diagnostic information task finished successfully");
+        ZF_LOGI("import bmc config task finished successfully");
         // output to outputStr
         UtoolBuildDefaultSuccessResult(&(result->desc));
         goto DONE;
@@ -133,6 +139,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
         result->code = UtoolBuildOutputResult(STATE_FAILURE, output, &(result->desc));
         goto DONE;
     }
+    */
 
 
 FAILURE:
@@ -142,7 +149,6 @@ FAILURE:
 DONE:
     FREE_OBJ(opt->bmcTempFileUrl)
     FREE_CJSON(payload)
-    FREE_CJSON(lastSuccessTaskJson)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;
@@ -235,7 +241,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *
     }
     else {
         UtoolUploadFileToBMC(server, opt->importFileUrl, result);
-        if(result->interrupt) {
+        if (result->interrupt) {
             goto FAILURE;
         }
 

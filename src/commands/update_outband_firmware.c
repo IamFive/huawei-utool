@@ -28,7 +28,7 @@
 #include "string_utils.h"
 #include "url_parser.h"
 
-#define LOG_HEAD "{\"log\":[\n"
+#define LOG_HEAD "{\"log\":[   \n"
 #define LOG_TAIL "\n]}"
 #define MAX_LOG_ENTRY_LEN 512
 #define LOG_ENTRY_FORMAT "\t{\n\t\t\"Time\": \"%s\",\n\t\t\"Stage\": \"%s\",\n\t\t\"State\": \"%s\",\n\t\t\"Note\": \"%s\"\n\t}, \n"
@@ -161,6 +161,8 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
     while (retryTimes++ < UPGRADE_FIRMWARE_RETRY_TIMES) {
         ZF_LOGI("Start to update outband firmware now, round: %d.", retryTimes);
 
+        /* reset temp values */
+        result->interrupt = 0;
         if (result->desc != NULL) {
             FREE_OBJ(result->desc);
         }
@@ -196,16 +198,19 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
         /* Wait util download file progress finished */
         if (!updateFirmwareOption->isLocalFile) {
+            ZF_LOGI("Waiting for BMC download update firmware file ...");
             WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_START,
                           "Start download remote file to BMC");
+
             UtoolRedfishWaitUtilTaskStart(server, result->data, result);
             if (result->interrupt) {
+                ZF_LOGE("Failed to download update firmware file.");
                 WriteFailedLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_FAILED, result);
                 continue;
             }
 
-            WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_START,
-                          "Start download remote file to BMC");
+            ZF_LOGE("Download update firmware file successfully.");
+            WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_SUCCESS, "");
         }
 
         // waiting util task complete or exception
@@ -256,7 +261,7 @@ DONE:
     if (updateFirmwareOption->logFileFP != NULL) {
         fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
         __off_t position = ftello(updateFirmwareOption->logFileFP);
-        ftruncate(fileno(updateFirmwareOption->logFileFP), position);
+        ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
 
         fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
         fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
@@ -499,7 +504,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption
         goto DONE;
     }
     else { /** handle remote file */
-        ZF_LOGI("Firmware image uri `%s` is not local file.", imageUri);
+        ZF_LOGI("Firmware image uri `%s` is not local file, will start update firmware directly now.", imageUri);
 
         /** parse url */
         parsedUrl = UtoolParseURL(imageUri);
