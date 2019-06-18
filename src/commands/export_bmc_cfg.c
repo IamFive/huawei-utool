@@ -55,7 +55,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
 * */
 int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *output = NULL, *payload = NULL, *lastSuccessTaskJson = NULL;
+    cJSON *output = NULL, *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -103,11 +103,25 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    lastSuccessTaskJson = result->data;
     if (result->interrupt) {
         goto FAILURE;
     }
+    FREE_CJSON(result->data)
 
+    ZF_LOGI("export BMC config xml task finished successfully");
+    if (opt->isLocalFile) { /* download file to local if necessary */
+        ZF_LOGI("Try to download BMC config xml file from BMC now.");
+        UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+    }
+
+    // output to outputStr
+    UtoolBuildDefaultSuccessResult(&(result->desc));
+    goto DONE;
+
+    /**
     cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
     // if task is successfully complete
     if (taskState != NULL && UtoolStringInArray(taskState->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
@@ -141,7 +155,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
         result->code = UtoolBuildOutputResult(STATE_FAILURE, output, &(result->desc));
         goto DONE;
-    }
+    }*/
 
 
 FAILURE:
@@ -149,9 +163,8 @@ FAILURE:
     goto DONE;
 
 DONE:
-    FREE_OBJ(opt->bmcTempFileUrl)
     FREE_CJSON(payload)
-    FREE_CJSON(lastSuccessTaskJson)
+    FREE_OBJ(opt->bmcTempFileUrl)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;

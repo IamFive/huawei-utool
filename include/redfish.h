@@ -216,6 +216,15 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
 */
 bool UtoolIsRedfishTaskSuccess(cJSON *task);
 
+/**
+* check whether a redfish task state in desired list
+*
+* @param task
+* @param states
+* @return
+*/
+bool UtoolIsRedfishTaskInArray(cJSON *task, char *states[]);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_REDFISH_H

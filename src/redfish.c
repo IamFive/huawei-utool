@@ -993,7 +993,8 @@ FAILURE:
 /**
 * wait redfish task util completed or failed. If task has sub task, it will wait sub task finished first.
 *
-*  - result->data will carry the last success response of "get-task" request, caller should free it themself.
+*  Be caution: if task success, result->data will carry the last success response of "get-task" request,
+*    caller should free it themself.
 *
 * @param server
 * @param cJSONTask
@@ -1030,6 +1031,14 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
             // fprintf(stdout, "\33[2K\r");
             fprintf(stdout, "\n");
             fflush(stdout);
+
+            /* if task failed, we build output directly */
+            if (!UtoolIsRedfishTaskSuccess(result->data)) {
+                result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
+                result->data = NULL;
+                goto FAILURE;
+            }
+
             goto DONE;
         }
 
@@ -1046,6 +1055,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
     }
 
 FAILURE:
+    result->interrupt = 1;
     goto DONE;
 
 DONE:
@@ -1091,6 +1101,14 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
             // fprintf(stdout, "\33[2K\r");
             fprintf(stdout, "\n");
             fflush(stdout);
+
+            /* if task failed, we build output directly */
+            if (UtoolIsRedfishTaskInArray(result->data, g_UtoolRedfishTaskFailedStatus)) {
+                result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
+                result->data = NULL;
+                goto FAILURE;
+            }
+
             goto DONE;
         }
 
@@ -1101,14 +1119,6 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
         }
         FREE_CJSON(jsonTask)        /** free last json TASK */
         jsonTask = result->data;
-
-        /* if task failed, we build output directly */
-        if (!UtoolIsRedfishTaskSuccess(result->data)) {
-            result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
-            goto FAILURE;
-        }
-
-        /* we need to */
 
         UtoolFreeRedfishTask(task); /** free task structure */
         sleep(1); /** next task query interval */
@@ -1130,12 +1140,32 @@ DONE:
 */
 bool UtoolIsRedfishTaskSuccess(cJSON *task)
 {
-    cJSON *status = cJSON_GetObjectItem(task, "TaskStatus");
-    int ret = UtoolAssetJsonNodeNotNull(status, "/TaskStatus");
+    cJSON *status = cJSON_GetObjectItem(task, "TaskState");
+    int ret = UtoolAssetJsonNodeNotNull(status, "/TaskState");
     if (ret != UTOOLE_OK) {
         return false;
     }
 
     return UtoolStringInArray(status->valuestring, g_UtoolRedfishTaskSuccessStatus);
+}
+
+
+/**
+*
+* check whether a redfish task state in desired list
+*
+* @param task
+* @param states
+* @return
+*/
+bool UtoolIsRedfishTaskInArray(cJSON *task, char *states[])
+{
+    cJSON *status = cJSON_GetObjectItem(task, "TaskState");
+    int ret = UtoolAssetJsonNodeNotNull(status, "/TaskState");
+    if (ret != UTOOLE_OK) {
+        return false;
+    }
+
+    return UtoolStringInArray(status->valuestring, states);
 }
 

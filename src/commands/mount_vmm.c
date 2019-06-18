@@ -110,16 +110,12 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
     if (result->interrupt) {
-        FREE_CJSON(result->data)
         goto FAILURE;
     }
-    //FREE_CJSON(result->data)
+    FREE_CJSON(result->data)
 
-    result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
-
-    // output to outputStr
-    //result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    //UtoolBuildDefaultSuccessResult(&(result->desc));
+    /* When task success */
+    UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
 FAILURE:

@@ -36,6 +36,8 @@ extern const char *g_UtoolRedfishTaskSuccessStatus[];
 
 extern const char *g_UtoolRedfishTaskFinishedStatus[];
 
+extern const char *g_UtoolRedfishTaskFailedStatus[];
+
 
 /**
 * Redfish Async Task output mapping

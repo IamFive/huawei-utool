@@ -54,6 +54,15 @@ const char *g_UtoolRedfishTaskFinishedStatus[] = {
         NULL
 };
 
+const char *g_UtoolRedfishTaskFailedStatus[] = {
+        TASK_STATE_EXCEPTION,
+        TASK_STATE_INTERRUPTED,
+        TASK_STATE_KILLED,
+        NULL
+};
+
+
+
 int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsTrue(node)) {
@@ -156,30 +165,40 @@ return_statement:
  */
 int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
 {
-    cJSON *output = cJSON_CreateObject();
-    int ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
+    cJSON *output = NULL;
 
-    // mapping redfish task to output task
-    ret = UtoolMappingCJSONItems(task, output, g_UtoolGetTaskMappings);
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    cJSON *status = cJSON_GetObjectItem(task, "TaskStatus");
-    ret = UtoolAssetJsonNodeNotNull(status, "/TaskStatus");
+    cJSON *status = cJSON_GetObjectItem(task, "TaskState");
+    int ret = UtoolAssetJsonNodeNotNull(status, "/TaskState");
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
 
     /** if task is success */
     if (UtoolStringInArray(status->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
-        ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+        /* if success, user do not need task structure anymore */
+        //ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+        UtoolBuildDefaultSuccessResult(result);
     }
     else {
-        ret = UtoolBuildOutputResult(STATE_FAILURE, output, result);
+        cJSON *severity = cJSONUtils_GetPointer(task, "/Messages/Severity");
+        cJSON *resolution = cJSONUtils_GetPointer(task, "/Messages/Resolution");
+        cJSON *message = cJSONUtils_GetPointer(task, "/Messages/Message");
+        if (severity == NULL || resolution == NULL || message == NULL) {
+            ret = UTOOLE_UNKNOWN_JSON_FORMAT;
+            goto DONE;
+        }
+
+        char buffer[MAX_FAILURE_MSG_LEN];
+        snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity->valuestring,
+                 message->valuestring, resolution->valuestring);
+
+        cJSON *failure = cJSON_CreateString(buffer);
+        ret = UtoolAssetCreatedJsonNotNull(failure);
+        if (ret != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        ret = UtoolBuildOutputResult(STATE_FAILURE, failure, result);
     }
 
     if (ret != UTOOLE_OK) {
