@@ -88,8 +88,7 @@ int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(option, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -205,6 +204,7 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }

@@ -86,8 +86,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(setPasswordOption, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 

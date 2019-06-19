@@ -84,8 +84,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(opt, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -278,6 +277,7 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result)
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }

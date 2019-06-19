@@ -90,8 +90,7 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(mountVMMOptions);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (payload == NULL) {
         goto FAILURE;
     }
 

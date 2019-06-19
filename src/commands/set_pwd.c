@@ -88,8 +88,7 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
     // build payload
     payload = BuildPayload(setPasswordOption);
-    ret = UtoolAssetCreatedJsonNotNull(payload);
-    if (ret != UTOOLE_OK) {
+    if (payload == NULL) {
         goto FAILURE;
     }
 
