@@ -79,8 +79,7 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
 
     // build payload
     payload = BuildPayload(resetType, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -157,6 +156,7 @@ static cJSON *BuildPayload(char *resetType, UtoolResult *result)
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }

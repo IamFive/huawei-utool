@@ -98,8 +98,7 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
 
     // build payload
     payload = BuildPayload(addUserOption);
-    ret = UtoolAssetCreatedJsonNotNull(payload);
-    if (ret != UTOOLE_OK) {
+    if (payload == NULL) {
         goto FAILURE;
     }
 

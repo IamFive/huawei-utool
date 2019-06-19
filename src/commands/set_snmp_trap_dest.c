@@ -89,8 +89,7 @@ int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char 
 
     // build payload
     payload = BuildPayload(option, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -231,6 +230,7 @@ static cJSON *BuildPayload(UtoolUpdateTrapNotifyDestOption *option, UtoolResult 
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }

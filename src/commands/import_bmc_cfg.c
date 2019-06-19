@@ -90,8 +90,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(server, opt, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -259,6 +258,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }

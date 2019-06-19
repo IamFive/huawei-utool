@@ -79,8 +79,7 @@ int UtoolCmdSetVLAN(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(option, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
+    if (result->interrupt) {
         goto FAILURE;
     }
 
@@ -169,7 +168,7 @@ static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result)
     }
 
     cJSON *vlan = cJSON_AddObjectToObject(payload, "VLAN");
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    result->code = UtoolAssetCreatedJsonNotNull(vlan);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -193,6 +192,7 @@ static cJSON *BuildPayload(UtoolSetVlanOption *option, UtoolResult *result)
     return payload;
 
 FAILURE:
+    result->interrupt = 1;
     FREE_CJSON(payload)
     return NULL;
 }
