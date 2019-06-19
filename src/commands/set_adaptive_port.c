@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <regex.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -22,7 +21,7 @@
 #include "string_utils.h"
 
 
-static const char *OPT_PORT_LIST_ILLEGAL = "Error: option `ort-list` is illegal, "
+static const char *OPT_PORT_LIST_ILLEGAL = "Error: option `port-list` is illegal, "
                                            "it must be formatted with: NIC1,PORT1;[NIC2,PORT2;...]. "
                                            "Allowable NIC type: Dedicated, Aggregation, LOM, ExternalPCIe, LOM2.";
 
@@ -151,21 +150,13 @@ DONE:
 static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->adaptivePortListStr)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(" port-list")),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("port-list")),
                                               &(result->desc));
         goto FAILURE;
     }
 
-    /* try to validate user input format */
-    /*
-    {
-        "Type": Type,
-                "PortNumber": PortNumber,
-                "AdaptiveFlag":
-        AdaptiveFlag
-    }
-    */
-
+    /* because glibc is forbidden by Huawei, so regex.h is forbidden too. */
+    /* try to validate user input format
     regex_t regex;
     int invalid = regcomp(&regex, "^((Dedicated|Aggregation|LOM|ExternalPCIe|LOM2),[0-9]+;)+$", REG_EXTENDED);
     if (invalid) {
@@ -173,7 +164,6 @@ static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolR
         goto FAILURE;
     }
 
-    /* Execute regular expression */
     int ret = regexec(&regex, option->adaptivePortListStr, 0, NULL, 0);
     if (ret == REG_NOERROR) {
         goto DONE;
@@ -184,20 +174,22 @@ static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolR
         goto FAILURE;
     }
     else {
-        /* should not happen */
         char msg[128];
         regerror(ret, &regex, msg, sizeof(msg));
         ZF_LOGE("Port List regex match failed, reason -> %s", msg);
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(msg), &(result->desc));
         goto FAILURE;
-    }
+    }*/
+
+    goto DONE;
 
 FAILURE:
     result->interrupt = 1;
     goto DONE;
 
 DONE:
-    regfree(&regex);
+    return;
+    /* regfree(&regex); */
 }
 
 static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, UtoolResult *result)
@@ -251,9 +243,14 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
         snprintf(msg, sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
 
         char *nic = strtok(selectedPortStr, ",");
-        //char *port = strtok(NULL, ",");
-        long p = strtol(strtok(NULL, ","), NULL, 0);
+        char *left = strtok(NULL, "");
+        if (!UtoolStringIsNumeric(left)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PORT_LIST_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
 
+        long p = strtol(left, NULL, 0);
         bool matched = false;
         cJSON *allowableValue;
         cJSON_ArrayForEach(allowableValue, allowableValues) {
@@ -301,6 +298,7 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
     payload = wrapped;
 
     goto DONE;
+
 
 FAILURE:
     result->interrupt = 1;
