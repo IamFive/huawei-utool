@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <string_utils.h>
+#include <assert.h>
+#include <stdlib.h>
 
 
 /**
@@ -205,12 +207,64 @@ char *UtoolStringCaseFindInArray(const char *str, const char **array)
 */
 bool UtoolStringIsNumeric(const char *str)
 {
-    while(*str != '\0')
-    {
-        if(*str < '0' || *str > '9')
+    while (*str != '\0') {
+        if (*str < '0' || *str > '9') {
             return false;
+        }
         str++;
     }
     return true;
 }
 
+/**
+* split string by delim.
+*
+* Caller should free return array themselves
+* .
+*
+* @param source
+* @param delim
+* @return string pointer array
+*/
+char **UtoolStringSplit(char *source, const char delim)
+{
+    char **result = 0;
+    size_t count = 0;
+    char *tmp = source;
+    char *lastComma = 0;
+
+    char delimStr[2];
+    delimStr[0] = delim;
+    delimStr[1] = '\0';
+
+    /* Count how many elements will be extracted. */
+    while (*tmp) {
+        if (delim == *tmp) {
+            count++;
+            lastComma = tmp;
+        }
+        tmp++;
+    }
+
+    /* Add space for trailing token. */
+    count += lastComma < (source + strlen(source) - 1);
+
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
+    count++;
+
+    result = malloc(sizeof(char *) * count);
+    if (result) {
+        size_t idx = 0;
+        char *token = strtok(source, delimStr);
+        while (token) {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delimStr);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+
+    return result;
+}

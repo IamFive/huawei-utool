@@ -114,6 +114,18 @@ char *UtoolStringCaseFindInArray(const char *str, const char **array);
 */
 bool UtoolStringIsNumeric(const char *str);
 
+/**
+* split string by delim.
+*
+* Caller should free return array themselves
+* .
+*
+* @param source
+* @param delim
+* @return string pointer array
+*/
+char **UtoolStringSplit(char *source, const char delim);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

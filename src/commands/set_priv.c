@@ -200,18 +200,18 @@ DONE:
 static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->username)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(username)), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("username")), &(result->desc));
         goto FAILURE;
     }
 
     if (UtoolStringIsEmpty(option->roleId)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(role-id)), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("role-id")), &(result->desc));
         goto FAILURE;
     }
 
     if (!UtoolStringInArray(option->roleId, ROLES)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(
-                OPT_NOT_IN_CHOICE(role-id, "Administrator, Operator, Commonuser, Noaccess")), &(result->desc));
+                OPT_NOT_IN_CHOICE("role-id", "Administrator, Operator, Commonuser, Noaccess")), &(result->desc));
         goto FAILURE;
     }
 

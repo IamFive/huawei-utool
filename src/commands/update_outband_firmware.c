@@ -33,6 +33,7 @@
 #define MAX_LOG_ENTRY_LEN 512
 #define LOG_ENTRY_FORMAT "\t{\n\t\t\"Time\": \"%s\",\n\t\t\"Stage\": \"%s\",\n\t\t\"State\": \"%s\",\n\t\t\"Note\": \"%s\"\n\t}, \n"
 
+#define STAGE_UPDATE "Update firmware"
 #define STAGE_UPLOAD_FILE "Upload File"
 #define STAGE_DOWNLOAD_FILE "Download File"
 
@@ -175,7 +176,12 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
             FREE_CJSON(payload)
         }
 
-        /* build payload - upload local file if necessary */
+
+        char round[16];
+        snprintf(round, sizeof(round), "Round %d", retryTimes);
+        WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_START, round);
+
+        /* step1: build payload - upload local file if necessary */
         payload = BuildPayload(server, updateFirmwareOption, result);
         if (payload == NULL || result->interrupt) {
             // TODO should we only retry when BMC return failure?
@@ -189,14 +195,14 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
             continue;
         }
 
-        /* send update firmware request */
+        /* step2: send update firmware request */
         char *url = "/UpdateService/Actions/UpdateService.SimpleUpdate";
         UtoolRedfishPost(server, url, payload, NULL, NULL, result);
         if (result->interrupt) {
             continue;
         }
 
-        /* Wait util download file progress finished */
+        /* step3: Wait util download file progress finished */
         if (!updateFirmwareOption->isLocalFile) {
             ZF_LOGI("Waiting for BMC download update firmware file ...");
             WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_START,
@@ -210,10 +216,19 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
             }
 
             ZF_LOGE("Download update firmware file successfully.");
-            WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_SUCCESS, "");
+            WriteLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_SUCCESS,
+                          "Download remote file to BMC success");
         }
 
-        // waiting util task complete or exception
+
+        sleep(3);
+
+        /* step4: get firmware current version */
+        //TODO "Motherboard CPLD"
+        cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
+
+
+        /* waiting util task complete or exception */
         UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
         if (!result->interrupt) {
             break;
@@ -513,7 +528,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption
             ZF_LOGI("It seems the image uri is illegal.");
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_NO_SCHEMA),
                                                   &(result->desc));
-            WriteLogEntry(updateFirmwareOption, PROGRESS_FAILED, PROGRESS_INVAILD_URI, OPTION_IMAGE_URI_NO_SCHEMA);
+            WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_INVAILD_URI, OPTION_IMAGE_URI_NO_SCHEMA);
             goto FAILURE;
         }
 
@@ -522,7 +537,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption
             snprintf(message, MAX_FAILURE_MSG_LEN, OPTION_IMAGE_URI_ILLEGAL_SCHEMA, parsedUrl->scheme);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message),
                                                   &(result->desc));
-            WriteLogEntry(updateFirmwareOption, PROGRESS_FAILED, PROGRESS_INVAILD_URI, message);
+            WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_INVAILD_URI, message);
             goto FAILURE;
         }
 

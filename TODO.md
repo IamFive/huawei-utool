@@ -276,6 +276,16 @@ RedundantType
 
 
 
+BIOS：dcpowercycle
+CPLD：dcpowercycle
+iBMC：automatic
+PSU：automatic
+FAN：automatic
+FW：none
+Driver：none
+
+UtoolAssetCreatedJsonNotNull(payload);
+
 
 
 

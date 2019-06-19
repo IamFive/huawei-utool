@@ -250,7 +250,7 @@ static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolRes
 
     if (!UtoolStringIsEmpty(option->sslEnabled)) {
         if (!UtoolStringInArray(option->sslEnabled, g_UTOOL_ENABLED_CHOICES)) {
-            char *message = OPT_NOT_IN_CHOICE(ssl-enabled, "Enabled, Disabled");
+            char *message = OPT_NOT_IN_CHOICE("ssl-enabled", "Enabled, Disabled");
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message), &(result->desc));
             goto FAILURE;
         }

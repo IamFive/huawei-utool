@@ -163,7 +163,7 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
 {
 
     if (UtoolStringIsEmpty(option->version)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(ip - version)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("ip-version")),
                                               &(result->desc));
         goto FAILURE;
     }
@@ -171,7 +171,7 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
     if (!UtoolStringIsEmpty(option->version)) {
         if (!UtoolStringInArray(option->version, IP_VERSION_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(ip - version, "4, 6")),
+                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE("ip-version", "4, 6")),
                                                   &(result->desc));
             goto FAILURE;
         }
@@ -180,7 +180,7 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
     if (!UtoolStringIsEmpty(option->mode)) {
         if (!UtoolStringInArray(option->mode, IP_MODE_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE(ip - mode, "Static, DHCP")),
+                                                  cJSON_CreateString(OPT_NOT_IN_CHOICE("ip-mode", "Static, DHCP")),
                                                   &(result->desc));
             goto FAILURE;
         }

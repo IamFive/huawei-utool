@@ -170,7 +170,7 @@ static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult 
     ZF_LOGI("Import file URI is %s.", opt->importFileUrl);
 
     if (UtoolStringIsEmpty(opt->importFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(file-uri)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("file-uri")),
                                               &(result->desc));
         goto FAILURE;
     }
