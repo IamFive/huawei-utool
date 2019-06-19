@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "string_utils.h"
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -39,13 +40,12 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
-
 static const UtoolOutputMapping getFwMappings[] = {
         {.sourceXpath = "/Name", .targetKeyValue="Name"},
         {.sourceXpath = "/SoftwareId", .targetKeyValue="Type", .handle=FirmwareTypeHandler},
         {.sourceXpath = "/Version", .targetKeyValue="Version"},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
-        //{.sourceXpath = "", .targetKeyValue="SupportActivateType"},
+        //{.sourceXpath = "/SoftwareId", .targetKeyValue="SupportActivateType"},
         NULL
 };
 
@@ -146,18 +146,60 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result)
             goto FAILURE;
         }
 
-        cJSON *supportActivateTypes = cJSON_AddRawToObject(firmware, "SupportActivateType", "[\"automatic\"]");
-        ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
-        if (ret != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
         // create firmware item and add it to array
         ret = UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }
         cJSON_AddItemToArray(firmwares, firmware);
+
+
+        /**
+            BIOS：dcpowercycle
+            CPLD：dcpowercycle
+            iBMC：automatic
+            PSU：automatic
+            FAN：automatic
+            FW：none
+            Driver：none
+        */
+
+        cJSON *firmwareType = cJSON_GetObjectItem(firmware, "Type");
+        ret = UtoolAssetParseJsonNotNull(firmwareType); /* should never be null */
+        if (ret != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        char *activateType = NULL;
+        if (UtoolStringEquals(firmwareType->valuestring, "BMC")) {
+            activateType = "[\"automatic\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "CPLD")) {
+            activateType = "[\"dcpowercycle\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "BIOS")) {
+            activateType = "[\"dcpowercycle\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "PSU")) {
+            activateType = "[\"automatic\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "FAN")) {
+            activateType = "[\"automatic\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "FW")) {
+            activateType = "[\"none\"]";
+        }
+        else if (UtoolStringEquals(firmwareType->valuestring, "Driver")) {
+            activateType = "[\"none\"]";
+        } else {
+            activateType = "[\"none\"]";
+        }
+
+        cJSON *supportActivateTypes = cJSON_AddRawToObject(firmware, "SupportActivateType", activateType);
+        ret = UtoolAssetCreatedJsonNotNull(supportActivateTypes);
+        if (ret != UTOOLE_OK) {
+            goto FAILURE;
+        }
 
         // free memory
         FREE_CJSON(firmwareJson)

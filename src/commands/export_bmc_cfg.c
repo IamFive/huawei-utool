@@ -185,7 +185,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
     ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
 
     if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(file-uri)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("file-uri")),
                                               &(result->desc));
         goto FAILURE;
     }

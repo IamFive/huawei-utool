@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <regex.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -21,6 +22,13 @@
 #include "string_utils.h"
 
 
+static const char *OPT_PORT_LIST_ILLEGAL = "Error: option `ort-list` is illegal, "
+                                           "it must be formatted with: NIC1,PORT1;[NIC2,PORT2;...]. "
+                                           "Allowable NIC type: Dedicated, Aggregation, LOM, ExternalPCIe, LOM2.";
+
+static const char *OPT_EMPTY_ALLOWABLE_PORT = "Error: could not load allowable adaptive ports.";
+static const char *OPT_PORT_NOT_EXISTS = "Error: your input `%s` does not match any allowable port.";
+
 static const char *const usage[] = {
         "setadaptiveport -p port-list",
         NULL,
@@ -31,7 +39,7 @@ typedef struct _SetAdaptivePortOption
     char *adaptivePortListStr;
 } UtoolSetAdaptivePortOption;
 
-static cJSON *BuildPayload(UtoolSetAdaptivePortOption *option, UtoolResult *result);
+static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result);
 
@@ -44,7 +52,10 @@ static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolR
 * */
 int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *payload = NULL, *getEthernetInterfacesRespJson = NULL;
+    cJSON *payload = NULL,
+            *getEthernetRespJson = NULL,
+            *getEthernetsRespJson = NULL;
+
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -53,8 +64,8 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_STRING ('p', "port-list", &(option->adaptivePortListStr),
-                        "specifies adaptive port list in JSON format, "
-                        "example: [{NIC=Dedicated,Port=0},{NIC=MEZZ,Port=1}]", NULL, 0, 0),
+                        "specifies adaptive ports, format: NIC1,PORT1;[NIC2,PORT2;...], example: 'Dedicated,0;LOM,1;'."
+                        " Allowable NIC type: Dedicated, Aggregation, LOM, ExternalPCIe, LOM2.", NULL, 0, 0),
             OPT_END()
     };
 
@@ -73,13 +84,6 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    // build payload
-    payload = BuildPayload(option, result);
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
@@ -90,13 +94,29 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
     if (result->interrupt) {
         goto FAILURE;
     }
-    getEthernetInterfacesRespJson = result->data;
+    getEthernetsRespJson = result->data;
 
-    cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
+    cJSON *linkNode = cJSONUtils_GetPointer(result->data, "/Members/0/@odata.id");
+    result->code = UtoolAssetJsonNodeNotNull(linkNode, "/Members/0/@odata.id");
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
     char *url = linkNode->valuestring;
 
 
-    // TODO build payload
+    /* load all allowed ports */
+    UtoolRedfishGet(server, url, NULL, NULL, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    getEthernetRespJson = result->data;
+
+    // build payload
+    payload = BuildPayload(getEthernetRespJson, option, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
     if (result->interrupt) {
         goto FAILURE;
@@ -112,7 +132,8 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    FREE_CJSON(getEthernetInterfacesRespJson)
+    FREE_CJSON(getEthernetRespJson)
+    FREE_CJSON(getEthernetsRespJson)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;
@@ -130,67 +151,167 @@ DONE:
 static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->adaptivePortListStr)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(port-list)),
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED(" port-list")),
                                               &(result->desc));
         goto FAILURE;
     }
 
-    cJSON *adaptivePortArray = cJSON_Parse(option->adaptivePortListStr);
-    if (adaptivePortArray != NULL && cJSON_IsArray(adaptivePortArray)) {
-        if (cJSON_GetArraySize(adaptivePortArray) > 0) {
-            cJSON *adaptivePort = NULL;
-            cJSON_ArrayForEach(adaptivePort, adaptivePortArray) {
-                cJSON *nicNode = cJSON_GetObjectItem(adaptivePort, "NIC");
-                nicNode->string = "Type";
-                //cJSON_HasObjectItem(adaptivePort, "Port");
-            }
-        }
+    /* try to validate user input format */
+    /*
+    {
+        "Type": Type,
+                "PortNumber": PortNumber,
+                "AdaptiveFlag":
+        AdaptiveFlag
+    }
+    */
+
+    regex_t regex;
+    int invalid = regcomp(&regex, "^((Dedicated|Aggregation|LOM|ExternalPCIe|LOM2),[0-9]+;)+$", REG_EXTENDED);
+    if (invalid) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
     }
 
-    //fprintf(stdout, "%s", cJSON_Print(adaptivePortArray));
-    //result->code = UtoolAssetParseJsonNotNull(node);
-
-    return;
+    /* Execute regular expression */
+    int ret = regexec(&regex, option->adaptivePortListStr, 0, NULL, 0);
+    if (ret == REG_NOERROR) {
+        goto DONE;
+    }
+    else if (ret == REG_NOMATCH) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PORT_LIST_ILLEGAL),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+    else {
+        /* should not happen */
+        char msg[128];
+        regerror(ret, &regex, msg, sizeof(msg));
+        ZF_LOGE("Port List regex match failed, reason -> %s", msg);
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(msg), &(result->desc));
+        goto FAILURE;
+    }
 
 FAILURE:
     result->interrupt = 1;
-    return;
+    goto DONE;
+
+DONE:
+    regfree(&regex);
 }
 
-static cJSON *BuildPayload(UtoolSetAdaptivePortOption *option, UtoolResult *result)
+static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, UtoolResult *result)
 {
-    cJSON *payload = cJSON_CreateObject();
+    cJSON *payload = NULL;
+    char *inputPorts = NULL;
+    char **selectedPortStrArray = NULL;
+
+    inputPorts = strdup(option->adaptivePortListStr);
+    if (!inputPorts) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+
+    payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    cJSON *vlan = cJSON_AddObjectToObject(payload, "VLAN");
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    cJSON *mode = cJSON_AddStringToObject(payload, "NetworkPortMode", "Automatic");
+    result->code = UtoolAssetCreatedJsonNotNull(mode);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    //if (!UtoolStringIsEmpty(option->state)) {
-    //    cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
-    //    result->code = UtoolAssetCreatedJsonNotNull(node);
-    //    if (result->code != UTOOLE_OK) {
-    //        goto FAILURE;
-    //    }
-    //}
-    //
-    //if (option->frequency != DEFAULT_INT_V) {
-    //    cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->frequency);
-    //    result->code = UtoolAssetCreatedJsonNotNull(node);
-    //    if (result->code != UTOOLE_OK) {
-    //        goto FAILURE;
-    //    }
-    //}
+    cJSON *adaptivePortArray = cJSON_AddArrayToObject(payload, "AdaptivePort");
+    result->code = UtoolAssetCreatedJsonNotNull(mode);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
 
-    return payload;
+
+    /* load & validate allowable ports */
+    cJSON *allowableValues = cJSONUtils_GetPointer(ethernet,
+                                                   "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues");
+    if (!(cJSON_IsArray(allowableValues) && cJSON_GetArraySize(allowableValues) > 0)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_EMPTY_ALLOWABLE_PORT),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+
+
+    /* parse & validate user input */
+    selectedPortStrArray = UtoolStringSplit(inputPorts, ';');
+
+
+    for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
+        char *selectedPortStr = *(selectedPortStrArray + idx);
+        char msg[MAX_FAILURE_MSG_LEN];
+        snprintf(msg, sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
+
+        char *nic = strtok(selectedPortStr, ",");
+        //char *port = strtok(NULL, ",");
+        long p = strtol(strtok(NULL, ","), NULL, 0);
+
+        bool matched = false;
+        cJSON *allowableValue;
+        cJSON_ArrayForEach(allowableValue, allowableValues) {
+            cJSON *portType = cJSON_GetObjectItem(allowableValue, "Type");
+            cJSON *portNumber = cJSON_GetObjectItem(allowableValue, "PortNumber");
+
+            /* no expect allowable ports format */
+            if (!(cJSON_IsString(portType) && cJSON_IsNumber(portNumber))) {
+                result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_EMPTY_ALLOWABLE_PORT),
+                                                      &(result->desc));
+                goto FAILURE;
+            }
+
+            if (UtoolStringEquals(nic, portType->valuestring) && portNumber->valueint == p) {
+                matched = true;
+
+                cJSON *cloned = cJSON_Duplicate(allowableValue, 1);
+                result->code = UtoolAssetCreatedJsonNotNull(cloned);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+                cJSON_DeleteItemFromObject(cloned, "LinkStatus");
+
+                cJSON *flag = cJSON_AddBoolToObject(cloned, "AdaptiveFlag", cJSON_True);
+                result->code = UtoolAssetCreatedJsonNotNull(flag);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+
+                cJSON_AddItemToArray(adaptivePortArray, cloned);
+                break;
+            }
+        }
+
+        if (!matched) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(msg), &(result->desc));
+            goto FAILURE;
+        }
+    }
+
+    cJSON *wrapped = UtoolWrapOem(payload, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    payload = wrapped;
+
+    goto DONE;
 
 FAILURE:
     result->interrupt = 1;
     FREE_CJSON(payload)
-    return NULL;
+    goto DONE;
+
+DONE:
+    free(inputPorts);
+    for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
+        free(*(selectedPortStrArray + idx));
+    }
+    free(selectedPortStrArray);
+    return payload;
 }

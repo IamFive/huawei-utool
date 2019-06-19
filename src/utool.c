@@ -89,6 +89,7 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "setbios", .pFuncExecute = UtoolCmdSetBIOS, .type = SET},
         {.name = "importbmccfg", .pFuncExecute = UtoolCmdImportBMCCfg, .type = SET},
         {.name = "exportbmccfg", .pFuncExecute = UtoolCmdExportBMCCfg, .type = SET},
+        {.name = "setfan", .pFuncExecute = UtoolCmdSetFan, .type = SET},
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
