@@ -3,6 +3,7 @@ set(LIB_NAME utool)
 
 project(${LIB_NAME} C)
 
+set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
@@ -13,7 +14,7 @@ set(PROJECT_VERSION_PATCH 0)
 set(UTOOL_SO_VERSION 1)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-set(UTOOL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(UTOOL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
 set(UTOOL_BIN_DIR ${PROJECT_SOURCE_DIR}/bin)
 set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 
@@ -58,7 +59,7 @@ message(STATUS "Install dir prefix is: ${CMAKE_INSTALL_PREFIX}")
 
 # header files
 #aux_source_directory(include INCLUDE_FILES)
-install(FILES include/utool.h DESTINATION "${CMAKE_INSTALL_PREFIX}/include/${LIB_NAME}")
+install(FILES src/include/utool.h DESTINATION "${CMAKE_INSTALL_PREFIX}/include/")
 
 # shared library
 add_library(${LIB_NAME} SHARED ${SOURCE_FILES})
@@ -70,22 +71,21 @@ set_target_properties("${LIB_NAME}"
         SOVERSION "${UTOOL_SO_VERSION}"
         VERSION "${PROJECT_VERSION}")
 install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
-
+install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_LIB_DIR}")
 
 # static library
 add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-static PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME}-static PROPERTIES LINKER_LANGUAGE C)
 install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
 
 # build & install executable utool bin
-add_executable(utool-bin src/main.c ${SOURCE_FILES})
+add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
+set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
+install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
-# TODO
 # debug purpose, should remove before release
 add_executable(utool-debug src/main-debug.c ${SOURCE_FILES})
-install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
-
-#add_executable(opt_test src/opt_test.c ${SOURCE_FILES})
-#install(TARGETS opt_test DESTINATION ${UTOOL_BIN_DIR})
+#install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})

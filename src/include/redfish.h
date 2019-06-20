@@ -223,7 +223,7 @@ bool UtoolIsRedfishTaskSuccess(cJSON *task);
 * @param states
 * @return
 */
-bool UtoolIsRedfishTaskInArray(cJSON *task, char *states[]);
+bool UtoolIsRedfishTaskInArray(cJSON *task, const char *states[]);
 
 #ifdef __cplusplus
 }

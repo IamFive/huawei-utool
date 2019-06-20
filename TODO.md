@@ -275,7 +275,6 @@ RedundantType
 2. 等到重启后再返回.
 
 
-
 BIOS：dcpowercycle
 CPLD：dcpowercycle
 iBMC：automatic
@@ -284,11 +283,42 @@ FAN：automatic
 FW：none
 Driver：none
 
-UtoolAssetCreatedJsonNotNull(payload);
+
+1. mapping  message args => firmware url   (task message arg -> firmware)
+2. 失败 自动重启? 什么条件?
+3. 升级已"完成", 但是获取版本号接口失败.
+4. 升级完自动重启? 什么条件?
+5. 自动重试包含哪些步骤,
+6. 什么时候去获取升级前版本号?
+
+
+Motherboard CPLD
+Backplane CPLD
+
+
+ipmitool
+===========
+
+## window
+
+由用户自行配置
+
+## centos 
+
+在 Utool 中打包携带 ipmitool 的二进制文件
+
+## 集成功能
+
+- 获取redfish 端口号
+- send ipmi raw command
 
 
 
 
+CPLD --- 版本
+
+升级前 固件版本都打印
+升级后 
 
 
 

@@ -54,6 +54,36 @@ cd build
 cmake .. && make
 ```
 
+
+### Install utool
+
+After make done, run `sudo make install` to install utool to current system.
+
+```bash
+cd ${workspace}/utool/build
+sudo make install
+```
+
+Remember, before using `utool`, you should make sure libcurl>=7.56.0 has been installed. 
+You can install libcurl through package manager like `apt-get`, `yum` or through:
+
+```bash
+cd ${your-workspace}/utool/third-party/curl
+./buildconf
+./configure --with-ssl
+make 
+sudo make install
+```
+
+After install,
+
+- `utool` bin script will be install to `/usr/local/bin`
+- `utool` bin script will be install to `${your-workspace}/bin`
+- `utool` lib will be install to `/usr/local/lib`
+- `utool` lib will be install to `${your-workspace}/lib`
+- `utool` static lib will be install to `/usr/local/lib`
+- `utool` static lib will be install to `${your-workspace}/lib`
+
 ### Try Utool
 
 ```sh

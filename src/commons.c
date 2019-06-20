@@ -180,17 +180,23 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
         UtoolBuildDefaultSuccessResult(result);
     }
     else {
-        cJSON *severity = cJSONUtils_GetPointer(task, "/Messages/Severity");
-        cJSON *resolution = cJSONUtils_GetPointer(task, "/Messages/Resolution");
-        cJSON *message = cJSONUtils_GetPointer(task, "/Messages/Message");
-        if (severity == NULL || resolution == NULL || message == NULL) {
-            ret = UTOOLE_UNKNOWN_JSON_FORMAT;
-            goto DONE;
-        }
-
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity->valuestring,
-                 message->valuestring, resolution->valuestring);
+        cJSON *messageIdNode = cJSONUtils_GetPointer(task, "/Messages/MessageId");
+        if (cJSON_IsNull(messageIdNode)) {
+            snprintf(buffer, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
+        } else {
+            cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
+            cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
+            cJSON *messageNode = cJSONUtils_GetPointer(task, "/Messages/Message");
+            //if (severity == NULL || resolution == NULL || message == NULL) {
+            //    ret = UTOOLE_UNKNOWN_JSON_FORMAT;
+            //    goto DONE;
+            //}
+            char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
+            char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
+            char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
+            snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error, resolution);
+        }
 
         cJSON *failure = cJSON_CreateString(buffer);
         ret = UtoolAssetCreatedJsonNotNull(failure);
