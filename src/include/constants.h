@@ -25,7 +25,7 @@ extern "C" {
 #define IPMI_PORT 623;
 #define HTTPS_PORT 443;
 
-#define CURL_TIMEOUT 300
+#define CURL_TIMEOUT 60
 #define CURL_CONN_TIMEOUT 60
 
 #define CONTENT_TYPE_JSON "Content-Type: application/json"
@@ -60,6 +60,7 @@ extern "C" {
 /** Redfish message severity level// */
 
 #define SEVERITY_OK "OK"
+#define SEVERITY_WARNING "Warning"
 
 /** //Redfish message severity level */
 

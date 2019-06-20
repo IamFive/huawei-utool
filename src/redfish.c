@@ -1158,7 +1158,7 @@ bool UtoolIsRedfishTaskSuccess(cJSON *task)
 * @param states
 * @return
 */
-bool UtoolIsRedfishTaskInArray(cJSON *task, char *states[])
+bool UtoolIsRedfishTaskInArray(cJSON *task, const char *states[])
 {
     cJSON *status = cJSON_GetObjectItem(task, "TaskState");
     int ret = UtoolAssetJsonNodeNotNull(status, "/TaskState");
