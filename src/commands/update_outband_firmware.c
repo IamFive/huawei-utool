@@ -36,13 +36,17 @@
 #define STAGE_UPDATE "Update firmware"
 #define STAGE_UPLOAD_FILE "Upload File"
 #define STAGE_DOWNLOAD_FILE "Download File"
+#define STAGE_ACTIVATE "Activate"
 
 #define PROGRESS_START "Start"
 #define PROGRESS_RUN "In Progress"
-#define PROGRESS_FINISHED "Finish"
 #define PROGRESS_SUCCESS "Success"
 #define PROGRESS_FAILED "Failed"
 #define PROGRESS_INVAILD_URI "Invalid URI"
+#define PROGRESS_GET_CURRENT_VERSION "Get current version"
+#define PROGRESS_GET_NEW_VERSION "Get new version"
+
+#define MAX_FIRMWARE_NAME_LEN 64
 
 typedef struct _UpdateFirmwareOption
 {
@@ -54,7 +58,23 @@ typedef struct _UpdateFirmwareOption
     bool isLocalFile;
     FILE *logFileFP;
     time_t startTime;
-} UtoolUpdateFirmwareOption;
+} UpdateFirmwareOption;
+
+typedef struct _FirmwareMapping
+{
+    char *firmwareName;
+    char *firmwareURL;
+} FirmwareMapping;
+
+
+static const FirmwareMapping firmwareMapping[] = {
+        {.firmwareName = "/BMC", .firmwareURL="/UpdateService/FirmwareInventory/ActiveBMC"},
+        {.firmwareName = "/Backplane CPLD", .firmwareURL="/UpdateService/FirmwareInventory/MainBoardCPLD"},
+        {.firmwareName = "/Motherboard CPLD", .firmwareURL="/UpdateService/FirmwareInventory/MainBoardCPLD"},
+        {.firmwareName = "/PS1", .firmwareURL="/UpdateService/FirmwareInventory/MainBoardCPLD"},
+        {.firmwareName = "/Bios", .firmwareURL="/UpdateService/FirmwareInventory/Bios"},
+        NULL
+};
 
 
 static const char *MODE_CHOICES[] = {UPGRADE_ACTIVATE_MODE_AUTO, UPGRADE_ACTIVATE_MODE_MANUAL, NULL};
@@ -80,20 +100,23 @@ static const char *const usage[] = {
         NULL,
 };
 
-static void ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
+static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
-static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                            UtoolResult *result);
 
 static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server);
 
-static void createUpdateLogFile(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                 UtoolResult *result);
 
-static void WriteLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const char *state, const char *note);
+static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, const char *note);
 
 static void
-WriteFailedLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result);
+WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result);
+
+void WaitUpdateEffect(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, cJSON *firmwareType,
+                      UtoolResult *result);
 
 /**
  * 要求：升级失败要求能重试，最多3次。
@@ -107,14 +130,14 @@ WriteFailedLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const 
  */
 int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *output = NULL,           /** output result json*/
-            *payload = NULL,        /** payload json */
-            *updateFirmwareJson = NULL;    /** curl response thermal as json */
+    cJSON *output = NULL,                   /** output result json*/
+            *payload = NULL,                /** payload json */
+            *lastRedfishUpdateTask = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
-    UtoolUpdateFirmwareOption *updateFirmwareOption = &(UtoolUpdateFirmwareOption) {0};
+    UpdateFirmwareOption *updateFirmwareOption = &(UpdateFirmwareOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -122,7 +145,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
             OPT_STRING ('e', "activate-mode", &(updateFirmwareOption->activateMode),
                         "firmware active mode, choices: {Auto, Manual}", NULL, 0, 0),
             OPT_STRING ('t', "firmware-type", &(updateFirmwareOption->firmwareType),
-                        "firmware type, choices: {BMC, BIOS, CPLD, PSUFW}",
+                        "firmware type, availbale choices: {BMC, BIOS, CPLD, PSUFW}",
                         NULL, 0, 0),
             OPT_END(),
     };
@@ -161,6 +184,10 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
     cJSON *cJSONTask = NULL;
     while (retryTimes++ < UPGRADE_FIRMWARE_RETRY_TIMES) {
         ZF_LOGI("Start to update outband firmware now, round: %d.", retryTimes);
+
+        /* if (retryTimes > 1) {
+             sleep(5);
+         }*/
 
         /* reset temp values */
         result->interrupt = 0;
@@ -220,20 +247,26 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
                           "Download remote file to BMC success");
         }
 
+        /*
+          make sure update has official start, message args will carry the update firmware type.
+        */
+        /* sleep(3); */
+        /*
+          we do not know when the message args will carry the real firmware type.
+          So, we will get firmware type after upgrade complete.
+        */
 
-        sleep(3);
-
-        /* step4: get firmware current version */
-        //TODO "Motherboard CPLD"
-        cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
-
-
-        /* waiting util task complete or exception */
+        /* step4: waiting util task complete or exception */
+        ZF_LOGI("Waiting util updating task finished...");
+        WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_RUN, round);
         UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-        if (!result->interrupt) {
-            break;
+        if (result->interrupt) {
+            ZF_LOGI("Updating firmware task failed.");
+            WriteFailedLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_FAILED, result);
+            continue;
         }
-        // TODO 是否需要判断task的状态？如果状态异常也是需要自动重试？
+
+        break;
     }
 
     // if it still fails when reaching the maximum retries
@@ -242,25 +275,21 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         goto FAILURE;
     }
 
-    /* create output container */
-    output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
+    lastRedfishUpdateTask = result->data;
 
-    // output to result
-    result->code = UtoolMappingCJSONItems(result->data, output, g_UtoolGetTaskMappings);
+    /* step4: wait util firmware updating effect */
+    cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
+    if (cJSON_IsString(firmwareType)) {
+        WaitUpdateEffect(server, updateFirmwareOption, firmwareType, result);
+    }
     FREE_CJSON(result->data)
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
 
-    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
+    /* if update success */
+    ZF_LOGI("Updating firmware task succeed.");
+    WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_SUCCESS, "");
 
+    /* everything finished */
+    UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
 FAILURE:
@@ -269,7 +298,7 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    FREE_CJSON(updateFirmwareJson)
+    FREE_CJSON(lastRedfishUpdateTask)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(response);
 
@@ -286,6 +315,65 @@ DONE:
     return result->code;
 }
 
+
+/**
+* wait update firmware job tasking effect
+*  - compare version
+*
+* @param server
+* @param updateFirmwareOption
+* @param firmwareType
+* @param result
+*/
+void WaitUpdateEffect(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, cJSON *firmwareType,
+                      UtoolResult *result)
+{
+    const FirmwareMapping *mapping = NULL;
+    for (int idx = 0;; idx++) {
+        const FirmwareMapping *_firmware = firmwareMapping + idx;
+        if (_firmware && _firmware->firmwareName) {
+            if (UtoolStringEquals(_firmware->firmwareName, firmwareType->valuestring)) {
+                mapping = _firmware;
+                break;
+            }
+        }
+    }
+
+    WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_START, "Start to activate new firmware.");
+    if (mapping) {
+        /* get current firmware version */
+        ZF_LOGI("Waiting for BMC download update firmware file ...");
+        WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, "");
+        UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
+        if (result->interrupt) {
+            WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION,
+                          "Failed to get current firmware version");
+            goto FAILURE;
+        }
+
+        cJSON *versionNode = cJSON_GetObjectItem(result->data, "Version");
+        result->code = UtoolAssetParseJsonNotNull(versionNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        char message[MAX_OUTPUT_LEN];
+        snprintf(message, MAX_OUTPUT_LEN, "Current %s version is %s", mapping->firmwareName, versionNode->valuestring);
+        fprintf(stdout, "%s\n", message);
+        fflush(stdout);
+        WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, message);
+
+
+        // TODO wait bmc reset ?
+
+        /* get new firmware version */
+
+    }
+
+FAILURE:
+    return;
+}
+
 /**
 *
 * create update log file&folder
@@ -294,7 +382,7 @@ DONE:
 * @param updateFirmwareOption
 * @param result
 */
-static void createUpdateLogFile(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                 UtoolResult *result)
 {
     cJSON *getSystemRespJson = NULL;
@@ -408,7 +496,7 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateUpdateFirmwareOptions(UtoolUpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
+static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
 {
     if (updateFirmwareOption->imageURI == NULL) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_IMAGE_URI_REQUIRED),
@@ -453,7 +541,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateFirmwareOption *updateFirmwareOption,
+static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                            UtoolResult *result)
 {
 
@@ -573,7 +661,7 @@ DONE:
 
 
 static void
-WriteFailedLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result)
+WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result)
 {
     if (result->code != UTOOLE_OK) {
         const char *errorString = (result->code > UTOOLE_OK && result->code < CURL_LAST) ?
@@ -592,7 +680,7 @@ WriteFailedLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const 
 }
 
 
-static void WriteLogEntry(UtoolUpdateFirmwareOption *option, const char *stage, const char *state, const char *note)
+static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, const char *note)
 {
     /* get current timestamp */
     char nowStr[100];

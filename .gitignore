@@ -1,6 +1,9 @@
 .idea/
 .developer
 
+lib
+bin
+
 *.so
 *.a
 *.o
