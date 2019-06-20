@@ -125,9 +125,10 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
 
     // setup progress callback
+    bool finished = false;
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, UtoolCurlPrintUploadProgressCallback);
-    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, NULL);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &finished);
 
     /* enable verbose for easier tracing */
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -719,13 +720,16 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
 static int
 UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
 {
-    (void *) output;
     (double) dltotal;
     (double) dlnow;
     if (ultotal > 0 && ulnow > 0) {
-        fprintf(stdout, "\33[2K\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
-        if (ultotal == ulnow) {
-            fprintf(stdout, "\n");
+        bool *finished = (bool *) output;
+        if (!*finished) {
+            fprintf(stdout, "\33[2K\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
+            if (ultotal == ulnow) {
+                *((bool *) output) = true;
+                fprintf(stdout, "\n");
+            }
         }
         fflush(stdout);
     }
