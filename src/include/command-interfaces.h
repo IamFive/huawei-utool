@@ -128,6 +128,8 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr);
+
 
 /** Test purpose **/
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr);
