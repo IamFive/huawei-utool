@@ -284,12 +284,17 @@ FW：none
 Driver：none
 
 
-1. mapping  message args => firmware url   (task message arg -> firmware)
-2. 失败 自动重启? 什么条件?
-3. 升级已"完成", 但是获取版本号接口失败.
-4. 升级完自动重启? 什么条件?
-5. 自动重试包含哪些步骤,
-6. 什么时候去获取升级前版本号?
+3次失败 => 重启 => 再试3次
+2次失败 => 重启 => 再试1次
+
+1. mapping  message args => firmware url (task message arg -> firmware) 需要永波提供映射表
+
+2. 失败 自动重启? 什么条件?  => 不管什么原因, 失败了就重启
+3. 升级已"完成", 但是获取版本号接口失败.  => 继续往下执行,版本号显示无法获取. // 如果升级BMC自动重启之后还获取不到,当做失败,
+4. 升级完自动重启? 什么条件?              => 除BMC外不自动重启, 除BMC不获取生效后版本. (或者改成获取全部固件版本).
+5. 自动重试包含哪些步骤,                  => 固件升级 Task 那一块, 其他步骤不包含在自动重试流程中.
+6. 什么时候去获取升级前版本号?            => 在Task完成后, 去获取升级前版本号.
+
 
 
 Motherboard CPLD
@@ -310,8 +315,9 @@ ipmitool
 ## 集成功能
 
 - 获取redfish 端口号
-- send ipmi raw command
-
+- send ipmi raw command ,  IPMI 参数
+- getbiosresult 需要确认结果
+- locatedisk -> 有接口
 
 
 
@@ -319,6 +325,9 @@ CPLD --- 版本
 
 升级前 固件版本都打印
 升级后 
+
+
+
 
 
 
