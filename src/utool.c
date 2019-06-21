@@ -59,7 +59,6 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
         {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
-        {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = GET},
         {.name = "getpcie", .pFuncExecute = UtoolCmdGetPCIe, .type = GET},
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
@@ -95,6 +94,7 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
         {.name = "waittask", .pFuncExecute = UtoolCmdWaitRedfishTask, .type = DEBUG},
+        {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = DEBUG},
 
         NULL,
 };
