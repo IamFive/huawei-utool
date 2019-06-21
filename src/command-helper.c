@@ -10,24 +10,6 @@
 #include <zf_log.h>
 #include <commons.h>
 
-/**
- * parse sub-command argv
- *
- * @param commandOption
- * @param options
- * @param usage
- * @return
- */
-int UtoolParseSubCommandArgv(const UtoolCommandOption *commandOption,
-                             struct argparse_option *options,
-                             const char *const *usage)
-{
-    struct argparse argparse;
-    argparse_init(&argparse, options, usage, 0);
-    argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
-    int argc = argparse_parse(&argparse, commandOption->commandArgc, commandOption->commandArgv);
-    return argc;
-}
 
 /**
  * get help action handler
@@ -110,15 +92,15 @@ int
 UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct argparse_option *options,
                                     const char *const *usage, char **result)
 {
-    struct argparse argparse;
-    argparse_init(&argparse, options, usage, 0);
-    argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
-    int left_argc = argparse_parse(&argparse, commandOption->commandArgc, commandOption->commandArgv);
+    struct argparse parser;
+    argparse_init(&parser, options, usage, 0);
+    argparse_describe(&parser, TOOL_DESC, TOOL_EPI_LOG);
+    int left_argc = argparse_parse(&parser, commandOption->commandArgc, commandOption->commandArgv);
 
-    if (argparse.error) {
+    if (parser.error) {
         commandOption->flag = ILLEGAL;
-        int ret = UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(argparse.reason), result);
-        FREE_OBJ(argparse.reason)
+        int ret = UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(parser.reason), result);
+        FREE_OBJ(parser.reason)
         return ret;
     }
 
