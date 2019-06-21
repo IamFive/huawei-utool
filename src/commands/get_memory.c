@@ -136,7 +136,7 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
     FREE_CJSON(result->data)
 
     // initialize output memory array
-    memories = cJSON_AddArrayToObject(output, "Information");
+    memories = cJSON_AddArrayToObject(output, "Memory");
     result->code = UtoolAssetCreatedJsonNotNull(memories);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
