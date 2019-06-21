@@ -29,7 +29,7 @@ static const UtoolOutputMapping getVoltageMappings[] = {
         {.sourceXpath = "/UpperThresholdFatal", .targetKeyValue="UpperThresholdFatal"},
         {.sourceXpath = "/UpperThresholdCritical", .targetKeyValue="UpperThresholdCritical"},
         {.sourceXpath = "/UpperThresholdNonCritical", .targetKeyValue="UpperThresholdNonCritical"},
-        {.sourceXpath = "/ReadingCelsius", .targetKeyValue="ReadingCelsius"},
+        {.sourceXpath = "/ReadingVolts", .targetKeyValue="ReadingVolts"},
         {.sourceXpath = "/LowerThresholdNonCritical", .targetKeyValue="LowerThresholdNonCritical"},
         {.sourceXpath = "/LowerThresholdCritical", .targetKeyValue="LowerThresholdCritical"},
         {.sourceXpath = "/LowerThresholdFatal", .targetKeyValue="LowerThresholdFatal"},

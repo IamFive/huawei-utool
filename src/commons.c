@@ -29,7 +29,7 @@ const UtoolOutputMapping g_UtoolGetTaskMappings[] = {
         {.sourceXpath = "/Null", .targetKeyValue="Trigger", .handle=TaskTriggerPropertyHandler},
         {.sourceXpath = "/Messages", .targetKeyValue="Messages"},
         {.sourceXpath = "/Oem/Huawei/TaskPercentage", .targetKeyValue="TaskPercentage"},
-        NULL,
+        {0},
 };
 
 static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node)

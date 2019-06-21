@@ -247,7 +247,7 @@ char **UtoolStringSplit(char *source, const char delim)
     }
 
     /* Add space for trailing token. */
-    count += lastComma < (source + strlen(source) - 1);
+    count += (lastComma < (source + strlen(source) - 1)) ? 1 : 0;
 
     /* Add space for terminating null string so caller
        knows where the list of returned strings ends. */

@@ -46,7 +46,7 @@ static const UtoolOutputMapping getFwMappings[] = {
         {.sourceXpath = "/Version", .targetKeyValue="Version"},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
         //{.sourceXpath = "/SoftwareId", .targetKeyValue="SupportActivateType"},
-        NULL
+        {0}
 };
 
 
