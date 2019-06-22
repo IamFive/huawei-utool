@@ -20,29 +20,32 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-#define SERVICE_KVMIP "KVMIP"
+#define SERVICE_KVM "KVM"
 #define SERVICE_VM "VirtualMedia"
+#define SERVICE_IPMI "IPMI"
 
 static const char *OEM_SERVICE_CHOICES[] = {"VNC", "Video", "NAT", NULL};
-static const char *SERVICE_CHOICES[] = {"HTTP", "HTTPS", "SNMP", "VirtualMedia", "IPMI", "SSH", "KVMIP", "VNC",
-                                        "Video", "NAT", "SSDP", NULL};
-static const char *SUPPORT_SSL_SERVICES[] = {SERVICE_KVMIP, SERVICE_VM, NULL};
+static const char *SERVICE_CHOICES[] = {
+        "HTTP", "SNMP", "VirtualMedia", "IPMI", "SSH", "KVM", "VNC",
+        "Video", "NAT", "SSDP", NULL
+};
+static const char *SUPPORT_SSL_SERVICES[] = {SERVICE_KVM, SERVICE_VM, NULL};
 
 static const char *OPT_SERVICE_REQUIRED = "Error: option `service` is required.";
 static const char *OPT_SERVICE_ILLEGAL = "Error: option `service` is illegal, available choices: "
-                                         "HTTP, HTTPS, SNMP, VirtualMedia, IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP.";
+                                         "HTTP, HTTPS, SNMP, VirtualMedia, IPMI, SSH, KVM, VNC, Video, NAT, SSDP.";
 static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
 static const char *OPT_PORT_ILLEGAL = "Error: option `port` is illegal, value range should be: 1~65535";
 
-static const char *OPT_SSL_NOT_SUPPORT = "Error: setting `ssl-enabled` is only support for service `KVMIP` and 'Vedio`.";
+static const char *OPT_SSL_NOT_SUPPORT = "Error: setting `ssl-enabled` is only support for service `KVM` and 'Vedio`.";
+static const char *OPT_PORT2_NOT_SUPPORT = "Error: setting `port2` is only support for service `IPMI`";
 
 static const char *const usage[] = {
-        "setservice -s service [-e enabled] [-p port] [-t ssl-enabled]",
+        "setservice -s service [-e enabled] [-p port] [-q port2] [-t ssl-enabled]",
         NULL,
 };
 
-typedef struct _UpdateServiceOption
-{
+typedef struct _UpdateServiceOption {
     char *service;
     char *enabled;
     int port;
@@ -66,22 +69,29 @@ UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *
 * @param result
 * @return
 * */
-int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
-{
-    cJSON *payload = NULL;
+int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
+    cJSON *output = NULL,
+            *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolUpdateServiceOption *option = &(UtoolUpdateServiceOption) {.port=DEFAULT_INT_V, 0};
+    UtoolUpdateServiceOption *option = &(UtoolUpdateServiceOption) {
+            .port=DEFAULT_INT_V,
+            .port2=DEFAULT_INT_V,
+            0
+    };
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_STRING ('s', "service", &(option->service),
-                        "specifies service to update, available choices: {HTTP, HTTPS, SNMP, VirtualMedia, "
-                        "IPMI, SSH, KVMIP, VNC, Video, NAT, SSDP}", NULL, 0, 0),
+                        "specifies service to update, available choices: {HTTP, SNMP, VirtualMedia, "
+                        "IPMI, SSH, KVM, VNC, Video, NAT, SSDP}", NULL, 0, 0),
             OPT_STRING ('e', "enabled", &(option->enabled),
                         "specifies whether the service is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
             OPT_INTEGER('p', "port", &(option->port), "specifies service port, value range: 1~65535", NULL, 0, 0),
+            OPT_INTEGER('q', "port2", &(option->port2),
+                        "specifies service port2, value range: 1~65535. Only IPMI service is supported for now.",
+                        NULL, 0, 0),
             OPT_STRING ('t', "ssl-enabled", &(option->sslEnabled),
                         "specifies whether SSL is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
             OPT_END()
@@ -108,25 +118,10 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    /** update service */
-    if (option->enabled != NULL || option->port != DEFAULT_INT_V) {
-        // build payload
-        payload = BuildPayload(option, result);
-        if (result->interrupt) {
-            goto FAILURE;
-        }
-
-        UtoolRedfishPatch(server, "/Managers/%s/NetworkProtocol", payload, NULL, NULL, NULL, result);
-        if (result->interrupt) {
-            goto FAILURE;
-        }
-        FREE_CJSON(result->data)
-    }
-
-    /** update SSL enabled for KVMIP and VirtualMedia */
+    /** update SSL enabled for KVM and VirtualMedia */
     if (option->sslEnabled != NULL) {
         /** handle KVM service */
-        if (UtoolStringEquals(option->service, SERVICE_KVMIP)) {
+        if (UtoolStringEquals(option->service, SERVICE_KVM)) {
             UpdateKvmService(server, option, result);
             if (result->interrupt) {
                 goto FAILURE;
@@ -140,6 +135,39 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr)
                 goto FAILURE;
             }
         }
+
+        FREE_CJSON(result->data)
+    }
+
+    /** update service */
+    if (option->enabled != NULL || option->port != DEFAULT_INT_V) {
+        // build payload
+        payload = BuildPayload(option, result);
+        if (result->interrupt) {
+            goto FAILURE;
+        }
+
+        UtoolRedfishPatch(server, "/Managers/%s/NetworkProtocol", payload, NULL, NULL, NULL, result);
+        if (result->interrupt) {
+            /* we need to patch output message array if ssl-enabled present */
+            if (option->sslEnabled != NULL && result->code == UTOOLE_OK && result->desc != NULL) {
+                cJSON *message = cJSON_CreateString("Success: successfully update ssl-enabled property");
+                result->code = UtoolAssetCreatedJsonNotNull(message);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+
+                output = cJSON_Parse(result->desc);
+                cJSON *messages = cJSON_GetObjectItem(output, "Message");
+                cJSON_InsertItemInArray(messages, 0, message);
+                FREE_OBJ(result->desc)
+                result->desc = cJSON_Print(output);
+            }
+            goto FAILURE;
+        }
+        FREE_CJSON(result->data)
+
+
     }
 
     // output to outputStr
@@ -150,6 +178,7 @@ FAILURE:
     goto DONE;
 
 DONE:
+    FREE_CJSON(output)
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
 
@@ -157,8 +186,7 @@ DONE:
     return result->code;
 }
 
-static void UpdateKvmService(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result)
-{
+static void UpdateKvmService(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result) {
     cJSON *payload = cJSON_CreateObject();
     cJSON *enabled = cJSON_AddBoolToObject(payload, "EncryptionEnabled",
                                            UtoolStringEquals(option->sslEnabled, ENABLED));
@@ -181,11 +209,10 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    UtoolFreeRedfishServer(server);
 }
 
-static void UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result)
-{
+static void
+UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result) {
     cJSON *payload = cJSON_CreateObject();
     cJSON *enabled = cJSON_AddBoolToObject(payload, "EncryptionEnabled",
                                            UtoolStringEquals(option->sslEnabled, ENABLED));
@@ -214,7 +241,6 @@ FAILURE:
 
 DONE:
     FREE_CJSON(payload)
-    UtoolFreeRedfishServer(server);
 }
 
 
@@ -225,8 +251,7 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolResult *result)
-{
+static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolResult *result) {
     if (UtoolStringIsEmpty(option->service)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SERVICE_REQUIRED),
                                               &(result->desc));
@@ -269,6 +294,21 @@ static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolRes
         }
     }
 
+    if (option->port2 != DEFAULT_INT_V) {
+        if (!UtoolStringEquals(option->service, SERVICE_IPMI)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PORT2_NOT_SUPPORT),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+
+        if (option->port2 < 1 || option->port2 > 65535) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE,
+                                                  cJSON_CreateString(OPT_NOT_IN_RANGE("port2", "1, 65535")),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+    }
+
     if (UtoolStringIsEmpty(option->enabled) && UtoolStringIsEmpty(option->sslEnabled) &&
         option->port == DEFAULT_INT_V) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
@@ -282,15 +322,47 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result)
-{
-    cJSON *payload = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
+static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result) {
+
+    cJSON *payload = NULL;
+
+    char *serviceName = UtoolStringEquals(option->service, SERVICE_KVM) ? "KVMIP" : option->service;
+
+    /* IPMI port2 handler*/
+    if (option->port2 != DEFAULT_INT_V) {
+        cJSON *ipmiOemNode = cJSON_CreateObject();
+        result->code = UtoolAssetCreatedJsonNotNull(ipmiOemNode);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        cJSON *nest = cJSON_AddObjectToObject(ipmiOemNode, serviceName);
+        result->code = UtoolAssetCreatedJsonNotNull(nest);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        cJSON *port2 = cJSON_AddNumberToObject(nest, "Port2", option->port2);
+        result->code = UtoolAssetCreatedJsonNotNull(port2);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        payload = UtoolWrapOem(ipmiOemNode, result);
+        if (result->interrupt) {
+            FREE_CJSON(ipmiOemNode)
+            goto FAILURE;
+        }
+    }
+    else {
+        payload = cJSON_CreateObject();
+        result->code = UtoolAssetCreatedJsonNotNull(payload);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
     }
 
-    cJSON *service = cJSON_AddObjectToObject(payload, option->service);
+    cJSON *service = cJSON_AddObjectToObject(payload, serviceName);
     result->code = UtoolAssetCreatedJsonNotNull(service);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
@@ -312,7 +384,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
         }
     }
 
-    if (UtoolStringInArray(option->service, OEM_SERVICE_CHOICES)) {
+    if (UtoolStringInArray(serviceName, OEM_SERVICE_CHOICES)) {
         cJSON *wrapped = UtoolWrapOem(payload, result);
         if (result->interrupt) {
             goto FAILURE;

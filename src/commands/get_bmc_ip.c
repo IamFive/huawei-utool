@@ -53,6 +53,7 @@ static const UtoolOutputMapping getEthernetMappings[] = {
         {.sourceXpath = "/Oem/Huawei/IPVersion", .targetKeyValue="IPVersion"},
         {.sourceXpath = "/PermanentMACAddress", .targetKeyValue="PermanentMACAddress"},
         {.sourceXpath = "/IPv4Addresses", .targetKeyValue="IPv4"},
+        {.sourceXpath = "/IPv6DefaultGateway", .targetKeyValue="IPv6DefaultGateway"},
         {.sourceXpath = "/IPv6Addresses", .targetKeyValue="IPv6"},
         {.sourceXpath = "/VLAN", .targetKeyValue="VLANInfo", .handle=VlanPropertyHandler},
         NULL,

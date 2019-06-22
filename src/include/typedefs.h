@@ -49,6 +49,7 @@ typedef struct _CommandOption
 {
     char *host;
     int port;
+    int ipmiPort;
     char *username;
     char *password;
     int commandArgc;

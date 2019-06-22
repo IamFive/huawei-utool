@@ -377,6 +377,9 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
 
         ZF_LOGI("[%s] %s", httpMethod, fullURL);
 
+        /* enable verbose for easier tracing */
+        /*curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);*/
+
         // setup basic http meta
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, httpMethod);
         curl_easy_setopt(curl, CURLOPT_URL, fullURL);

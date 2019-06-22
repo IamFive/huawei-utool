@@ -22,6 +22,7 @@
 #include "zf_log.h"
 #include <pthread.h>
 #include <stdbool.h>
+#include <ipmi.h>
 
 static bool initialized = false;
 static pthread_mutex_t mutex;
@@ -57,6 +58,7 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "getsensor", .pFuncExecute = UtoolCmdGetSensor, .type = GET},
         {.name = "getbios", .pFuncExecute = UtoolCmdGetBiosSettings, .type = GET},
         {.name = "getbiossetting", .pFuncExecute = UtoolCmdGetPendingBiosSettings, .type = GET},
+        {.name = "getbiosresult", .pFuncExecute = UtoolCmdGetBiosResult, .type = GET},
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
         {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "getpcie", .pFuncExecute = UtoolCmdGetPCIe, .type = GET},
@@ -90,13 +92,13 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "exportbmccfg", .pFuncExecute = UtoolCmdExportBMCCfg, .type = SET},
         {.name = "setfan", .pFuncExecute = UtoolCmdSetFan, .type = SET},
         {.name = "locatedisk", .pFuncExecute = UtoolCmdLocateDisk, .type = SET},
+        {.name = "sendipmirawcmd", .pFuncExecute = UtoolCmdSendIPMIRawCommand, .type = SET},
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
         {.name = "waittask", .pFuncExecute = UtoolCmdWaitRedfishTask, .type = DEBUG},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = DEBUG},
-
         NULL,
 };
 
@@ -115,8 +117,7 @@ static const char *const usage[] = {
  * @param argv
  * @return OK if succeed else failed
  */
-static int utool_parse_command_option(UtoolCommandOption *commandOption, int argc, const char **argv, char **result)
-{
+static int utool_parse_command_option(UtoolCommandOption *commandOption, int argc, const char **argv, char **result) {
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag),
                         "show this help message.",
@@ -128,7 +129,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
             OPT_STRING ('H', "Host", &(commandOption->host),
                         "domain name, IPv4 address, or [IPv6 address].",
                         NULL, 0, 0),
-            OPT_INTEGER('p', "Port", &(commandOption->port),
+            OPT_INTEGER('p', "Port", &(commandOption->ipmiPort),
                         "IPMI port, 623 by default.",
                         NULL, 0, 0),
             OPT_STRING ('U', "Username", &(commandOption->username),
@@ -140,20 +141,25 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
             OPT_END(),
     };
 
-    struct argparse argparse = {0};
-    argparse_init(&argparse, options, usage, 1);
-    argparse_describe(&argparse, TOOL_DESC, TOOL_EPI_LOG);
-    argc = argparse_parse(&argparse, argc, argv);
-    if (argparse.error) {
+    struct argparse parser = {0};
+    argparse_init(&parser, options, usage, 1);
+    argparse_describe(&parser, TOOL_DESC, TOOL_EPI_LOG);
+    argc = argparse_parse(&parser, argc, argv);
+    if (parser.error) {
         commandOption->flag = ILLEGAL;
-        int ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(argparse.reason), result);
-        FREE_OBJ(argparse.reason);
+        int ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(parser.reason), result);
+        FREE_OBJ(parser.reason);
         return ret;
     }
 
     if (!commandOption->port) {
-        commandOption->port = HTTPS_PORT
+        commandOption->port = IPMI_PORT
     }
+
+    /* TODO get redfish HTTPS port from ipmitool */
+    //UtoolResult *utoolResult = &(UtoolResult) {0};
+    //int httpPort = UtoolIPMIGetHttpsPort(commandOption, utoolResult);
+    commandOption->port = HTTPS_PORT;
 
     commandOption->commandArgc = argc;
     commandOption->commandArgv = argv;
@@ -190,8 +196,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
  * @param result
  * @return
  */
-static int initialize(char **result)
-{
+static int initialize(char **result) {
     if (!initialized) {
         // get mutex
         pthread_mutex_lock(&mutex);
@@ -228,8 +233,7 @@ static int initialize(char **result)
 }
 
 
-int utool_main(int argc, char *argv[], char **result)
-{
+int utool_main(int argc, char *argv[], char **result) {
     int ret;
 
     ret = initialize(result);

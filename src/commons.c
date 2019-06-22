@@ -287,6 +287,12 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 
         /** plain mapping */
         if (mapping->nestMapping == NULL) {
+            if (mapping->filter != NULL) {
+                int accept = mapping->filter(source);
+                if (!accept) {
+                    continue;
+                }
+            }
             cJSON *cloned = ref != NULL ? cJSON_Duplicate(ref, 1) : cJSON_CreateNull();
             ret = UtoolAssetCreatedJsonNotNull(cloned);
             if (ret != UTOOLE_OK) {

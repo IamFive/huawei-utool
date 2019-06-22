@@ -60,6 +60,8 @@ int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdGetBiosResult(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr);
@@ -129,6 +131,8 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
 int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputStr);
 
 
 /** Test purpose **/

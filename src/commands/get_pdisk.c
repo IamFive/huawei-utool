@@ -88,9 +88,10 @@ static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
+        {.sourceXpath = "/Protocol", .targetKeyValue="Protocol"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/FailurePredicted", .targetKeyValue="FailurePredicted"},
-        {.sourceXpath = "/CapacityBytes", .targetKeyValue="CapacityGiB", .handle = CapacityGiBHandler}, // TODO
+        {.sourceXpath = "/CapacityBytes", .targetKeyValue="CapacityGiB", .handle = CapacityGiBHandler},
         {.sourceXpath = "/HotspareType", .targetKeyValue="HotspareType"},
         {.sourceXpath = "/IndicatorLED", .targetKeyValue="IndicatorLED"},
         {.sourceXpath = "/PredictedMediaLifeLeftPercent", .targetKeyValue="PredictedMediaLifeLeftPercent"},
@@ -104,7 +105,7 @@ static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Oem/Huawei/TemperatureCelsius", .targetKeyValue="TemperatureCelsius"},
         {.sourceXpath = "/Oem/Huawei/HoursOfPoweredUp", .targetKeyValue="HoursOfPoweredUp"},
         {.sourceXpath = "/Oem/Huawei/FirmwareStatus", .targetKeyValue="FirmwareStatus"},
-        {.sourceXpath = "/Oem/Huawei/SASAddress", .targetKeyValue="SASAddress"}, // TODO
+        {.sourceXpath = "/Oem/Huawei/SASAddress", .targetKeyValue="SASAddress"},
         {.sourceXpath = "/Oem/Huawei/PatrolState", .targetKeyValue="PatrolState"},
         {.sourceXpath = "/Oem/Huawei/RebuildState", .targetKeyValue="RebuildState"},
         {.sourceXpath = "/Oem/Huawei/RebuildProgress", .targetKeyValue="RebuildProgress"},

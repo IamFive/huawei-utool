@@ -12,7 +12,8 @@ utool is based on C99 and built with cmake. So, the compile ENV should have:
 - git
 - CMake>=3.5.0
 - C Compiler
-- OpenSSL(used by libcurl)
+- OpenSSL(required by libcurl)
+- ipmitool
 
 ## Compilation
 
@@ -28,7 +29,7 @@ git submodule update --init
 ```
 
 ### Build curl
-The CURL version required is >=curl-7_65_0.
+The CURL version required is >=7.56.0, the `third-party/curl` provide along with source code is `curl-7_65_0`.
 Please make sure `libssl-dev` is ready before making CURL. 
 
 - ubuntu: `sudo apt install libssl-dev`

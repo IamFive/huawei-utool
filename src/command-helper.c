@@ -99,7 +99,7 @@ UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct ar
 
     if (parser.error) {
         commandOption->flag = ILLEGAL;
-        int ret = UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(parser.reason), result);
+        int ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(parser.reason), result);
         FREE_OBJ(parser.reason)
         return ret;
     }
