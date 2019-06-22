@@ -20,12 +20,12 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *RESET_TYPE_CHOICES[] = {"On", "ForceOff", "GracefulShutdown", "ForceReset", "Nmi",
+static const char *RESET_TYPE_CHOICES[] = {"On", "ForceOff", "GracefulShutdown", "ForceRestart", "Nmi",
                                            "ForcePowerCycle", NULL};
 
 static const char *OPT_RESET_TYPE_REQUIRED = "Error: option `reset-type` is required.";
 static const char *OPT_RESET_TYPE_ILLEGAL = "Error: option `reset-type` is illegal, available choices: "
-                                            "On, ForceOff, GracefulShutdown, ForceReset, Nmi, ForcePowerCycle.";
+                                            "On, ForceOff, GracefulShutdown, ForceRestart, Nmi, ForcePowerCycle.";
 
 static const char *const usage[] = {
         "powercontrol -t reset-type",
@@ -56,7 +56,7 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_STRING ('t', "reset-type", &resetType,
                         "specifies the system reset type, "
-                        "choices: {On, ForceOff, GracefulShutdown, ForceReset, Nmi, ForcePowerCycle}",
+                        "choices: {On, ForceOff, GracefulShutdown, ForceRestart, Nmi, ForcePowerCycle}",
                         NULL, 0, 0),
             OPT_END()
     };

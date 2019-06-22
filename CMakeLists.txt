@@ -22,6 +22,7 @@ set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
 set(LIBZFLOG_PATH third-party/zf_log/zf_log)
 set(LIBCURL_PATH third-party/curl)
+set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 
 #find_package(CURL REQUIRED)
 #include_directories(${CURL_INCLUDE_DIR})
@@ -54,8 +55,13 @@ aux_source_directory(src/commands PRO_SOURCE_FILES)
 list(REMOVE_ITEM PRO_SOURCE_FILES "src/main.c")
 list(REMOVE_ITEM PRO_SOURCE_FILES "src/main-debug.c")
 list(APPEND SOURCE_FILES ${PRO_SOURCE_FILES} ${THIRD_PARTY_SOURCE})
+
+message(STATUS "CMAKE binary dir is ${CMAKE_BINARY_DIR}")
 message(STATUS "Source files is ${SOURCE_FILES}")
 message(STATUS "Install dir prefix is: ${CMAKE_INSTALL_PREFIX}")
+
+# copy ipmitool
+configure_file(${IPMITOOL_BIN_PATH} ${CMAKE_BINARY_DIR} COPYONLY)
 
 # header files
 #aux_source_directory(include INCLUDE_FILES)
@@ -85,6 +91,7 @@ add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
 
 # debug purpose, should remove before release
 add_executable(utool-debug src/main-debug.c ${SOURCE_FILES})

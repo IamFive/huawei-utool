@@ -38,7 +38,7 @@ static const UtoolOutputMapping getMemorySummaryMapping[] = {
 
 static const UtoolOutputMapping getMemoryMappings[] = {
         {.sourceXpath = "/DeviceLocator", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/CapacityMiB", .targetKeyValue="CapacityMiB"},
         {.sourceXpath = "/OperatingSpeedMhz", .targetKeyValue="OperatingSpeedMhz"},
@@ -47,12 +47,13 @@ static const UtoolOutputMapping getMemoryMappings[] = {
         {.sourceXpath = "/DataWidthBits", .targetKeyValue="DataWidthBits"},
         {.sourceXpath = "/RankCount", .targetKeyValue="RankCount"},
         {.sourceXpath = "/PartNumber", .targetKeyValue="PartNumber"},
-        {.sourceXpath = "/Technology", .targetKeyValue="Technology"},
-        {.sourceXpath = "/MinVoltageMillivolt", .targetKeyValue="MinVoltageMillivolt"},
+        {.sourceXpath = "/Oem/Huawei/Technology", .targetKeyValue="Technology"},
+        {.sourceXpath = "/Oem/Huawei/MinVoltageMillivolt", .targetKeyValue="MinVoltageMillivolt"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL
 };
+
 
 static const UtoolOutputMapping getAbsentMemoryMappings[] = {
         {.sourceXpath = "/DeviceLocator", .targetKeyValue="CommonName"},
@@ -83,7 +84,7 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
     cJSON *output = NULL,                   // output result json
             *memories = NULL,               // output memory array
             *memory = NULL,                 // output memory item
-            *memoryViewJson = NULL;         // curl get memory view response as json
+            *memoryMembersRespJson = NULL;         // curl get memory view response as json
 
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
@@ -114,26 +115,17 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
     FREE_CJSON(result->data)
 
 
-    UtoolRedfishGet(server, "/Systems/%s/MemoryView", NULL, NULL, result);
-    if (result->interrupt) {
-        goto FAILURE;
-    }
-    memoryViewJson = result->data;
-
-    // mapping response json to output
-    cJSON *member;
-    cJSON *members = cJSON_GetObjectItem(memoryViewJson, "Information");
-    cJSON *maximumNode = cJSON_AddNumberToObject(output, "Maximum", cJSON_GetArraySize(members));
-    result->code = UtoolAssetCreatedJsonNotNull(maximumNode);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
     UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerWattsMapping, result);
     if (result->interrupt) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
+
+    UtoolRedfishGet(server, "/Systems/%s/Memory", NULL, NULL, result);
+    if (result->interrupt) {
+        goto FAILURE;
+    }
+    memoryMembersRespJson = result->data;
 
     // initialize output memory array
     memories = cJSON_AddArrayToObject(output, "Memory");
@@ -142,25 +134,10 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    cJSON_ArrayForEach(member, members) {
-        memory = cJSON_CreateObject();
-        result->code = UtoolAssetCreatedJsonNotNull(memory);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        cJSON *stateNode = cJSONUtils_GetPointer(member, "/Status/State");
-        if (stateNode != NULL && UtoolStringEquals(MEMORY_STATE_ENABLED, stateNode->valuestring)) {
-            result->code = UtoolMappingCJSONItems(member, memory, getMemoryMappings);
-        }
-        else {
-            result->code = UtoolMappingCJSONItems(member, memory, getAbsentMemoryMappings);
-        }
-
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-        cJSON_AddItemToArray(memories, memory);
+    /** load all network ports */
+    UtoolRedfishGetMemberResources(server, memoryMembersRespJson, memories, getMemoryMappings, result);
+    if (result->interrupt) {
+        goto FAILURE;
     }
 
     // output to result
@@ -173,7 +150,7 @@ FAILURE:
     goto DONE;
 
 DONE:
-    FREE_CJSON(memoryViewJson)
+    FREE_CJSON(memoryMembersRespJson)
     UtoolFreeRedfishServer(server);
 
     *outputStr = result->desc;

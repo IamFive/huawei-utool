@@ -114,12 +114,11 @@ extern "C" {
 #define UPGRADE_ACTIVATE_MODE_AUTO "Auto"
 #define UPGRADE_ACTIVATE_MODE_MANUAL "Manual"
 
-
 /**
  * Argument parse help messages
  */
 #define TOOL_DESC "\nCommand-line interface to the HUAWEI server management APIs."
-#define TOOL_EPI_LOG "\nThanks for using."
+#define TOOL_EPI_LOG "\nUsing `utool getcapabilities` to get more information about sub-commands."
 #define HELP_DESC "Show help message."
 #define HELP_SUB_COMMAND_DESC "Show help message for this sub-command."
 #define OPTIONAL_ARG_GROUP_TITLE "Optional arguments:"
