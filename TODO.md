@@ -320,7 +320,6 @@ ipmitool
 - locatedisk -> 有接口
 
 
-
 CPLD --- 版本
 
 升级前 固件版本都打印
