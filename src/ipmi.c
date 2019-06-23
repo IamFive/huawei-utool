@@ -53,6 +53,39 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
     return cmdOutput;
 }
 
+
+unsigned char hex2uchar(unsigned char hex_ch) {
+    if (hex_ch >= '0' && hex_ch <= '9') {
+        return hex_ch - '0';
+    }
+
+    if (hex_ch >= 'a' && hex_ch <= 'f') {
+        return hex_ch - 'a' + 10;
+    }
+
+    if (hex_ch >= 'A' && hex_ch <= 'F') {
+        return hex_ch - 'A' + 10;
+    }
+
+    printf("%s:%d: convert failed.\n", __FUNCTION__, __LINE__);
+    return 0x00;
+}
+
+
+unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
+    unsigned int bin_len = 0;
+    unsigned int hex_len = strlen((char *) hexstr);
+    unsigned int index = 0;
+    bin_len = hex_len / 2;
+    hex_len = bin_len * 2;
+
+    for (index = 0; index < hex_len; index += 2) {
+        binstr[index / 2] = ((hex2uchar(hexstr[index]) << 4) & 0xF0) + hex2uchar(hexstr[index + 1]);
+    }
+
+    return bin_len;
+}
+
 int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     int port = 0;
     char *ipmiCmdOutput = UtoolIPMIExecCommand(option, IPMI_GET_HTTPS_PORT_RAW_CMD, result);
@@ -67,8 +100,10 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     hexPortString[2] = ipmiCmdOutput[160];
     hexPortString[3] = ipmiCmdOutput[161];
 
-    char *token = strtok(ipmiCmdOutput, " ");
+    char result_str[1024] = {0};
+    hexstr2uchar(hexPortString, result_str);
 
+    char *token = strtok(ipmiCmdOutput, " ");
 
 
     //*https_port = port;
