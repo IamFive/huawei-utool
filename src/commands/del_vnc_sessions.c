@@ -73,7 +73,7 @@ int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr
 
     /** get all session members */
     UtoolRedfishGet(server, "/SessionService/Sessions", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     sessionMembersResJson = result->data;
@@ -85,7 +85,7 @@ int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr
     }
 
     UtoolRedfishGetMemberResources(server, sessionMembersResJson, sessions, getSessionsMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -105,7 +105,7 @@ int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr
             }
 
             UtoolRedfishDelete(server, url->valuestring, NULL, NULL, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 goto FAILURE;
             }
 

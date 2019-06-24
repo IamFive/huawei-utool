@@ -183,7 +183,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
     /* validation update firmware options */
     ValidateUpdateFirmwareOptions(updateFirmwareOption, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -201,14 +201,14 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
         /* step1: build payload - upload local file if necessary */
         payload = BuildPayload(server, updateFirmwareOption, result);
-        if (payload == NULL || result->interrupt) {
+        if (payload == NULL || result->broken) {
             goto RETRY;
         }
 
         /* step2: send update firmware request */
         char *url = "/UpdateService/Actions/UpdateService.SimpleUpdate";
         UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto RETRY;
         }
 
@@ -219,7 +219,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
                           "Start download remote file to BMC");
 
             UtoolRedfishWaitUtilTaskStart(server, result->data, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 ZF_LOGE("Failed to download update firmware file.");
                 WriteFailedLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_FAILED, result);
                 goto RETRY;
@@ -243,7 +243,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         ZF_LOGI("Waiting util updating task finished...");
         WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_RUN, "Start execute update firmware task.");
         UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-        if (result->interrupt) {
+        if (result->broken) {
             ZF_LOGI("Updating firmware task failed.");
             WriteFailedLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_FAILED, result);
             goto RETRY;
@@ -255,7 +255,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 RETRY:
         if (retryTimes < UPGRADE_FIRMWARE_RETRY_TIMES) {
             /* reset temp values */
-            result->interrupt = 0;
+            result->broken = 0;
             if (result->desc != NULL) {
                 FREE_OBJ(result->desc);
             }
@@ -281,7 +281,7 @@ RETRY:
     }
 
     // if it still fails when reaching the maximum retries
-    if (result->interrupt) {
+    if (result->broken) {
         FREE_CJSON(result->data)
         goto FAILURE;
     }
@@ -315,8 +315,10 @@ DONE:
     if (updateFirmwareOption->logFileFP != NULL) {
         fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
         __off_t position = ftello(updateFirmwareOption->logFileFP);
-        ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
-
+        int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
+        if (ret != 0) {
+            ZF_LOGE("Failed to truncate update firmware log file");
+        }
         fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
         fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
     }
@@ -354,7 +356,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
         /* get current firmware version */
         ZF_LOGI("Waiting for BMC download update firmware file ...");
         UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION,
                           MSG_FAILED_TO_GET_CURRENT_VERSION);
 
@@ -446,7 +448,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
 
             fprintf(stdout, "\n");
             UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_NEW_VERSION,
                               MSG_FAILED_TO_GET_NEW_VERSION);
                 FREE_OBJ(result->desc)
@@ -473,7 +475,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -491,7 +493,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     updateFirmwareOption->startTime = time(NULL);
 
     UtoolRedfishGet(server, "/Systems/%s", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         ZF_LOGE("Failed to load system resource.");
         goto FAILURE;
     }
@@ -637,7 +639,7 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -678,7 +680,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
         WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_START, "");
         UtoolUploadFileToBMC(server, imageUri, result);
-        if (result->interrupt) {
+        if (result->broken) {
             WriteFailedLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_FAILED, result);
             goto FAILURE;
         }
@@ -745,7 +747,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     payload = NULL;
     goto DONE;

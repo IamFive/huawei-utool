@@ -90,7 +90,7 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/NetworkProtocol", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     serviceRespJson = result->data;
@@ -129,7 +129,7 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
         /** KVMIP should Load ssl-enabled through another API */
         if (UtoolStringEquals(name->valuestring, "KVMIP")) {
             UtoolRedfishGet(server, "/Managers/%s/KvmService", service, getKVMIPSslEnabledMappings, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 goto FAILURE;
             }
             FREE_CJSON(result->data)
@@ -138,7 +138,7 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
         /** VirtualMedia should Load ssl-enabled through another API */
         if (UtoolStringEquals(name->valuestring, "VirtualMedia")) {
             UtoolRedfishGet(server, "/Managers/%s/VirtualMedia/CD", service, getVMSslEnabledMappings, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 goto FAILURE;
             }
             FREE_CJSON(result->data)

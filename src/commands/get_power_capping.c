@@ -81,7 +81,7 @@ int UtoolCmdGetPowerCapping(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerCappingMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

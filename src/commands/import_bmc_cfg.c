@@ -78,7 +78,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
@@ -90,20 +90,20 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(server, opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ImportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
     // lastSuccessTaskJson = result->data;
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -207,7 +207,7 @@ static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult 
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -240,7 +240,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *
     }
     else {
         UtoolUploadFileToBMC(server, opt->importFileUrl, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 
@@ -258,7 +258,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

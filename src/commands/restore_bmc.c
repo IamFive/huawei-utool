@@ -71,7 +71,7 @@ int UtoolCmdRestoreBMC(UtoolCommandOption *commandOption, char **outputStr)
 
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

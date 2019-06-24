@@ -19,7 +19,7 @@
 * @param str
 * @return true if empty else false
 */
-bool UtoolStringIsEmpty(char *str)
+bool UtoolStringIsEmpty(const char *str)
 {
     if (str == NULL) {
         return true;
@@ -183,7 +183,7 @@ char *UtoolStringLastSplit(char *source, char split)
 char *UtoolStringCaseFindInArray(const char *str, const char **array)
 {
     if (str == NULL) {
-        return false;
+        return NULL;
     }
 
     for (int idx = 0;; idx++) {
@@ -246,14 +246,15 @@ char **UtoolStringSplit(char *source, const char delim)
         tmp++;
     }
 
-    /* Add space for trailing token. */
-    count += (lastComma < (source + strlen(source) - 1)) ? 1 : 0;
+    if (lastComma != NULL) { /* Add space for trailing token. */
+        count += (lastComma < (source + strlen(source) - 1)) ? 1 : 0;
+    }
 
     /* Add space for terminating null string so caller
        knows where the list of returned strings ends. */
     count++;
 
-    result = malloc(sizeof(char *) * count);
+    result = (char **) malloc(sizeof(char *) * count);
     if (result) {
         size_t idx = 0;
         char *token = strtok(source, delimStr);

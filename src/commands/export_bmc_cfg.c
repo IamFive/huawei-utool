@@ -78,13 +78,13 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -96,13 +96,13 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ExportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -111,7 +111,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
     if (opt->isLocalFile) { /* download file to local if necessary */
         ZF_LOGI("Try to download BMC config xml file from BMC now.");
         UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
     }
@@ -224,7 +224,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -277,7 +277,7 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result)
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

@@ -78,13 +78,13 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     }
 
     ValidateSubcommandOptions(opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(opt, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -96,13 +96,13 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
 
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.Dump";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -112,7 +112,7 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     if (opt->isLocalFile) {
         ZF_LOGI("Try to download collect file from BMC now.");
         UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
     }
@@ -225,7 +225,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -278,7 +278,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

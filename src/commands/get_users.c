@@ -88,13 +88,13 @@ int UtoolCmdGetUsers(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     userMemberJson = result->data;
     UtoolRedfishGetMemberResources(server, userMemberJson, userArray, getUserMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

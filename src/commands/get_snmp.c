@@ -111,7 +111,7 @@ int UtoolCmdGetSNMP(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/SnmpService", output, getTrapNotificationMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

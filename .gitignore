@@ -1,6 +1,7 @@
 .idea/
 .developer
 
+build
 lib
 bin
 

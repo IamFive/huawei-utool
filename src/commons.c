@@ -330,7 +330,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 
                 cJSON *mapped = cJSON_CreateObject();
                 cJSON_AddItemToArray(array, mapped);
-                int ret = UtoolMappingCJSONItems(element, mapped, nestMapping);
+                ret = UtoolMappingCJSONItems(element, mapped, nestMapping);
                 if (ret != UTOOLE_OK) {
                     return ret;
                 }
@@ -395,7 +395,7 @@ cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result)
 
 FAILURE:
     FREE_CJSON(wrapped)
-    result->interrupt = 1;
+    result->broken = 1;
     return NULL;
 }
 

@@ -73,13 +73,13 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
     }
 
     ValidateSubcommandOptions(resetType, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(resetType, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -90,7 +90,7 @@ int UtoolCmdSystemPowerControl(UtoolCommandOption *commandOption, char **outputS
     }
 
     UtoolRedfishPost(server, "/Systems/%s/Actions/ComputerSystem.Reset", payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -135,7 +135,7 @@ static void ValidateSubcommandOptions(char *resetType, UtoolResult *result)
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -156,7 +156,7 @@ static cJSON *BuildPayload(char *resetType, UtoolResult *result)
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

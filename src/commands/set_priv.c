@@ -80,13 +80,13 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSetUserOptions(setPasswordOption, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     // build payload
     payload = BuildPayload(setPasswordOption, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -97,7 +97,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/AccountService/Accounts", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     userMembersJson = result->data;
@@ -164,7 +164,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
         };
 
         UtoolRedfishPatch(server, userAccountUrl, payload, ifMatchHeader, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
         FREE_CJSON(result->data)
@@ -217,7 +217,7 @@ static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *resu
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -238,7 +238,7 @@ static cJSON *BuildPayload(UtoolSetUserOption *option, UtoolResult *result)
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

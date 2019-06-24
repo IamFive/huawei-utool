@@ -24,7 +24,7 @@ extern "C" {
 * @param str
 * @return
 */
-bool UtoolStringIsEmpty(char *str);
+bool UtoolStringIsEmpty(const char *str);
 
 /**
 * check whether source string starts with target string

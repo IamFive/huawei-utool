@@ -102,13 +102,13 @@ int UtoolCmdSetIP(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -119,7 +119,7 @@ int UtoolCmdSetIP(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     getEthernetInterfacesRespJson = result->data;
@@ -129,7 +129,7 @@ int UtoolCmdSetIP(UtoolCommandOption *commandOption, char **outputStr)
     cJSON *linkNode = cJSONUtils_GetPointer(getEthernetInterfacesRespJson, "/Members/0/@odata.id");
     char *url = linkNode->valuestring;
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -232,7 +232,7 @@ static void ValidateSubcommandOptions(UtoolSetIPOption *option, UtoolResult *res
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -351,7 +351,7 @@ static cJSON *BuildPayload(UtoolSetIPOption *option, UtoolResult *result)
     return wrapped;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(wrapped)
     return NULL;
 }

@@ -71,7 +71,7 @@ int UtoolCmdRestoreBIOS(UtoolCommandOption *commandOption, char **outputStr)
 
     char *url = "/Systems/%s/Bios/Actions/Bios.ResetBios";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

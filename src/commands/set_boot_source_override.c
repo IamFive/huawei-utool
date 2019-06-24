@@ -91,13 +91,13 @@ int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outp
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -108,7 +108,7 @@ int UtoolCmdSetBootSourceOverride(UtoolCommandOption *commandOption, char **outp
     }
 
     UtoolRedfishPatch(server, "/Systems/%s", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -171,7 +171,7 @@ static void ValidateSubcommandOptions(UtoolSetBootSourceOverrideOption *option, 
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -218,7 +218,7 @@ static cJSON *BuildPayload(UtoolSetBootSourceOverrideOption *option, UtoolResult
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

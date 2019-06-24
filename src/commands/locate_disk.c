@@ -76,13 +76,13 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -96,7 +96,7 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr)
     snprintf(url, sizeof(url), "/redfish/v1/Chassis/%s/Drives/%s", server->systemId, option->diskId);
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
 
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -149,7 +149,7 @@ static void ValidateSubcommandOptions(SetDiskIndicatorOption *option, UtoolResul
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -176,7 +176,7 @@ static cJSON *BuildPayload(SetDiskIndicatorOption *option, UtoolResult *result)
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

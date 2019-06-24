@@ -138,7 +138,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     if (result->code == CURLE_OK) { /* Check for errors */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
         if (response->httpStatusCode >= 400) {
-            ZF_LOGE("Failed to upload local file `%s` to BMC, http status code is %d.",
+            ZF_LOGE("Failed to upload local file `%s` to BMC, http status code is %ld.",
                     uploadFilePath, response->httpStatusCode);
             result->code = UtoolResolveFailureResponse(response, &(result->desc));
             result->retryable = 1; // TODO?? should we only retry when BMC return failure?
@@ -155,7 +155,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
 
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -192,7 +192,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     FILE *outputFileFP = fopen(localFileUri, "wb");
     if (!outputFileFP) {
-        result->interrupt = 1;
+        result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         return;
     }
@@ -201,7 +201,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
     CURL *curl = UtoolSetupCurlRequest(server, url, HTTP_POST, response);
     if (!curl) {
-        result->interrupt = 1;
+        result->broken = 1;
         result->code = UTOOLE_CURL_INIT_FAILED;
         return;
     }
@@ -243,7 +243,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -421,8 +421,8 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
  */
 int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
 {
-    int code = response->httpStatusCode;
-    ZF_LOGE("Failed to execute request, http error code -> %d", code);
+    long int code = response->httpStatusCode;
+    ZF_LOGE("Failed to execute request, http error code -> %ld", code);
 
     // handle standard internet errors
     if (403 == code) {
@@ -464,8 +464,8 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
 */
 bool UtoolResolvePartialFailureResponse(UtoolCurlResponse *response, UtoolResult *result)
 {
-    int code = response->httpStatusCode;
-    ZF_LOGI("Try to resolve partial failure, http code -> %d", code);
+    long int code = response->httpStatusCode;
+    ZF_LOGI("Try to resolve partial failure, http code -> %ld", code);
     ZF_LOGI("Try to resolve partial failure, http response -> %s", response->content);
 
     // handle standard internet errors
@@ -506,7 +506,7 @@ bool UtoolResolvePartialFailureResponse(UtoolCurlResponse *response, UtoolResult
     return false;
 
 RESOLVED:
-    result->interrupt = 1;
+    result->broken = 1;
     return true;
 }
 
@@ -674,47 +674,49 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
 
 static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
 {
-    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_LENGTH)) {
-        // get response content
-        unsigned long fullSize = size * nitems;
-        char content[fullSize - 1];
-        memcpy(content, buffer, fullSize - 1);
-        content[fullSize - 2] = '\0';
+    if (buffer != NULL) {
+        if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_LENGTH)) {
+            // get response content
+            unsigned long fullSize = size * nitems;
+            char content[fullSize - 1];
+            memcpy(content, buffer, fullSize - 1);
+            content[fullSize - 2] = '\0';
 
-        //int len = strlen(content) - strlen(HEADER_CONTENT_LENGTH) + 1;
-        //char *contentLength = (char *) malloc(len);
-        //memcpy(contentLength, content + strlen(HEADER_CONTENT_LENGTH), len);
+            //int len = strlen(content) - strlen(HEADER_CONTENT_LENGTH) + 1;
+            //char *contentLength = (char *) malloc(len);
+            //memcpy(contentLength, content + strlen(HEADER_CONTENT_LENGTH), len);
 
-        char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
-        response->contentLength = strtol(length, NULL, 10);
-    }
+            char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
+            response->contentLength = strtol(length, NULL, 10);
+        }
 
-    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
-        // get response content
-        unsigned long fullSize = size * nitems;
-        char content[fullSize - 1];
-        memcpy(content, buffer, fullSize - 1);
-        content[fullSize - 2] = '\0';
+        if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_ETAG)) {
+            // get response content
+            unsigned long fullSize = size * nitems;
+            char content[fullSize - 1];
+            memcpy(content, buffer, fullSize - 1);
+            content[fullSize - 2] = '\0';
 
-        int len = strlen(content) - strlen(HEADER_ETAG) + 1;
-        char *etag = (char *) malloc(len);
-        memcpy(etag, content + strlen(HEADER_ETAG), len);
+            int len = strlen(content) - strlen(HEADER_ETAG) + 1;
+            char *etag = (char *) malloc(len);
+            memcpy(etag, content + strlen(HEADER_ETAG), len);
 
-        response->etag = etag;
-    }
+            response->etag = etag;
+        }
 
-    if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_TYPE)) {
-        // get response content
-        unsigned long fullSize = size * nitems;
-        char content[fullSize - 1];
-        memcpy(content, buffer, fullSize - 1);
-        content[fullSize - 2] = '\0';
+        if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_TYPE)) {
+            // get response content
+            unsigned long fullSize = size * nitems;
+            char content[fullSize - 1];
+            memcpy(content, buffer, fullSize - 1);
+            content[fullSize - 2] = '\0';
 
-        int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
-        char *etag = (char *) malloc(len);
-        memcpy(etag, content + strlen(HEADER_CONTENT_TYPE), len);
+            int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
+            char *etag = (char *) malloc(len);
+            memcpy(etag, content + strlen(HEADER_CONTENT_TYPE), len);
 
-        response->contentType = etag;
+            response->contentType = etag;
+        }
     }
 
     return nitems * size;
@@ -762,7 +764,7 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
     //}
 
     bool resolved = UtoolResolvePartialFailureResponse(response, result);
-    if (resolved || result->interrupt) {
+    if (resolved || result->broken) {
         goto FAILURE;
     }
 
@@ -783,7 +785,7 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -851,19 +853,19 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
 {
     cJSON *outputMember = NULL;
 
-    cJSON *link = NULL;
+    cJSON *memberLink = NULL;
     cJSON *links = cJSON_IsArray(owner) ? owner : cJSON_GetObjectItem(owner, "Members");
-    cJSON_ArrayForEach(link, links) {
+    cJSON_ArrayForEach(memberLink, links) {
         outputMember = cJSON_CreateObject();
         result->code = UtoolAssetCreatedJsonNotNull(outputMember);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
 
-        cJSON *linkNode = cJSON_GetObjectItem(link, "@odata.id");
+        cJSON *linkNode = cJSON_GetObjectItem(memberLink, "@odata.id");
         char *url = linkNode->valuestring;
         UtoolRedfishGet(server, url, outputMember, memberMapping, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 
@@ -876,7 +878,7 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(outputMember)  /** make sure output member is freed */
     goto DONE;
 
@@ -992,7 +994,7 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     return task;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     UtoolFreeRedfishTask(task);
     return NULL;
 }
@@ -1015,7 +1017,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
 
     while (true) {
         task = UtoolRedfishMapTaskFromJson(jsonTask, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 
@@ -1051,7 +1053,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
 
         /** if task is still processing */
         UtoolRedfishGet(server, task->url, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
         FREE_CJSON(jsonTask)        /** free last json TASK */
@@ -1062,7 +1064,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
     }
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -1090,7 +1092,7 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
 
     while (true) {
         task = UtoolRedfishMapTaskFromJson(jsonTask, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 
@@ -1121,7 +1123,7 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
 
         /** if task is still processing */
         UtoolRedfishGet(server, task->url, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
         FREE_CJSON(jsonTask)        /** free last json TASK */
@@ -1132,7 +1134,7 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
     }
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:

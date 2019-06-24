@@ -66,13 +66,13 @@ int UtoolCmdSetTimezone(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(timezone, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(timezone, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -83,7 +83,7 @@ int UtoolCmdSetTimezone(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishPatch(server, "/Managers/%s", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -121,7 +121,7 @@ static void ValidateSubcommandOptions(char *timezone, UtoolResult *result)
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -142,7 +142,7 @@ static cJSON *BuildPayload(char *timezone, UtoolResult *result)
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

@@ -39,7 +39,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
     int bracketFlag;
 
     /* Allocate the parsed url storage */
-    parsedUrl = malloc(sizeof(struct ParsedUrl));
+    parsedUrl = (struct ParsedUrl *) malloc(sizeof(struct ParsedUrl));
     if (NULL == parsedUrl) {
         return NULL;
     }
@@ -77,7 +77,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         }
     }
     /* Copy the scheme to the storage */
-    parsedUrl->scheme = malloc(sizeof(char) * (len + 1));
+    parsedUrl->scheme = (char *) malloc(sizeof(char) * (len + 1));
     if (NULL == parsedUrl->scheme) {
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
@@ -93,7 +93,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
     curstr = tmpstr;
 
     /*
-     * //<user>:<password>@<host>:<port>/<url-path>
+     * //<user>:<pass>@<host>:<port>/<url-path>
      * Any ":", "@" and "/" must be encoded.
      */
     /* Eat "//" */
@@ -105,12 +105,12 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         curstr++;
     }
 
-    /* Check if the user (and password) are specified. */
+    /* Check if the user (and pass) are specified. */
     userpassFlag = 0;
     tmpstr = curstr;
     while ('\0' != *tmpstr) {
         if ('@' == *tmpstr) {
-            /* Username and password are specified */
+            /* Username and pass are specified */
             userpassFlag = 1;
             break;
         }
@@ -122,7 +122,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         tmpstr++;
     }
 
-    /* User and password specification */
+    /* User and pass specification */
     tmpstr = curstr;
     if (userpassFlag) {
         /* Read username */
@@ -130,7 +130,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             tmpstr++;
         }
         len = tmpstr - curstr;
-        parsedUrl->username = malloc(sizeof(char) * (len + 1));
+        parsedUrl->username = (char *) malloc(sizeof(char) * (len + 1));
         if (NULL == parsedUrl->username) {
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
@@ -142,13 +142,13 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         if (':' == *curstr) {
             /* Skip ':' */
             curstr++;
-            /* Read password */
+            /* Read credential */
             tmpstr = curstr;
             while ('\0' != *tmpstr && '@' != *tmpstr) {
                 tmpstr++;
             }
             len = tmpstr - curstr;
-            parsedUrl->password = malloc(sizeof(char) * (len + 1));
+            parsedUrl->password = (char *) malloc(sizeof(char) * (len + 1));
             if (NULL == parsedUrl->password) {
                 UtoolFreeParsedURL(parsedUrl);
                 return NULL;
@@ -186,7 +186,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         tmpstr++;
     }
     len = tmpstr - curstr;
-    parsedUrl->host = malloc(sizeof(char) * (len + 1));
+    parsedUrl->host = (char *) malloc(sizeof(char) * (len + 1));
     if (NULL == parsedUrl->host || len <= 0) {
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
@@ -204,7 +204,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             tmpstr++;
         }
         len = tmpstr - curstr;
-        parsedUrl->port = malloc(sizeof(char) * (len + 1));
+        parsedUrl->port = (char *) malloc(sizeof(char) * (len + 1));
         if (NULL == parsedUrl->port) {
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
@@ -232,7 +232,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         tmpstr++;
     }
     len = tmpstr - curstr;
-    parsedUrl->path = malloc(sizeof(char) * (len + 1));
+    parsedUrl->path = (char *) malloc(sizeof(char) * (len + 1));
     if (NULL == parsedUrl->path) {
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
@@ -251,7 +251,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             tmpstr++;
         }
         len = tmpstr - curstr;
-        parsedUrl->query = malloc(sizeof(char) * (len + 1));
+        parsedUrl->query = (char *) malloc(sizeof(char) * (len + 1));
         if (NULL == parsedUrl->query) {
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
@@ -271,7 +271,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             tmpstr++;
         }
         len = tmpstr - curstr;
-        parsedUrl->fragment = malloc(sizeof(char) * (len + 1));
+        parsedUrl->fragment = (char *) malloc(sizeof(char) * (len + 1));
         if (NULL == parsedUrl->fragment) {
             UtoolFreeParsedURL(parsedUrl);
             return NULL;

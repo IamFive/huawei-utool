@@ -137,14 +137,14 @@ int UtoolCmdGetSensor(UtoolCommandOption *commandOption, char **outputStr)
 
     /** get threshold sensors */
     UtoolRedfishGet(server, "/Chassis/%s/ThresholdSensors", output, getThresholdSensorMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     /** get threshold sensors */
     UtoolRedfishGet(server, "/Chassis/%s/DiscreteSensors", output, getDiscreteSensorsMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

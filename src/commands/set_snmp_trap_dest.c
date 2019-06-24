@@ -83,13 +83,13 @@ int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char 
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -100,7 +100,7 @@ int UtoolCmdSetSNMPTrapNotificationDest(UtoolCommandOption *commandOption, char 
     }
 
     UtoolRedfishPatch(server, "/Managers/%s/SnmpService", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -167,7 +167,7 @@ static void ValidateSubcommandOptions(UtoolUpdateTrapNotifyDestOption *option, U
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -230,7 +230,7 @@ static cJSON *BuildPayload(UtoolUpdateTrapNotifyDestOption *option, UtoolResult 
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

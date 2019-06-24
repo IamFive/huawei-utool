@@ -84,7 +84,7 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateMountVMMOptions(mountVMMOptions, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
@@ -102,13 +102,13 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
 
     char *url = "/Managers/%s/VirtualMedia/CD/Oem/Huawei/Actions/VirtualMedia.VmmControl";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -159,7 +159,7 @@ static void ValidateMountVMMOptions(UtoolMountVMMOption *option, UtoolResult *re
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 

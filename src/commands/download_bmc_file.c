@@ -57,7 +57,7 @@ int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **outputStr)
     char *bmcFileUri = "/tmp/web/9.xml";
     char *filepath = "/home/qianbiao/9-download.xml";
     UtoolDownloadFileFromBMC(server, bmcFileUri, filepath, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

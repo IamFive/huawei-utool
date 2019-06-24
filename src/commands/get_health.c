@@ -86,19 +86,19 @@ int UtoolCmdGetHealth(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", output, getSystemSummaryMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     UtoolRedfishGet(server, "/Chassis/%s", output, getChassisSummaryMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     UtoolRedfishGet(server, "/Chassis/%s/Thermal", output, getThermalSummaryMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

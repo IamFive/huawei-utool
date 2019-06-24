@@ -27,7 +27,7 @@ typedef struct _Result
     int code;           /** result code */
     char *desc;         /** result desc */
     cJSON *data;         /** result data */
-    int interrupt;      /** whether the program is interrupt, default no(0) otherwise yes */
+    int broken;      /** whether the program is broken, default no(0) otherwise yes */
     int retryable;
 } UtoolResult;
 
@@ -97,7 +97,7 @@ typedef struct _CurlResponse
 {
     char *content;
     size_t size;
-    int httpStatusCode;
+    long int httpStatusCode;
     char *etag;
     long contentLength;
     char *contentType;

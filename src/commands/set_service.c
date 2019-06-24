@@ -108,7 +108,7 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
@@ -123,7 +123,7 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
         /** handle KVM service */
         if (UtoolStringEquals(option->service, SERVICE_KVM)) {
             UpdateKvmService(server, option, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 goto FAILURE;
             }
         }
@@ -131,7 +131,7 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
         /** handle Virtual Media service */
         if (UtoolStringEquals(option->service, SERVICE_VM)) {
             UpdateVirtualMediaService(server, option, result);
-            if (result->interrupt) {
+            if (result->broken) {
                 goto FAILURE;
             }
         }
@@ -143,12 +143,12 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
     if (option->enabled != NULL || option->port != DEFAULT_INT_V) {
         // build payload
         payload = BuildPayload(option, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 
         UtoolRedfishPatch(server, "/Managers/%s/NetworkProtocol", payload, NULL, NULL, NULL, result);
-        if (result->interrupt) {
+        if (result->broken) {
             /* we need to patch output message array if ssl-enabled present */
             if (option->sslEnabled != NULL && result->code == UTOOLE_OK && result->desc != NULL) {
                 cJSON *message = cJSON_CreateString("Success: successfully update ssl-enabled property");
@@ -196,7 +196,7 @@ static void UpdateKvmService(UtoolRedfishServer *server, UtoolUpdateServiceOptio
     }
 
     UtoolRedfishPatch(server, "/Managers/%s/KvmService", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -204,7 +204,7 @@ static void UpdateKvmService(UtoolRedfishServer *server, UtoolUpdateServiceOptio
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -222,13 +222,13 @@ UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *
     }
 
     cJSON *wrapped = UtoolWrapOem(payload, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     payload = wrapped;
 
     UtoolRedfishPatch(server, "/Managers/%s/VirtualMedia/CD", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -236,7 +236,7 @@ UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -318,7 +318,7 @@ static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolRes
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
 
@@ -349,7 +349,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
         }
 
         payload = UtoolWrapOem(ipmiOemNode, result);
-        if (result->interrupt) {
+        if (result->broken) {
             FREE_CJSON(ipmiOemNode)
             goto FAILURE;
         }
@@ -386,7 +386,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
 
     if (UtoolStringInArray(serviceName, OEM_SERVICE_CHOICES)) {
         cJSON *wrapped = UtoolWrapOem(payload, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
         payload = wrapped;
@@ -395,7 +395,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
     return payload;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     return NULL;
 }

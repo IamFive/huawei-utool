@@ -170,7 +170,7 @@ int UtoolCmdGetBiosResult(UtoolCommandOption *commandOption, char **outputStr) {
     }
 
     UtoolRedfishGet(server, "/Systems/%s/Bios", output, getBiosResultMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

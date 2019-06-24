@@ -99,7 +99,7 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
         {.name = "waittask", .pFuncExecute = UtoolCmdWaitRedfishTask, .type = DEBUG},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = DEBUG},
-        NULL,
+        {0},
 };
 
 /**
@@ -285,11 +285,11 @@ int utool_main(int argc, char *argv[], char **result) {
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
         ret = targetCommand->pFuncExecute(commandOption, result);
         if (ret != UTOOLE_OK) {
-            const char *errorString = (ret > UTOOLE_OK && ret < CURL_LAST) ?
+            const char *errorString = (ret > UTOOLE_OK && ret < ((int) CURL_LAST)) ?
                                       curl_easy_strerror(ret) : UtoolGetStringError(ret);
             // we can not use cJSON to build result here, because it may cause problems...
             // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
-            char *buffer = malloc(MAX_OUTPUT_LEN);
+            char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
             snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
             *result = buffer;
         }

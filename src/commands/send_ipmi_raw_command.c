@@ -69,8 +69,8 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
         goto DONE;
     }
 
-    ValidateSubCommandOptions(commandOption, result);
-    if (result->interrupt) {
+    ValidateSubCommandOptions(sendIpmiCommandOption, result);
+    if (result->broken) {
         goto DONE;
     }
 
@@ -79,7 +79,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
     snprintf(ipmiCmd, sizeof(ipmiCmd), "%s %s", sendIpmiCommandOption->command, data);
 
     commandOutput = UtoolIPMIExecCommand(commandOption, ipmiCmd, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -112,6 +112,6 @@ static void ValidateSubCommandOptions(UtoolSendIPMICommandOption *option, UtoolR
     return;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     return;
 }
