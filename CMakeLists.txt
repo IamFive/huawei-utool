@@ -3,6 +3,19 @@ set(LIB_NAME utool)
 
 project(${LIB_NAME} C)
 
+set(default_build_type "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+    set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+            STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+            "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+set(CMAKE_BUILD_TYPEc "Release")
+message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -93,6 +106,8 @@ install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 
-# debug purpose, should remove before release
-add_executable(utool-debug src/main-debug.c ${SOURCE_FILES})
-#install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    # debug purpose, should remove before release
+    add_executable(utool-debug src/main-debug.c ${SOURCE_FILES})
+    #install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
+ENDIF()

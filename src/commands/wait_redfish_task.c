@@ -68,7 +68,7 @@ int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
     char url[MAX_URL_LEN];
     snprintf(url, MAX_URL_LEN, "/TaskService/Tasks/%s", taskId);
     UtoolRedfishGet(server, url, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

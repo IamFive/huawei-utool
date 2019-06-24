@@ -101,7 +101,7 @@ int UtoolCmdGetMgmtPort(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     getEthernetInterfacesRespJson = result->data;
@@ -110,7 +110,7 @@ int UtoolCmdGetMgmtPort(UtoolCommandOption *commandOption, char **outputStr)
     char *url = linkNode->valuestring;
 
     UtoolRedfishGet(server, url, output, getMgmtPortMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

@@ -18,15 +18,15 @@
 #include "string_utils.h"
 #include "url_parser.h"
 
-int run_utool_main()
-{
+int run_utool_main() {
     char *argv2[] = {
             "utool",
             //"--version",
-            "-H", "112.93.129.9",
+            "-H", "112.93.129.235",
             "-U", "qianbiao",
             "-P", "********",
-            //"getproduct",
+            //"getcapabilities", "-j",
+            "getproduct",
             //"getfw",
             //"getip",
             //"getpsu",
@@ -53,8 +53,9 @@ int run_utool_main()
             //"gettrap",
             //"getvnc",
             //"gettaskstate",
-            //"geteventlog",
+            //"geteventlog", "-u", "/data/nfs/sel.tar.gz",
             //"getpcie",
+            //"getbiosresult",
 
             //"adduser", "-n", "utool", "-p", "chajian12#$", "--role-id", "Administrator", "-l", "None",
             //"setpwd", "-n", "utool", "-p", "chajian12#$5",
@@ -66,17 +67,17 @@ int run_utool_main()
             //"-e", "Auto", "-t", "BMC",
             ////"-u", "/data/nfs/2288H_V5_5288_V5-iBMC-V318.hpm",
             ////"waittask", "-i", "2",
-            ////"-u", "/data/nfs/CH121_V5_CH121L_V5-iBMC-V338.hpm",
-            ////"-u", "nfs://112.93.129.100/data/nfs/CH121_V5-CPLD-V110.hpm",
-            ////"-u", "http://112.93.129.100/data/nfs/CH121_V5_CH121L_V5-iBMC-V338.hpm",
-            ////"-u", "/data/nfs/ubuntu-iso.zip",
+            //"-u", "/data/nfs/CH121_V5_CH121L_V5-iBMC-V338.hpm",
+            //"-u", "nfs://112.93.129.100/data/nfs/CH121_V5-CPLD-V110.hpm",
+            //"-u", "nfs://112.93.129.100/data/nfs/CH121_V5_CH121L_V5-iBMC-V338.hpm",
+            //"-u", "/data/nfs/ubuntu-iso.zip",
             //"-u", "nfs://112.93.129.100/data/nfs/cpldimage.hpm",
             //"mountvmm", "-o", "Mount", "-i", "nfs://112.93.129.100/data/nfs/mini.iso",
             //"mountvmm", "-o", "Unmount",
             //"clearsel",
             //"settimezone", "-z", "+08:00",
-            //"powercontrol", "-t", "On",
-            //"setservice", "-s", "VirtualMedia", "-e", "Enabled", "-p", "10086", "-t", "Enabled",
+            //"powercontrol", "-t", "ForcePowerCycle",
+            //"setservice", "-s", "KVM", "-e", "Enabled", "-p", "80", "-t", "Enabled",
             //"setvlan", "-e", "Enabled", "-v", "100",
             //"resetbmc",
             //"restorebios",
@@ -89,12 +90,15 @@ int run_utool_main()
             //"delvncsession",
             //"setip", "-v", "4", "-m", "Static", "-a", "112.93.129.9", "-g", "112.93.129.1", "-s", "255.255.255.0",
             //"setip", "-v", "6", "-m", "Static", "-a", "2000::2000", "-g", "2000::2100", "-s", "16",
-            "setadaptiveport", "-p", "Dedicated,1,2;",
+            //"setadaptiveport", "-p", "Dedicated,1,2;",
 
-            //"exportbmccfg", "-u", "/data/nfs/utool_bmc_9.xml",
+            //"exportbmccfg", "-u", "nfs://112.93.129.100/data/nfs/utool_bmc_9.json",
             //"importbmccfg", "-u", "/data/nfs/utool_bmc_235.xml",
+            //"setbios", "-a", "BootRetry", "-v", "Disabled",
             //"setbios", "-a", "BootRetry", "-v", "Enabled", "-f", "/data/nfs/bios.json",
             //"setfan", "-i", "255", "-m", "Automatic", "-s", "30",
+            //"locatedisk", "-i", "HDDPlaneDisk1", "-s", "Off",
+            //"sendipmirawcmd", "-c", "spd",
             NULL
     };
     char *result = NULL;
@@ -108,24 +112,15 @@ int run_utool_main()
     return ret;
 }
 
-int debug(UtoolResult *result)
-{
-    //time_t now = time(NULL);
-    //struct tm *tm_now = localtime(&now);
-    ////printf("now datetime: %d-%02d-%02d %02d:%02d:%02d\n",
-    ////       tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min,
-    ////       tm_now->tm_sec);
-    //
-    //char text[100];
-    //strftime(text, sizeof(text)-1, "%Y%m%d%H%M%S", tm_now);
-    //strftime(text, sizeof(text)-1, "%d %m %Y %H:%M", tm_now);
-    //printf("Current Date: %s", text);
-
+int debug(UtoolResult *result) {
+    //result = system("ls");
+    char *test = "/abc/cde/def";
+    char *last = UtoolStringLastSplit(test, '/');
+    return 0;
 }
 
 
-int main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
     int ret = 0;
     debug(NULL);
     ret = run_utool_main();

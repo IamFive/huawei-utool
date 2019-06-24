@@ -101,7 +101,7 @@ int UtoolCmdGetVNC(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/VncService", output, getVNCMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

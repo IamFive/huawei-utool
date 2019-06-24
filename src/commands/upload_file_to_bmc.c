@@ -57,7 +57,7 @@ int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr)
 
     char *filepath = "/data/nfs/9.xml";
     UtoolUploadFileToBMC(server, filepath, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

@@ -87,7 +87,7 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     systemRespJson = result->data;
@@ -99,7 +99,7 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGetMemberResources(server, members, pcieDeviceArray, getPCIeDeviceMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

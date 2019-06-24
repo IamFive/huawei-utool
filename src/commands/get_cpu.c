@@ -107,13 +107,13 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", output, getProcessorSummaryMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerWattsMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -127,14 +127,14 @@ int UtoolCmdGetProcessor(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s/Processors", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     processorMembers = result->data;
 
     /** load all network ports */
     UtoolRedfishGetMemberResources(server, processorMembers, processors, getProcessorMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

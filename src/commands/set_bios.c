@@ -82,13 +82,13 @@ int UtoolCmdSetBIOS(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
     // build payload
     payload = BuildPayload(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -99,7 +99,7 @@ int UtoolCmdSetBIOS(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishPatch(server, "/Systems/%s/Bios/Settings", payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -177,7 +177,7 @@ static void ValidateSubcommandOptions(UtoolSetBiosAttrOption *option, UtoolResul
 
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -223,7 +223,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
         }
 
         /* copy all the text into the buffer */
-        fread(fileContent, sizeof(char), numbytes, infile);
+        size_t size = fread(fileContent, sizeof(char), numbytes, infile);
         fileContent[numbytes] = '\0';
         fclose(infile);
         infile = NULL;
@@ -231,7 +231,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
 
         /** parse file content */
         payload = cJSON_Parse(fileContent);
-        if (!payload) {
+        if (size == 0 || !payload) {
             ZF_LOGI("File format is illegal, not well json formatted, position: %s.", cJSON_GetErrorPtr());
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_ILLEGAL), &(result->desc));
             goto FAILURE;
@@ -258,7 +258,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     FREE_CJSON(attributes)
     goto DONE;

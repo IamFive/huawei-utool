@@ -79,7 +79,7 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     ValidateSubcommandOptions(option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto DONE;
     }
 
@@ -90,7 +90,7 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Managers/%s/EthernetInterfaces", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     getEthernetsRespJson = result->data;
@@ -105,19 +105,19 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
 
     /* load all allowed ports */
     UtoolRedfishGet(server, url, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     getEthernetRespJson = result->data;
 
     // build payload
     payload = BuildPayload(getEthernetRespJson, option, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -184,7 +184,7 @@ static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolR
     goto DONE;
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     goto DONE;
 
 DONE:
@@ -292,7 +292,7 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
     }
 
     cJSON *wrapped = UtoolWrapOem(payload, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     payload = wrapped;
@@ -301,7 +301,7 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
 
 
 FAILURE:
-    result->interrupt = 1;
+    result->broken = 1;
     FREE_CJSON(payload)
     goto DONE;
 

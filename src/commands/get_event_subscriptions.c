@@ -84,13 +84,13 @@ int UtoolCmdGetEventSubscriptions(UtoolCommandOption *commandOption, char **outp
     }
 
     UtoolRedfishGet(server, "/EventService/Subscriptions", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
     subscriptionMemberJson = result->data;
     UtoolRedfishGetMemberResources(server, subscriptionMemberJson, subscriptionArray, getSubscriptionMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

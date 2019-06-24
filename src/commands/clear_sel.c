@@ -63,7 +63,7 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s/LogServices", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     logServices = result->data;
@@ -83,7 +83,7 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishPost(server, clearSELUrl, payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

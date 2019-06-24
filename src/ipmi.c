@@ -32,7 +32,7 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
         ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
         result->desc = IPMITOOL_CMD_RUN_FAILED;
-        result->interrupt = 1;
+        result->broken = 1;
         return NULL;
     }
 
@@ -44,7 +44,7 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
 
     int ret = pclose(fp);
     if (ret != 0) {
-        result->interrupt = 1;
+        result->broken = 1;
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, cmdOutput, &(result->desc));
         free(cmdOutput);
         return NULL;
@@ -89,7 +89,7 @@ unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
 int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     int port = 0;
     char *ipmiCmdOutput = UtoolIPMIExecCommand(option, IPMI_GET_HTTPS_PORT_RAW_CMD, result);
-    if (result->interrupt) {
+    if (result->broken) {
         FREE_OBJ(result->desc)
         return port;
     }

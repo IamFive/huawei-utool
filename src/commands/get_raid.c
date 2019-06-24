@@ -133,13 +133,13 @@ int UtoolCmdGetRAID(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", output, getRAIDSummaryMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     UtoolRedfishGet(server, "/Systems/%s/Storages", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     storageMembers = result->data;
@@ -151,7 +151,7 @@ int UtoolCmdGetRAID(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGetMemberResources(server, storageMembers, raidArray, getRAIDMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 

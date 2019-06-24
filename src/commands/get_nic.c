@@ -120,13 +120,13 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Chassis/%s", output, getNetworkAdapterSummaryMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     chassisJson = result->data;
 
     UtoolRedfishGet(server, "/Chassis/%s/NetworkAdapters", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     networkAdapterMembersJson = result->data;
@@ -150,7 +150,7 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
         cJSON *linkNode = cJSON_GetObjectItem(member, "@odata.id");
         char *url = linkNode->valuestring;
         UtoolRedfishGet(server, url, networkAdapter, getNetworkAdapterMappings, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
         networkAdapterJson = result->data;
@@ -179,7 +179,7 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
         /** load all network ports */
         cJSON *networkPortMembers = cJSONUtils_GetPointer(networkAdapterJson, "/Controllers/0/Link/NetworkPorts");
         UtoolRedfishGetMemberResources(server, networkPortMembers, ports, getNetworkPortMappings, result);
-        if (result->interrupt) {
+        if (result->broken) {
             goto FAILURE;
         }
 

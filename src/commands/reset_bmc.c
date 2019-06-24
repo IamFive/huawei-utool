@@ -59,7 +59,7 @@ int UtoolCmdResetBMC(UtoolCommandOption *commandOption, char **outputStr)
 
     // build payload
     payload = BuildPayload(result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
@@ -70,7 +70,7 @@ int UtoolCmdResetBMC(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishPost(server, "/Managers/%s/Actions/Manager.Reset", payload, NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
@@ -109,6 +109,6 @@ static cJSON *BuildPayload(UtoolResult *result)
 
 FAILURE:
     FREE_CJSON(payload)
-    result->interrupt = 1;
+    result->broken = 1;
     return NULL;
 }

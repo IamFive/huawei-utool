@@ -86,7 +86,7 @@ int UtoolCmdGetEventLogBak(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s/LogServices", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     getLogServicesJson = result->data;
@@ -108,7 +108,7 @@ int UtoolCmdGetEventLogBak(UtoolCommandOption *commandOption, char **outputStr)
     cJSON_AddNumberToObject(payload, "StartEntryId", currentEntryId);
     cJSON_AddNumberToObject(payload, "EntriesCount", 32);
     UtoolRedfishPost(server, querySelLogUrl, payload, output, getEventArrayMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)

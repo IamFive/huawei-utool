@@ -109,20 +109,20 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     UtoolRedfishGet(server, "/Systems/%s", output, getMemorySummaryMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
 
     UtoolRedfishGet(server, "/Chassis/%s/Power", output, getPowerWattsMapping, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     FREE_CJSON(result->data)
 
     UtoolRedfishGet(server, "/Systems/%s/Memory", NULL, NULL, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
     memoryMembersRespJson = result->data;
@@ -136,7 +136,7 @@ int UtoolCmdGetMemory(UtoolCommandOption *commandOption, char **outputStr)
 
     /** load all network ports */
     UtoolRedfishGetMemberResources(server, memoryMembersRespJson, memories, getMemoryMappings, result);
-    if (result->interrupt) {
+    if (result->broken) {
         goto FAILURE;
     }
 
