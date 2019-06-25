@@ -181,7 +181,7 @@ DONE:
 */
 static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
 {
-    ZF_LOGI("Export to file URI is %s.", opt->exportToFileUrl);
+    ZF_LOGD("Export to file URI is %s.", opt->exportToFileUrl);
     UtoolParsedUrl *parsedUrl = NULL;
 
     if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
