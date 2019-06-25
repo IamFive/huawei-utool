@@ -223,7 +223,7 @@ static int initialize(char **result) {
         }
 
         // release mutex
-        pthread_mutex_destroy(&mutex);
+        pthread_mutex_unlock(&mutex);
 
         if (flag != CURLE_OK) {
             return flag;
