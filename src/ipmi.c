@@ -23,7 +23,12 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
     char ipmiCmd[256];
     snprintf(ipmiCmd, sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username, option->password, option->ipmiPort,
              ipmiSubCommand);
-    ZF_LOGD("execute IPMI command: %s", ipmiCmd);
+
+
+    char secureIpmiCmd[256];
+    snprintf(secureIpmiCmd, sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host, option->username, "******", option->ipmiPort,
+             ipmiSubCommand);
+    ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
 
     //snprintf(cmd_str, sizeof(cmd_str),
     //         "ipmitool -I lanplus -H %s -U %s -P %s raw 0x30 0x93 0xdb 0x07 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00",
