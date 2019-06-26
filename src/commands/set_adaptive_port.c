@@ -22,7 +22,7 @@
 
 
 static const char *OPT_PORT_LIST_ILLEGAL = "Error: option `port-list` is illegal, "
-                                           "it must be formatted with: NIC1,PORT1;[NIC2,PORT2;...]. "
+                                           "it must be formed with: NIC1,PORT1;[NIC2,PORT2;...]. "
                                            "Allowable NIC type: Dedicated, Aggregation, LOM, ExternalPCIe, LOM2.";
 
 static const char *OPT_EMPTY_ALLOWABLE_PORT = "Error: could not load allowable adaptive ports.";

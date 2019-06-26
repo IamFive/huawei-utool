@@ -119,6 +119,7 @@ extern "C" {
  */
 #define TOOL_DESC "\nCommand-line interface to the HUAWEI server management APIs."
 #define TOOL_EPI_LOG "\nUsing `utool getcapabilities` to get more information about sub-commands."
+#define CMD_EPI_LOG "\nPlease reading user guide document to get more information about this sub-command."
 #define HELP_DESC "Show help message."
 #define HELP_SUB_COMMAND_DESC "Show help message for this sub-command."
 #define OPTIONAL_ARG_GROUP_TITLE "Optional arguments:"

@@ -20,21 +20,22 @@
 #include "redfish.h"
 
 static const char *const usage[] = {
-        "getbios",
+        "getbiosresult",
         NULL,
 };
 
 static int ApplyResultPropertyHandler(cJSON *target, const char *key, cJSON *node) {
 
+    cJSON *newNode;
     if (cJSON_IsNull(node) || (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0)) {
-        FREE_CJSON(node)
-        cJSON_AddBoolToObject(target, key, true);
+        newNode = cJSON_AddStringToObject(target, key, "Success");
         return UTOOLE_OK;
     }
 
+    newNode = cJSON_AddStringToObject(target, key, "Failure");
     FREE_CJSON(node)
-    cJSON_AddBoolToObject(target, key, false);
-    return UTOOLE_OK;
+
+    return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
 static int ApplyDetailPropertyHandler(cJSON *target, const char *key, cJSON *node) {

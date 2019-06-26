@@ -107,7 +107,7 @@ UtoolCommand g_UtoolCommands[] = {
  * argparse usage description
  */
 static const char *const usage[] = {
-        "utool -H HOST [-p PORT] -U USERNAME -P PASSWORD sub-command ...",
+        "utool -H host [-p port] -U username -P password sub-command ...",
         NULL,
 };
 
@@ -127,16 +127,16 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
                         "show tool's version number.",
                         UtoolGetVersionOptionCallback, 0, 0),
             OPT_GROUP  ("Server Authentication Options:"),
-            OPT_STRING ('H', "Host", &(commandOption->host),
+            OPT_STRING ('H', "host", &(commandOption->host),
                         "domain name, IPv4 address, or [IPv6 address].",
                         NULL, 0, 0),
-            OPT_INTEGER('p', "Port", &(commandOption->ipmiPort),
+            OPT_INTEGER('p', "port", &(commandOption->ipmiPort),
                         "IPMI port, 623 by default.",
                         NULL, 0, 0),
-            OPT_STRING ('U', "Username", &(commandOption->username),
+            OPT_STRING ('U', "username", &(commandOption->username),
                         "local or LDAP username.",
                         NULL, 0, 1),
-            OPT_STRING ('P', "Password", &(commandOption->password),
+            OPT_STRING ('P', "password", &(commandOption->password),
                         "password for given username.",
                         NULL, 0, ARGPARSE_STOP_AT_NON_OPTION),
             OPT_END(),

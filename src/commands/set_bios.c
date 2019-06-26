@@ -26,7 +26,7 @@
 static const char *OPT_VALUE_REQUIRED = "Error: option `value` is required when `attribute` option present.";
 static const char *OPT_ATTR_REQUIRED = "Error: option `attribute` is required when `value` option present.";
 static const char *OPT_FILE_TOO_LARGE = "Error: input JSON file should not large than 1 MB.";
-static const char *OPT_JSON_FILE_ILLEGAL = "Error: input file is not well JSON formatted.";
+static const char *OPT_JSON_FILE_ILLEGAL = "Error: input JSON file is not well formed.";
 
 static const char *const usage[] = {
         "setbios [-a attribute] [-v value] [-f file-uri]",
@@ -232,7 +232,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
         /** parse file content */
         payload = cJSON_Parse(fileContent);
         if (size == 0 || !payload) {
-            ZF_LOGI("File format is illegal, not well json formatted, position: %s.", cJSON_GetErrorPtr());
+            ZF_LOGI("File format is illegal, not well json formed, position: %s.", cJSON_GetErrorPtr());
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_ILLEGAL), &(result->desc));
             goto FAILURE;
         }
