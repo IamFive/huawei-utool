@@ -27,12 +27,17 @@ static const UtoolOutputMapping getPCIeDeviceMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/PCIeFunctions/0/1", .targetKeyValue="PCIeFunction"},
+        {.sourceXpath = "/Status/State", .targetKeyValue="State"},
+        {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
+        NULL
+};
+
+static const UtoolOutputMapping getPCIeFunctionMappings[] = {
         {.sourceXpath = "/Oem/Huawei/AssociatedResource", .targetKeyValue="Type"},
         {.sourceXpath = "/Oem/Huawei/BusNumber", .targetKeyValue="SlotBus"},
         {.sourceXpath = "/Oem/Huawei/DeviceNumber", .targetKeyValue="SlotDevice"},
         {.sourceXpath = "/Oem/Huawei/FunctionNumber", .targetKeyValue="SlotFunction"},
-        {.sourceXpath = "/Status/State", .targetKeyValue="State"},
-        {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL
 };
 
@@ -101,6 +106,20 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr)
     UtoolRedfishGetMemberResources(server, members, pcieDeviceArray, getPCIeDeviceMappings, result);
     if (result->broken) {
         goto FAILURE;
+    }
+
+    cJSON *pcie = NULL;
+    cJSON_ArrayForEach(pcie, pcieDeviceArray) {
+        cJSON *pcieFuncLinkNode = cJSON_DetachItemFromObject(pcie, "PCIeFunction");
+        if (cJSON_IsString(pcieFuncLinkNode)) {
+            UtoolRedfishGet(server, pcieFuncLinkNode->valuestring, pcie, getPCIeFunctionMappings, result);
+            if (result->broken) {
+                FREE_CJSON(pcieFuncLinkNode)
+                goto FAILURE;
+            }
+        }
+
+        FREE_CJSON(pcieFuncLinkNode)
     }
 
     // add output properties
