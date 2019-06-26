@@ -62,6 +62,7 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "gethealthevent", .pFuncExecute = UtoolCmdGetHealthEvent, .type = GET},
         {.name = "geteventlog", .pFuncExecute = UtoolCmdGetEventLog, .type = GET},
         {.name = "getpcie", .pFuncExecute = UtoolCmdGetPCIe, .type = GET},
+        {.name = "gettime", .pFuncExecute = UtoolCmdGetTime, .type = GET},
 
         {.name = "adduser", .pFuncExecute = UtoolCmdAddUser, .type = SET},
         {.name = "setpwd", .pFuncExecute = UtoolCmdSetPassword, .type = SET},

@@ -74,6 +74,8 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdGetTasks(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdGetTime(UtoolCommandOption *commandOption, char **outputStr);
+
 int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **outputStr);
