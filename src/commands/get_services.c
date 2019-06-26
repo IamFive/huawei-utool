@@ -124,6 +124,12 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
             cJSON *ipmiPort2Node = cJSONUtils_GetPointer(oem, "/IPMI/Port2");
             cJSON_AddItemReferenceToObject(service, "Port2", ipmiPort2Node);
             continue;
+        } else {
+            cJSON *port2Node = cJSON_AddNullToObject(service, "Port2");
+            result->code = UtoolAssetCreatedJsonNotNull(port2Node);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
         }
 
         /** KVMIP should Load ssl-enabled through another API */

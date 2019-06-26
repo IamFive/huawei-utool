@@ -23,23 +23,6 @@ static const char *const usage[] = {
         NULL,
 };
 
-static const UtoolOutputMapping getPowerMappings[] = {
-        {.sourceXpath = "/PowerControl/0/PowerConsumedWatts", .targetKeyValue="TotalPowerWatts"},
-        NULL
-};
-
-static const UtoolOutputMapping getProductMappings[] = {
-        {.sourceXpath = "/Model", .targetKeyValue="ProductName"},
-        {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
-        {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
-        {.sourceXpath = "/Oem/Huawei/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
-        {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
-        {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},
-        {.sourceXpath = "/Status/Health", .targetKeyValue = "Health"},
-        NULL
-};
-
 /**
 *
 * get pending bios settings, command handler for `getbiossetting`
@@ -95,12 +78,15 @@ int UtoolCmdGetPendingBiosSettings(UtoolCommandOption *commandOption, char **res
     }
 
     cJSON *attributes = cJSON_DetachItemFromObject(getBiosJson, "Attributes");
-    ret = UtoolAssetJsonNodeNotNull(attributes, "/Attributes");
-    if (ret != UTOOLE_OK) {
-        goto FAILURE;
+    if (cJSON_IsNull(attributes)) {
+        FREE_OBJ(attributes)
+        attributes = cJSON_CreateObject();
+        ret = UtoolAssetCreatedJsonNotNull(attributes);
+        if (ret != UTOOLE_OK) {
+            goto FAILURE;
+        }
     }
 
-    // mapping result to output json
     ret = UtoolBuildOutputResult(STATE_SUCCESS, attributes, result);
     goto DONE;
 
