@@ -83,7 +83,7 @@ static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
     char *third = *(segments + 2) == NULL ? "0" : *(segments + 2);
 
     char output[16] = {0};
-    snprintf(output, sizeof(output), "%s.%02d.%02d", first, strtol(second, NULL, 0), strtol(third, NULL, 0));
+    snprintf(output, sizeof(output), "%s.%02ld.%02ld", first, strtol(second, NULL, 0), strtol(third, NULL, 0));
 
     for (int idx = 0; *(segments + idx); idx++) {
         free(*(segments + idx));
