@@ -65,8 +65,7 @@ static const UtoolOutputMapping getRAIDControllerMappings[] = {
         {.sourceXpath = "/Oem/Huawei/MinStripeSizeBytes", .targetKeyValue="MinStripeSizeBytes"},
         {.sourceXpath = "/Oem/Huawei/MaxStripeSizeBytes", .targetKeyValue="MaxStripeSizeBytes"},
         {.sourceXpath = "/Oem/Huawei/MemorySizeMiB", .targetKeyValue="MemorySizeMiB"},
-        {.sourceXpath = "/Oem/Huawei/SupportedRAIDLevels", .targetKeyValue="SupportedRAIDLevels",
-                .handle=SupportedRAIDLevelsHandler},
+        {.sourceXpath = "/Oem/Huawei/SupportedRAIDLevels", .targetKeyValue="SupportedRAIDLevels"},
         {.sourceXpath = "/Oem/Huawei/DDRECCCount", .targetKeyValue="DDRECCCount"},
         NULL
 };
