@@ -45,6 +45,14 @@ set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 #find_package(CURL REQUIRED)
 #include_directories(${CURL_INCLUDE_DIR})
 
+# use relatived link path
+cmake_policy(SET CMP0081 OLD)
+cmake_policy(SET CMP0015 OLD)
+
+list(APPEND LibcurlLibrary "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0")
+message(STATUS "Copying libcurl shared libraries.")
+file(COPY ${LibcurlLibrary} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/libcurl" NO_SOURCE_PERMISSIONS)
+
 include_directories(
         ${UTOOL_INCLUDE_DIR}
         ${LIBARGPARSE_PATH}
@@ -54,7 +62,7 @@ include_directories(
 )
 
 link_directories(
-        ${LIBCURL_PATH}/lib/.libs
+        "./libcurl"
 )
 
 link_libraries(
