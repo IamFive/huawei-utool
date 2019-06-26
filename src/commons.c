@@ -192,9 +192,9 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             //    ret = UTOOLE_UNKNOWN_JSON_FORMAT;
             //    goto DONE;
             //}
-            char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
-            char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
-            char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
+            const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
+            const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
+            const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
             snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error, resolution);
         }
 

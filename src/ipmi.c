@@ -42,6 +42,12 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
     }
 
     cmdOutput = (char *) malloc(MAX_IPMI_CMD_OUTPUT_LEN);
+    if (cmdOutput == NULL) {
+        result->broken = 1;
+        result->code = UTOOLE_INTERNAL;
+        return NULL;
+    }
+
     *cmdOutput = '\0';
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         strncat(cmdOutput, buffer, sizeof(buffer));

@@ -582,7 +582,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 
     cJSON *json = NULL;
 
-    char *baseUrl = malloc(MAX_URL_LEN);
+    char *baseUrl = (char *) malloc(MAX_URL_LEN);
     if (baseUrl == NULL) {
         return UTOOLE_INTERNAL;
     }
@@ -627,7 +627,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         strncpy(server->systemId, pSystemId, strlen(pSystemId) + 1);
     }
     else {
-        ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror(ret));
+        ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror((CURLcode) ret));
         ret = UtoolResolveFailureResponse(response, result);
     }
 
@@ -648,12 +648,12 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
     unsigned long fullSize = size * nmemb;
     if (response->content == NULL) {
         unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
-        response->content = malloc(length + 1);
+        response->content = (char *) malloc(length + 1);
         response->content[0] = '\0';
         response->size = length;
     }
 
-    strncat(response->content, buffer, fullSize);
+    strncat(response->content, (char *) buffer, fullSize);
 
     // get response content
     //char *content = (char *) malloc(fullSize + 1);
@@ -699,8 +699,9 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
 
             int len = strlen(content) - strlen(HEADER_ETAG) + 1;
             char *etag = (char *) malloc(len);
-            memcpy(etag, content + strlen(HEADER_ETAG), len);
-
+            if (etag != NULL) {
+                memcpy(etag, content + strlen(HEADER_ETAG), len);
+            }
             response->etag = etag;
         }
 
@@ -712,10 +713,11 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
             content[fullSize - 2] = '\0';
 
             int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
-            char *etag = (char *) malloc(len);
-            memcpy(etag, content + strlen(HEADER_CONTENT_TYPE), len);
-
-            response->contentType = etag;
+            char *contentType = (char *) malloc(len);
+            if (contentType != NULL) {
+                memcpy(contentType, content + strlen(HEADER_CONTENT_TYPE), len);
+            }
+            response->contentType = contentType;
         }
     }
 
@@ -725,8 +727,8 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
 static int
 UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
 {
-    (double) dltotal;
-    (double) dlnow;
+    // (double) dltotal;
+    // (double) dlnow;
     if (ultotal > 0 && ulnow > 0) {
         bool *finished = (bool *) output;
         if (!*finished) {

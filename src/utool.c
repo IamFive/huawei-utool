@@ -288,7 +288,7 @@ int utool_main(int argc, char *argv[], char **result) {
         ret = targetCommand->pFuncExecute(commandOption, result);
         if (ret != UTOOLE_OK) {
             const char *errorString = (ret > UTOOLE_OK && ret < ((int) CURL_LAST)) ?
-                                      curl_easy_strerror(ret) : UtoolGetStringError(ret);
+                                      curl_easy_strerror((CURLcode) ret) : UtoolGetStringError(ret);
             // we can not use cJSON to build result here, because it may cause problems...
             // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
             char *buffer = (char *) malloc(MAX_OUTPUT_LEN);

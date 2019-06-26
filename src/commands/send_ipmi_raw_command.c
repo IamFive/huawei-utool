@@ -36,7 +36,7 @@ static const char *const usage[] = {
 static void ValidateSubCommandOptions(UtoolSendIPMICommandOption *option, UtoolResult *result);
 
 /**
-* ssend IPMI raw command, command handler for `sendipmirawcmd`
+* send IPMI raw command, command handler for `sendipmirawcmd`
 *
 * @param commandOption
 * @param result
