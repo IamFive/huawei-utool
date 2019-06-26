@@ -29,12 +29,11 @@ static int ApplyResultPropertyHandler(cJSON *target, const char *key, cJSON *nod
     cJSON *newNode;
     if (cJSON_IsNull(node) || (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0)) {
         newNode = cJSON_AddStringToObject(target, key, "Success");
-        return UTOOLE_OK;
+    } else {
+        newNode = cJSON_AddStringToObject(target, key, "Failure");
     }
 
-    newNode = cJSON_AddStringToObject(target, key, "Failure");
     FREE_CJSON(node)
-
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
