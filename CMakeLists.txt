@@ -42,13 +42,13 @@ set(LIBZFLOG_PATH third-party/zf_log/zf_log)
 set(LIBCURL_PATH third-party/curl)
 set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 
-# use, i.e. don't skip the full RPATH for the build tree
+## use, i.e. don't skip the full RPATH for the build tree
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # when building, don't use the install RPATH already
 # (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 # the RPATH to be used when installing
-SET(CMAKE_INSTALL_RPATH "")
+SET(CMAKE_INSTALL_RPATH "./libs")
 # don't add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
@@ -63,8 +63,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 message(STATUS "Copying libcurl shared libraries.")
 set(ThirdPartyLibPath "${CMAKE_CURRENT_BINARY_DIR}/libs")
-list(APPEND ThirdPartyLibs "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0")
-file(COPY ${ThirdPartyLibs} DESTINATION "${ThirdPartyLibPath}" NO_SOURCE_PERMISSIONS)
+configure_file("${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" "${ThirdPartyLibPath}/libcurl.so" COPYONLY)
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
@@ -75,9 +74,9 @@ include_directories(
 )
 
 #link_directories(
-#        "./libcurl"
+#        "${LIBCURL_PATH}/lib/.libs"
 #)
-#
+
 link_libraries(
         curl
 )
@@ -115,6 +114,7 @@ set_target_properties("${LIB_NAME}"
         PROPERTIES
         SOVERSION "${UTOOL_SO_VERSION}"
         VERSION "${PROJECT_VERSION}")
+#set_target_properties(${LIB_NAME} PROPERTIES LINK_FLAGS "-L./libs")
 install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
 install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_LIB_DIR}")
 
@@ -128,9 +128,9 @@ install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
 # build & install executable utool bin
 add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
+#set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-L./libs")
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-set_target_properties(utool-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,./libs")
 
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
