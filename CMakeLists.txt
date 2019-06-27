@@ -43,15 +43,15 @@ set(LIBCURL_PATH third-party/curl)
 set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 
 ## use, i.e. don't skip the full RPATH for the build tree
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-# when building, don't use the install RPATH already
-# (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-# the RPATH to be used when installing
-SET(CMAKE_INSTALL_RPATH "./libs")
+#SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+## when building, don't use the install RPATH already
+## (but later on when installing)
+#SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+## the RPATH to be used when installing
+#SET(CMAKE_INSTALL_RPATH "")
 # don't add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 #find_package(CURL REQUIRED)
@@ -63,7 +63,9 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 message(STATUS "Copying libcurl shared libraries.")
 set(ThirdPartyLibPath "${CMAKE_CURRENT_BINARY_DIR}/libs")
-configure_file("${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" "${ThirdPartyLibPath}/libcurl.so" COPYONLY)
+file(COPY "${LIBCURL_PATH}/lib/.libs/" DESTINATION "${ThirdPartyLibPath}")
+#configure_file("${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" "${ThirdPartyLibPath}/libcurl.so.4.5.0" COPYONLY)
+
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
@@ -114,24 +116,32 @@ set_target_properties("${LIB_NAME}"
         PROPERTIES
         SOVERSION "${UTOOL_SO_VERSION}"
         VERSION "${PROJECT_VERSION}")
-#set_target_properties(${LIB_NAME} PROPERTIES LINK_FLAGS "-L./libs")
-install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+set_target_properties(${LIB_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
+#install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
 install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_LIB_DIR}")
+install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_BIN_DIR}")
 
 # static library
-add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
-set_target_properties(${LIB_NAME}-static PROPERTIES OUTPUT_NAME ${LIB_NAME})
-set_target_properties(${LIB_NAME}-static PROPERTIES LINKER_LANGUAGE C)
-install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
-install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
+#add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
+#set_target_properties(${LIB_NAME}-static PROPERTIES OUTPUT_NAME ${LIB_NAME})
+#set_target_properties(${LIB_NAME}-static PROPERTIES LINKER_LANGUAGE C)
+#install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+#install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
+
+macro(install_symlink filepath sympath)
+    install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${filepath} ${sympath})")
+    install(CODE "message(\"-- Created symlink: ${sympath} -> ${filepath}\")")
+endmacro(install_symlink)
 
 # build & install executable utool bin
 add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
-#set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-L./libs")
+set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
-install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-
+#install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
+install_symlink("${UTOOL_BIN_DIR}/libs/libcurl.so.4.5.0" "${UTOOL_BIN_DIR}/libs/libcurl.so.4")
+install_symlink("${UTOOL_BIN_DIR}/libs/libcurl.so.4.5.0" "${UTOOL_BIN_DIR}/libs/libcurl.so")
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     # debug purpose, should remove before release
