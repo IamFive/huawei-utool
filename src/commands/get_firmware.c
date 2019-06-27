@@ -78,12 +78,12 @@ static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
     char *version = node->valuestring;
     char **segments = UtoolStringSplit(version, '.');
 
-    char *first = *segments == NULL ? "0" : *segments;
-    char *second = *(segments + 1) == NULL ? "0" : *(segments + 1);
-    char *third = *(segments + 2) == NULL ? "0" : *(segments + 2);
+    char *first = *segments == NULL ? "00" : *segments;
+    char *second = *(segments + 1) == NULL ? "00" : *(segments + 1);
+    char *third = *(segments + 2) == NULL ? "00" : *(segments + 2);
 
     char output[16] = {0};
-    snprintf(output, sizeof(output), "%s.%02ld.%02ld", first, strtol(second, NULL, 0), strtol(third, NULL, 0));
+    snprintf(output, sizeof(output), "%s.%s.%s", first, second, third);
 
     for (int idx = 0; *(segments + idx); idx++) {
         free(*(segments + idx));
