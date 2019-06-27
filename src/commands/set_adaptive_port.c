@@ -307,9 +307,11 @@ FAILURE:
 
 DONE:
     free(inputPorts);
-    for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
-        free(*(selectedPortStrArray + idx));
+    if (selectedPortStrArray != NULL) {
+        for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
+            free(*(selectedPortStrArray + idx));
+        }
+        free(selectedPortStrArray);
     }
-    free(selectedPortStrArray);
     return payload;
 }

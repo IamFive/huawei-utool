@@ -266,10 +266,16 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
-            snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
-            node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
-            result->code = UtoolAssetCreatedJsonNotNull(node);
-            if (result->code != UTOOLE_OK) {
+            if (opt->bmcTempFileUrl != NULL) {
+                snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+                node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
+                result->code = UtoolAssetCreatedJsonNotNull(node);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+            } else {
+                ZF_LOGI("Could malloc memory for bmc temp file url");
+                result->code = UTOOLE_INTERNAL;
                 goto FAILURE;
             }
         }

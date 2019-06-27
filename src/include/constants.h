@@ -147,7 +147,7 @@ typedef enum _Code
     UTOOLE_OK = 0,
     UTOOLE_OPTION_ERROR = 120,                  /** user input illegal options */
     UTOOLE_INTERNAL = 130,                      /** tool internal errors like failed to malloc memory, failed to init curl */
-    UTOOLE_LOAD_SYSTEM_ID = 131,                /** failed to load redfish system id */
+    UTOOLE_CREATE_LOG_FILE = 131,                /** Failed to create log file `utool.log.txt` */
     UTOOLE_PARSE_JSON_FAILED = 132,                 /** failed to parse json text */
     UTOOLE_UNKNOWN_JSON_FORMAT = 133,               /** unexpect content returned by redfish */
     UTOOLE_CREATE_JSON_NULL = 134,                  /** failed to create json object */

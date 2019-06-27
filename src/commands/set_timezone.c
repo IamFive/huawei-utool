@@ -27,9 +27,9 @@ static const char *const usage[] = {
         NULL,
 };
 
-static cJSON *BuildPayload(char *option, UtoolResult *result);
+static cJSON *BuildPayload(const char *option, UtoolResult *result);
 
-static void ValidateSubcommandOptions(char *timezone, UtoolResult *result);
+static void ValidateSubcommandOptions(const char *timezone, UtoolResult *result);
 
 /**
 * set BMC time zone, command handler for `settimezone`
@@ -111,7 +111,7 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(char *timezone, UtoolResult *result)
+static void ValidateSubcommandOptions(const char *timezone, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(timezone)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_TIMEZONE_REQUIRED),
@@ -125,7 +125,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(char *timezone, UtoolResult *result)
+static cJSON *BuildPayload(const char *timezone, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);

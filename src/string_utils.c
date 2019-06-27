@@ -207,6 +207,10 @@ char *UtoolStringCaseFindInArray(const char *str, const char **array)
 */
 bool UtoolStringIsNumeric(const char *str)
 {
+    if (str == NULL) {
+        return false;
+    }
+
     while (*str != '\0') {
         if (*str < '0' || *str > '9') {
             return false;

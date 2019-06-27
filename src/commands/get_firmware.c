@@ -78,7 +78,7 @@ static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
     char *version = node->valuestring;
     char **segments = UtoolStringSplit(version, '.');
 
-    char *first = *segments;
+    char *first = *segments == NULL ? "0" : *segments;
     char *second = *(segments + 1) == NULL ? "0" : *(segments + 1);
     char *third = *(segments + 2) == NULL ? "0" : *(segments + 2);
 

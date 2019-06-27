@@ -205,8 +205,14 @@ static int initialize(char **result) {
         if (!initialized) {
             // init log file
             zf_log_set_output_level(ZF_LOG_INFO);
-            UtoolSetLogFilePath("utool.log.txt");
-            ZF_LOGI("Initialize zf-log done.");
+            int ret = UtoolSetLogFilePath("utool.log.txt");
+            if (!ret) {
+                ZF_LOGI("Initialize zf-log done.");
+            } else {
+                ret = UTOOLE_CREATE_LOG_FILE;
+                //fprintf(stderr, "Failed to create log file `utool.log.txt`");
+                return ret;
+            }
 
             ZF_LOGI("Start to global initialize CURL.");
             // init curl
@@ -237,10 +243,11 @@ static int initialize(char **result) {
 
 int utool_main(int argc, char *argv[], char **result) {
     int ret;
+    const char *errorString = NULL;
 
     ret = initialize(result);
     if (ret != UTOOLE_OK) {
-        return ret;
+        goto FAILURE;
     }
 
     ZF_LOGI("Receive new command, start processing now.");
@@ -254,12 +261,13 @@ int utool_main(int argc, char *argv[], char **result) {
     UtoolCommandOption *commandOption = &(UtoolCommandOption) {0};
     if (!commandOption) {
         ZF_LOGW("Failed to malloc memory for Redfish Connection struct.");
-        return UTOOLE_INTERNAL;
+        ret = UTOOLE_INTERNAL;
+        goto FAILURE;
     }
 
     ret = utool_parse_command_option(commandOption, argc, convert, result);
     if (ret != UTOOLE_OK || commandOption->flag != EXECUTABLE) {
-        goto return_statement;
+        goto DONE;
     }
 
     /**
@@ -287,27 +295,34 @@ int utool_main(int argc, char *argv[], char **result) {
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
         ret = targetCommand->pFuncExecute(commandOption, result);
         if (ret != UTOOLE_OK) {
-            const char *errorString = (ret > UTOOLE_OK && ret < ((int) CURL_LAST)) ?
-                                      curl_easy_strerror((CURLcode) ret) : UtoolGetStringError(ret);
-            // we can not use cJSON to build result here, because it may cause problems...
-            // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
-            char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
-            snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
-            *result = buffer;
+           goto FAILURE;
         }
 
         // if ret is ok, it means everything has been processed by command handler
-        goto return_statement;
+        goto DONE;
     }
     else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
         char buffer[MAX_FAILURE_MSG_LEN];
         snprintf(buffer, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.", commandName);
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
-        goto return_statement;
+        goto DONE;
     }
 
-return_statement:
-    ZF_LOGI("Command processed, return code is: %d, result is: %s", ret, *result);
+
+FAILURE:
+    errorString = (ret > UTOOLE_OK && ret < ((int) CURL_LAST)) ?
+                  curl_easy_strerror((CURLcode) ret) : UtoolGetStringError((UtoolCode) ret);
+    // we can not use cJSON to build result here, because it may cause problems...
+    // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
+    char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
+    snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
+    *result = buffer;
+    goto DONE;
+
+DONE:
+    if (ret != UTOOLE_CREATE_LOG_FILE) {
+        ZF_LOGI("Command processed, return code is: %d, result is: %s", ret, *result);
+    }
     return ret;
 }

@@ -636,6 +636,10 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
         }
     }
 
+    if (imageFileFP != NULL) {
+        fclose(imageFileFP);
+    }
+
     return;
 
 FAILURE:

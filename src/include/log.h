@@ -14,11 +14,12 @@ extern "C" {
 
 
 /**
- * setting log to file path
- *
- * @param log_file_path
- */
-void UtoolSetLogFilePath(const char *log_file_path);
+* setting log to file path
+*
+* @param log_file_path
+* @return 0 if success else 1
+*/
+int UtoolSetLogFilePath(const char *log_file_path);
 
 #ifdef __cplusplus
 }

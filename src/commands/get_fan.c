@@ -26,7 +26,7 @@ static const char *const usage[] = {
 static const UtoolOutputMapping getFanSummaryMapping[] = {
         {.sourceXpath = "/Oem/Huawei/FanSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
         {.sourceXpath = "/Oem/Huawei/FanSummary/Count", .targetKeyValue="Maximum"},
-        //{.sourceXpath = "/", .targetKeyValue="Model"},
+        {.sourceXpath = "/Null", .targetKeyValue="Model"},
         {.sourceXpath = "/Oem/Huawei/FanSpeedLevelPercents", .targetKeyValue="FanSpeedLevelPercents"},
         {.sourceXpath = "/Oem/Huawei/FanSpeedAdjustmentMode", .targetKeyValue="FanSpeedAdjustmentMode"},
         {.sourceXpath = "/Oem/Huawei/FanTotalPowerWatts", .targetKeyValue="FanTotalPowerWatts"},

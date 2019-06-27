@@ -454,6 +454,8 @@ const char *UtoolGetStringError(UtoolCode code)
             return "No error";
         case UTOOLE_INTERNAL:
             return "Internal error, please contact maintainer.";
+        case UTOOLE_CREATE_LOG_FILE:
+            return "Failed to create log file `utool.log.txt`";
         case UTOOLE_PARSE_JSON_FAILED:
             return "Internal error, failed to parse JSON content.";
         case UTOOLE_UNKNOWN_JSON_FORMAT:

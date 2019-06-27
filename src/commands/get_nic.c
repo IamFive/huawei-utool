@@ -95,7 +95,7 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
 
 
     /** initialize output objects */
-    cJSON *networkAdapterMembersJson, *networkAdapterJson = NULL, *chassisJson = NULL;
+    cJSON *networkAdapterMembersJson = NULL, *networkAdapterJson = NULL, *chassisJson = NULL;
     cJSON *output = NULL, *networkAdapterArray = NULL, *networkAdapter = NULL;
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));

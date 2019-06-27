@@ -34,8 +34,7 @@ static const char *const usage[] = {
 };
 
 
-typedef struct _ExportBMCCfg
-{
+typedef struct _ExportBMCCfg {
     char *exportToFileUrl;
     char *bmcTempFileUrl;
     int isLocalFile;
@@ -53,8 +52,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
 * @param result
 * @return
 * */
-int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
-{
+int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr) {
     cJSON *output = NULL, *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
@@ -178,8 +176,7 @@ DONE:
 * @param resultR
 * @return
 */
-static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *result)
-{
+static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *result) {
     UtoolParsedUrl *parsedUrl = NULL;
     ZF_LOGD("Export to file URI is %s.", opt->exportToFileUrl);
 
@@ -231,8 +228,7 @@ DONE:
     UtoolFreeParsedURL(parsedUrl);
 }
 
-static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result)
-{
+static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result) {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
@@ -265,10 +261,17 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result)
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
-            snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
-            node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
-            result->code = UtoolAssetCreatedJsonNotNull(node);
-            if (result->code != UTOOLE_OK) {
+            if (opt->bmcTempFileUrl != NULL) {
+                snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+                node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
+                result->code = UtoolAssetCreatedJsonNotNull(node);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+            }
+            else {
+                ZF_LOGI("Could malloc memory for bmc temp file url");
+                result->code = UTOOLE_INTERNAL;
                 goto FAILURE;
             }
         }

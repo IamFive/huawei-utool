@@ -30,10 +30,6 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
              ipmiSubCommand);
     ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
 
-    //snprintf(cmd_str, sizeof(cmd_str),
-    //         "ipmitool -I lanplus -H %s -U %s -P %s raw 0x30 0x93 0xdb 0x07 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00",
-    //         option->host, option->username, option->password);
-
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
         ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
         result->desc = IPMITOOL_CMD_RUN_FAILED;

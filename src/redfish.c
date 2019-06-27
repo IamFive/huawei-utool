@@ -289,7 +289,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (UtoolStringEquals(header->name, HEADER_IF_MATCH)) {
             ifMatchHeader = header;
         }
-        char buffer[MAX_URL_LEN];
+        char buffer[MAX_URL_LEN] = {0};
         snprintf(buffer, MAX_URL_LEN, "%s: %s", header->name, header->value);
         curlHeaderList = curl_slist_append(curlHeaderList, buffer);
     }
@@ -305,7 +305,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
                 goto DONE;
             }
 
-            char ifMatch[MAX_HEADER_LEN];
+            char ifMatch[MAX_HEADER_LEN] = {0};
             snprintf(ifMatch, MAX_URL_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
             curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
             UtoolFreeCurlResponse(response);
@@ -361,7 +361,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
     if (curl) {
         // replace %s with redfish-system-id if necessary
         char fullURL[MAX_URL_LEN] = {0};
-        strncat(fullURL, server->baseUrl, strlen(server->baseUrl));
+        strncat(fullURL, server->baseUrl, strnlen(server->baseUrl, MAX_URL_LEN));
         if (strstr(resourceURL, "/redfish/v1") == NULL) {
             strncat(fullURL, "/redfish/v1", strlen("/redfish/v1"));
         }
@@ -924,7 +924,9 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
         goto FAILURE;
     }
     task->url = (char *) malloc(strnlen(node->valuestring, 128) + 1);
-    strncpy(task->url, node->valuestring, strnlen(node->valuestring, 128) + 1);
+    if (task->url != NULL) {
+        strncpy(task->url, node->valuestring, strnlen(node->valuestring, 128) + 1);
+    }
 
     // id
     node = cJSON_GetObjectItem(cJSONTask, "Id");
@@ -933,7 +935,9 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
         goto FAILURE;
     }
     task->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
-    strncpy(task->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+    if (task->id != NULL) {
+        strncpy(task->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+    }
 
     // name
     node = cJSON_GetObjectItem(cJSONTask, "Name");
@@ -942,27 +946,35 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
         goto FAILURE;
     }
     task->name = (char *) malloc(strnlen(node->valuestring, 128) + 1);
-    strncpy(task->name, node->valuestring, strnlen(node->valuestring, 128) + 1);
+    if (task->name != NULL) {
+        strncpy(task->name, node->valuestring, strnlen(node->valuestring, 128) + 1);
+    }
 
     // state
     node = cJSON_GetObjectItem(cJSONTask, "TaskState");
     if (node != NULL && node->valuestring != NULL) {
         task->taskState = (char *) malloc(strnlen(node->valuestring, 32) + 1);
-        strncpy(task->taskState, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        if (task->taskState != NULL) {
+            strncpy(task->taskState, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        }
     }
 
     // startTime
     node = cJSON_GetObjectItem(cJSONTask, "StartTime");
     if (node != NULL && node->valuestring != NULL) {
         task->startTime = (char *) malloc(strnlen(node->valuestring, 32) + 1);
-        strncpy(task->startTime, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        if (task->startTime != NULL) {
+            strncpy(task->startTime, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        }
     }
 
     // TaskPercent
     node = cJSONUtils_GetPointer(cJSONTask, "/Oem/Huawei/TaskPercentage");
     if (node != NULL && node->valuestring != NULL) {
         task->taskPercentage = (char *) malloc(strnlen(node->valuestring, 32) + 1);
-        strncpy(task->taskPercentage, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        if (task->taskPercentage != NULL) {
+            strncpy(task->taskPercentage, node->valuestring, strnlen(node->valuestring, 32) + 1);
+        }
     }
 
     // messages
@@ -971,25 +983,33 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
         node = cJSON_GetObjectItem(messages, "MessageId");
         if (node != NULL && node->valuestring != NULL) {
             task->message->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
-            strncpy(task->message->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+            if (task->message->id != NULL) {
+                strncpy(task->message->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+            }
         }
 
         node = cJSON_GetObjectItem(messages, "Message");
         if (node != NULL && node->valuestring != NULL) {
             task->message->message = (char *) malloc(strnlen(node->valuestring, 128) + 1);
-            strncpy(task->message->message, node->valuestring, strnlen(node->valuestring, 128) + 1);
+            if (task->message->message != NULL) {
+                strncpy(task->message->message, node->valuestring, strnlen(node->valuestring, 128) + 1);
+            }
         }
 
         node = cJSON_GetObjectItem(messages, "Severity");
         if (node != NULL && node->valuestring != NULL) {
             task->message->severity = (char *) malloc(strnlen(node->valuestring, 32) + 1);
-            strncpy(task->message->severity, node->valuestring, strnlen(node->valuestring, 32) + 1);
+            if (task->message->severity != NULL) {
+                strncpy(task->message->severity, node->valuestring, strnlen(node->valuestring, 32) + 1);
+            }
         }
 
         node = cJSON_GetObjectItem(messages, "Resolution");
         if (node != NULL && node->valuestring != NULL) {
             task->message->resolution = (char *) malloc(strnlen(node->valuestring, 256) + 1);
-            strncpy(task->message->resolution, node->valuestring, strnlen(node->valuestring, 256) + 1);
+            if (task->message->resolution != NULL) {
+                strncpy(task->message->resolution, node->valuestring, strnlen(node->valuestring, 256) + 1);
+            }
         }
     }
 

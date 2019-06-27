@@ -57,14 +57,17 @@ static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
     int idx = 1;
     char *delim = "/";
 
-    char *raid;
-    char *volume;
-    char *split;
+    char *raid = NULL;
+    char *volume = NULL;
+    char *split = NULL;
 
     /** /redfish/v1/Systems/1/Storages/RAIDStorage0/Volumes/LogicalDrive0 */
     strtok(node->valuestring, delim);
     while (idx <= 7) {
         split = strtok(NULL, delim);
+        if (split == NULL) {
+            break;
+        }
         if (idx == 5) {
             raid = split;
         }
@@ -75,8 +78,8 @@ static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
         idx++;
     }
 
-    char value[64];
-    snprintf(value, 64, "%s-%s", raid, volume);
+    char value[64] = {0};
+    snprintf(value, sizeof(value), "%s-%s", raid, volume);
     FREE_CJSON(node)
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, value);
