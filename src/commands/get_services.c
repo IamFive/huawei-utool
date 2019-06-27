@@ -49,8 +49,7 @@ int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode);
  * @param outputStr
  * @return
  */
-int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
-{
+int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr) {
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
@@ -122,9 +121,19 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr)
         /** IPMI has port2 property */
         if (UtoolStringEquals(name->valuestring, "IPMI")) {
             cJSON *ipmiPort2Node = cJSONUtils_GetPointer(oem, "/IPMI/Port2");
-            cJSON_AddItemReferenceToObject(service, "Port2", ipmiPort2Node);
+            if (ipmiPort2Node == NULL) {
+                cJSON *port2Node = cJSON_AddNullToObject(service, "Port2");
+                result->code = UtoolAssetCreatedJsonNotNull(port2Node);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+            }
+            else {
+                cJSON_AddItemReferenceToObject(service, "Port2", ipmiPort2Node);
+            }
             continue;
-        } else {
+        }
+        else {
             cJSON *port2Node = cJSON_AddNullToObject(service, "Port2");
             result->code = UtoolAssetCreatedJsonNotNull(port2Node);
             if (result->code != UTOOLE_OK) {
@@ -177,8 +186,7 @@ DONE:
     return result->code;
 }
 
-int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode)
-{
+int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode) {
     while (rootNode != NULL) {
         if (cJSON_IsObject(rootNode)) {
             if (cJSON_HasObjectItem(rootNode, "ProtocolEnabled") && cJSON_HasObjectItem(rootNode, "Port")) {

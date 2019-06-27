@@ -33,7 +33,7 @@ static const char *SUPPORT_SSL_SERVICES[] = {SERVICE_KVM, SERVICE_VM, NULL};
 
 static const char *OPT_SERVICE_REQUIRED = "Error: option `service` is required.";
 static const char *OPT_SERVICE_ILLEGAL = "Error: option `service` is illegal, available choices: "
-                                         "HTTP, HTTPS, SNMP, VirtualMedia, IPMI, SSH, KVM, VNC, Video, NAT, SSDP.";
+                                         "HTTP, SNMP, VirtualMedia, IPMI, SSH, KVM, VNC, Video, NAT, SSDP.";
 static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
 static const char *OPT_PORT_ILLEGAL = "Error: option `port` is illegal, value range should be: 1~65535";
 

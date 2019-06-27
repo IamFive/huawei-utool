@@ -22,8 +22,8 @@ extern "C" {
 #define MAX_FAILURE_COUNT 32
 #define MAX_FILE_PATH_LEN 512
 
-#define IPMI_PORT 623;
-#define HTTPS_PORT 443;
+#define IPMI_PORT 623
+#define HTTPS_PORT 443
 
 #define CURL_TIMEOUT 60
 #define CURL_CONN_TIMEOUT 60

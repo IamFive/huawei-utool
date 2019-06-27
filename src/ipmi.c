@@ -26,7 +26,8 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
 
 
     char secureIpmiCmd[256];
-    snprintf(secureIpmiCmd, sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host, option->username, "******", option->ipmiPort,
+    snprintf(secureIpmiCmd, sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host, option->username, "******",
+             option->ipmiPort,
              ipmiSubCommand);
     ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
 
@@ -61,66 +62,65 @@ char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubComman
 }
 
 
-unsigned char hex2uchar(unsigned char hex_ch) {
-    if (hex_ch >= '0' && hex_ch <= '9') {
-        return hex_ch - '0';
+unsigned char hex2uchar(unsigned char hexChar) {
+    if (hexChar >= '0' && hexChar <= '9') {
+        return hexChar - '0';
     }
 
-    if (hex_ch >= 'a' && hex_ch <= 'f') {
-        return hex_ch - 'a' + 10;
+    if (hexChar >= 'a' && hexChar <= 'f') {
+        return hexChar - 'a' + 10;
     }
 
-    if (hex_ch >= 'A' && hex_ch <= 'F') {
-        return hex_ch - 'A' + 10;
+    if (hexChar >= 'A' && hexChar <= 'F') {
+        return hexChar - 'A' + 10;
     }
 
-    printf("%s:%d: convert failed.\n", __FUNCTION__, __LINE__);
+    ZF_LOGE("Convert hex char %s failed", hexChar);
     return 0x00;
 }
 
 
 unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
-    unsigned int bin_len = 0;
-    unsigned int hex_len = strlen((char *) hexstr);
+    unsigned int binLen = 0;
+    unsigned int hexLen = strlen((char *) hexstr);
     unsigned int index = 0;
-    bin_len = hex_len / 2;
-    hex_len = bin_len * 2;
+    binLen = hexLen / 2;
+    hexLen = binLen * 2;
 
-    for (index = 0; index < hex_len; index += 2) {
+    for (index = 0; index < hexLen; index += 2) {
         binstr[index / 2] = ((hex2uchar(hexstr[index]) << 4) & 0xF0) + hex2uchar(hexstr[index + 1]);
     }
 
-    return bin_len;
+    return binLen;
 }
 
 int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     int port = 0;
-    char *ipmiCmdOutput = UtoolIPMIExecCommand(option, IPMI_GET_HTTPS_PORT_RAW_CMD, result);
+    char *ipmiCmdOutput = NULL;
+    char hexPortString[5] = {0};
+    char ucharPortStr[1024] = {0};
+
+    ipmiCmdOutput = UtoolIPMIExecCommand(option, IPMI_GET_HTTPS_PORT_RAW_CMD, result);
     if (result->broken) {
         FREE_OBJ(result->desc)
         return port;
     }
 
-    char hexPortString[4] = {0};
     hexPortString[0] = ipmiCmdOutput[157];
     hexPortString[1] = ipmiCmdOutput[158];
     hexPortString[2] = ipmiCmdOutput[160];
     hexPortString[3] = ipmiCmdOutput[161];
+    hexPortString[4] = '\0';
 
-    char result_str[1024] = {0};
-    hexstr2uchar(hexPortString, result_str);
+    hexstr2uchar(hexPortString, ucharPortStr);
+    port = ((ucharPortStr[1] << 8) & 0x0000FF00) + (ucharPortStr[0] & 0x000000FF);
 
-    char *token = strtok(ipmiCmdOutput, " ");
+    if((port <= 0) || (port > 65535)) {
+        port = 443;
+        ZF_LOGI("Failed to get HTTPS port through ipmi, use default port 443");
+    }
 
-
-    //*https_port = port;
-    ////非法端口值时，则设置为HTTPS 默认端口号。
-    //if((port <= 0) || (port > 65535))
-    //{
-    //    *https_port = 443;
-    //    printf("%s:%d: get https port failed. use default port 443.\n", __FUNCTION__, __LINE__);
-    //}
-
+    FREE_OBJ(ipmiCmdOutput)
     return port;
 }
 

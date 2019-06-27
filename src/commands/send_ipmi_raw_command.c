@@ -23,15 +23,18 @@
 
 static const char *OPT_TIMEZONE_REQUIRED = "Error: option `datetime-local-offset` is required.";
 
+static const char *const usage[] = {
+        "sendipmirawcmd [-b bridge] [-t target] -n netfun -c command[-d data-list]",
+        NULL,
+};
+
 typedef struct _SendIPMICommandOption {
     char *command;
     char *data;
+    char *netfun;
+    char *bridge;
+    char *target;
 } UtoolSendIPMICommandOption;
-
-static const char *const usage[] = {
-        "sendipmirawcmd -n netfun -c command [-b bridge] [-t target] [-d data-list]",
-        NULL,
-};
 
 static void ValidateSubCommandOptions(UtoolSendIPMICommandOption *option, UtoolResult *result);
 
@@ -51,6 +54,12 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
+            OPT_STRING ('n', "netfun", &(sendIpmiCommandOption->netfun),
+                        "specifies the ipmi command to sent", NULL, 0, 0),
+            OPT_STRING ('b', "bridge", &(sendIpmiCommandOption->bridge),
+                        "specifies the ipmi command to sent", NULL, 0, 0),
+            OPT_STRING ('c', "command", &(sendIpmiCommandOption->command),
+                        "specifies the ipmi command to sent", NULL, 0, 0),
             OPT_STRING ('c', "command", &(sendIpmiCommandOption->command),
                         "specifies the ipmi command to sent", NULL, 0, 0),
             OPT_STRING ('d', "data-list", &(sendIpmiCommandOption->data),

@@ -153,14 +153,14 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         return ret;
     }
 
-    if (!commandOption->port) {
-        commandOption->port = IPMI_PORT
+    if (!commandOption->ipmiPort) {
+        commandOption->ipmiPort = IPMI_PORT;
     }
 
-    /* TODO get redfish HTTPS port from ipmitool */
-    //UtoolResult *utoolResult = &(UtoolResult) {0};
-    //int httpPort = UtoolIPMIGetHttpsPort(commandOption, utoolResult);
-    commandOption->port = HTTPS_PORT;
+    /* get redfish HTTPS port from ipmitool */
+    UtoolResult *utoolResult = &(UtoolResult) {0};
+    int httpPort = UtoolIPMIGetHttpsPort(commandOption, utoolResult);
+    commandOption->port = httpPort;
 
     commandOption->commandArgc = argc;
     commandOption->commandArgv = argv;
