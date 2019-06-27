@@ -179,7 +179,9 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
     /* create log file */
     createUpdateLogFile(server, updateFirmwareOption, result);
-
+    if (result->broken) {
+        goto FAILURE;
+    }
 
     /* validation update firmware options */
     ValidateUpdateFirmwareOptions(updateFirmwareOption, result);
@@ -541,6 +543,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     goto DONE;
 
 FAILURE:
+    result->broken = 1;
     goto DONE;
 
 DONE:
