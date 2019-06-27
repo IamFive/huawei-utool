@@ -42,16 +42,29 @@ set(LIBZFLOG_PATH third-party/zf_log/zf_log)
 set(LIBCURL_PATH third-party/curl)
 set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+# the RPATH to be used when installing
+SET(CMAKE_INSTALL_RPATH "")
+# don't add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
+
 #find_package(CURL REQUIRED)
 #include_directories(${CURL_INCLUDE_DIR})
 
 # use relatived link path
-cmake_policy(SET CMP0081 OLD)
-cmake_policy(SET CMP0015 OLD)
+#cmake_policy(SET CMP0015 OLD)
+#cmake_policy(SET CMP0081 OLD)
 
-list(APPEND LibcurlLibrary "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0")
 message(STATUS "Copying libcurl shared libraries.")
-file(COPY ${LibcurlLibrary} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/libcurl" NO_SOURCE_PERMISSIONS)
+set(ThirdPartyLibPath "${CMAKE_CURRENT_BINARY_DIR}/libs")
+list(APPEND ThirdPartyLibs "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0")
+file(COPY ${ThirdPartyLibs} DESTINATION "${ThirdPartyLibPath}" NO_SOURCE_PERMISSIONS)
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
@@ -61,10 +74,10 @@ include_directories(
         ${LIBCURL_PATH}/include
 )
 
-link_directories(
-        "./libcurl"
-)
-
+#link_directories(
+#        "./libcurl"
+#)
+#
 link_libraries(
         curl
 )
@@ -117,6 +130,7 @@ add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+set_target_properties(utool-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,./libs")
 
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
