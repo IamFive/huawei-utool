@@ -94,7 +94,7 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
     }
 
     // initialize output temperatures array
-    voltages = cJSON_AddArrayToObject(output, "Voltages");
+    voltages = cJSON_AddArrayToObject(output, "Voltage");
     ret = UtoolAssetCreatedJsonNotNull(voltages);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
@@ -107,7 +107,7 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    cJSON *members = cJSON_GetObjectItem(powerJson, "Voltage");
+    cJSON *members = cJSON_GetObjectItem(powerJson, "Voltages");
     int memberCount = cJSON_GetArraySize(members);
     for (int idx = 0; idx < memberCount; idx++) {
         cJSON *member = cJSON_GetArrayItem(members, idx);
