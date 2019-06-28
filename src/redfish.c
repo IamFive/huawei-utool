@@ -127,7 +127,8 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     // setup progress callback
     bool finished = false;
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, UtoolCurlPrintUploadProgressCallback);
+    curl_progress_callback *callback = UtoolCurlPrintUploadProgressCallback;
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &finished);
 
     /* enable verbose for easier tracing */

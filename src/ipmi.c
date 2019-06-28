@@ -111,15 +111,13 @@ unsigned char hex2uchar(unsigned char hexChar) {
     return 0x00;
 }
 
-
 unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
     unsigned int binLen = 0;
     unsigned int hexLen = strlen((char *) hexstr);
-    unsigned int index = 0;
     binLen = hexLen / 2;
     hexLen = binLen * 2;
 
-    for (index = 0; index < hexLen; index += 2) {
+    for (int index = 0; index < hexLen; index += 2) {
         binstr[index / 2] = ((hex2uchar(hexstr[index]) << 4) & 0xF0) + hex2uchar(hexstr[index + 1]);
     }
 
@@ -129,8 +127,8 @@ unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
 int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     int port = 0;
     char *ipmiCmdOutput = NULL;
-    char hexPortString[5] = {0};
-    char ucharPortStr[1024] = {0};
+    unsigned char hexPortString[5] = {0};
+    unsigned char ucharPortStr[1024] = {0};
 
     UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
         .netfun = IPMI_GET_HTTPS_PORT_NETFUN,

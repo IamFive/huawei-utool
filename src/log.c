@@ -50,4 +50,6 @@ int UtoolSetLogFilePath(const char *const log_file_path)
         //    return 1;
         //}
     }
+
+    return 0;
 }
