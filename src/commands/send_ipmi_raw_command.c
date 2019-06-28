@@ -21,22 +21,13 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-static const char *OPT_TIMEZONE_REQUIRED = "Error: option `datetime-local-offset` is required.";
-
 static const char *const usage[] = {
-        "sendipmirawcmd [-b bridge] [-t target] -n netfun -c command[-d data-list]",
+        "sendipmirawcmd [-b bridge] [-t target] -n netfun -c command [-d data-list]",
         NULL,
 };
 
-typedef struct _SendIPMICommandOption {
-    char *command;
-    char *data;
-    char *netfun;
-    char *bridge;
-    char *target;
-} UtoolSendIPMICommandOption;
 
-static void ValidateSubCommandOptions(UtoolSendIPMICommandOption *option, UtoolResult *result);
+static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult *result);
 
 /**
 * send IPMI raw command, command handler for `sendipmirawcmd`
@@ -49,17 +40,16 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
 
     char *commandOutput = NULL;
     UtoolResult *result = &(UtoolResult) {0};
-    UtoolSendIPMICommandOption *sendIpmiCommandOption = &(UtoolSendIPMICommandOption) {0};
-
+    UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "netfun", &(sendIpmiCommandOption->netfun),
-                        "specifies the ipmi command to sent", NULL, 0, 0),
             OPT_STRING ('b', "bridge", &(sendIpmiCommandOption->bridge),
-                        "specifies the ipmi command to sent", NULL, 0, 0),
-            OPT_STRING ('c', "command", &(sendIpmiCommandOption->command),
-                        "specifies the ipmi command to sent", NULL, 0, 0),
+                        "specifies the destination channel for bridged request", NULL, 0, 0),
+            OPT_STRING ('t', "target", &(sendIpmiCommandOption->target),
+                        "specifies the bridge request to remote target address", NULL, 0, 0),
+            OPT_STRING ('n', "netfun", &(sendIpmiCommandOption->netfun),
+                        "specifies the destination channel for bridged request", NULL, 0, 0),
             OPT_STRING ('c', "command", &(sendIpmiCommandOption->command),
                         "specifies the ipmi command to sent", NULL, 0, 0),
             OPT_STRING ('d', "data-list", &(sendIpmiCommandOption->data),
@@ -73,7 +63,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
         goto DONE;
     }
 
-    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
+    result->code = UtoolValidateIPMIConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
@@ -83,11 +73,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
         goto DONE;
     }
 
-    char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    char *data = sendIpmiCommandOption->data == NULL ? "" : sendIpmiCommandOption->data;
-    snprintf(ipmiCmd, sizeof(ipmiCmd), "%s %s", sendIpmiCommandOption->command, data);
-
-    commandOutput = UtoolIPMIExecCommand(commandOption, ipmiCmd, result);
+    commandOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
     if (result->broken) {
         goto FAILURE;
     }
@@ -99,9 +85,18 @@ FAILURE:
     goto DONE;
 
 DONE:
-    free(commandOutput);
+    FREE_OBJ(commandOutput);
+    FREE_OBJ(sendIpmiCommandOption->data);
     *outputStr = result->desc;
     return result->code;
+}
+
+void replace_char(char* str, char find, char replace){
+    char *current_pos = strchr(str,find);
+    while (current_pos){
+        *current_pos = replace;
+        current_pos = strchr(current_pos,find);
+    }
 }
 
 
@@ -112,12 +107,38 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubCommandOptions(UtoolSendIPMICommandOption *option, UtoolResult *result) {
+static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult *result) {
+
+    if (UtoolStringIsEmpty(option->netfun)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("netfun")),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+    else if (strnlen(option->netfun, 33) > 32) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ILLEGAL("netfun")),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+
     if (UtoolStringIsEmpty(option->command)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("command")),
                                               &(result->desc));
         goto FAILURE;
     }
+    else if (strnlen(option->command, 33) > 32) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ILLEGAL("command")),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+
+
+    /* replace all dot in data to space */
+    if (!UtoolStringIsEmpty(option->data)) {
+        char *data = strndup(option->data, strnlen(option->data, MAX_IPMI_CMD_LEN));
+        replace_char(data, ',', ' ');
+        option->data = data;
+    }
+
     return;
 
 FAILURE:

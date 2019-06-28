@@ -9,6 +9,7 @@
 #include <command-helps.h>
 #include <zf_log.h>
 #include <commons.h>
+#include <ipmi.h>
 
 
 /**
@@ -54,6 +55,20 @@ int UtoolGetVersionOptionCallback(struct argparse *self, const struct argparse_o
  * @return
  */
 int UtoolValidateConnectOptions(UtoolCommandOption *commandOption, char **result)
+{
+    // only output if not command help action is requested.
+    int ret = UtoolValidateIPMIConnectOptions(commandOption, result);
+    if (ret == UTOOLE_OK && commandOption->flag != ILLEGAL) {
+        /* get redfish HTTPS port from ipmitool */
+        UtoolResult *utoolResult = &(UtoolResult) {0};
+        int httpPort = UtoolIPMIGetHttpsPort(commandOption, utoolResult);
+        commandOption->port = httpPort;
+    }
+
+    return UTOOLE_OK;
+}
+
+int UtoolValidateIPMIConnectOptions(UtoolCommandOption *commandOption, char **result)
 {
     // only output if not command help action is requested.
     ZF_LOGI("Try to parse arguments now...");

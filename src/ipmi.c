@@ -10,25 +10,58 @@
 #include <zf_log.h>
 #include <commons.h>
 
+#define MAX_IPMI_CMD_LEN 1024
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
 #define IPMITOOL_CMD "./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"
 
 
-char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubCommand, UtoolResult *result) {
+char *
+UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result) {
     FILE *fp = NULL;
     char *cmdOutput = NULL;
     char buffer[512] = {0};
 
-    char ipmiCmd[256];
+    //char bridge[128] = {0};
+    //char target[128] = {0};
+
+    /* build dynamic command part */
+
+    /* [-b channel] [-t target] */
+    char ipmiRawCmd[MAX_IPMI_CMD_LEN] = {0};
+    if (ipmiRawCmdOption->bridge != NULL) {
+        strcat(ipmiRawCmd, " -b ");
+        strncat(ipmiRawCmd, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
+        strcat(ipmiRawCmd, " ");
+    }
+
+    if (ipmiRawCmdOption->target != NULL) {
+        strcat(ipmiRawCmd, " -t ");
+        strncat(ipmiRawCmd, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
+        strcat(ipmiRawCmd, " ");
+    }
+
+    /* RAW Commands: raw <netfn> <cmd> [data] */
+    strcat(ipmiRawCmd, " raw ");
+    strncat(ipmiRawCmd, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
+    strcat(ipmiRawCmd, " ");
+    strncat(ipmiRawCmd, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 32));
+
+
+    if (ipmiRawCmdOption->data != NULL) {
+        strcat(ipmiRawCmd, " ");
+        strncat(ipmiRawCmd, ipmiRawCmdOption->data, strnlen(ipmiRawCmdOption->data, MAX_IPMI_CMD_LEN));
+    }
+
+
+    char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
     snprintf(ipmiCmd, sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username, option->password, option->ipmiPort,
-             ipmiSubCommand);
+             ipmiRawCmd);
 
 
-    char secureIpmiCmd[256];
+    char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
     snprintf(secureIpmiCmd, sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host, option->username, "******",
-             option->ipmiPort,
-             ipmiSubCommand);
+             option->ipmiPort, ipmiRawCmd);
     ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
 
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
@@ -75,7 +108,7 @@ unsigned char hex2uchar(unsigned char hexChar) {
         return hexChar - 'A' + 10;
     }
 
-    ZF_LOGE("Convert hex char %s failed", hexChar);
+    ZF_LOGE("Convert hex char %c failed", hexChar);
     return 0x00;
 }
 
@@ -100,22 +133,28 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     char hexPortString[5] = {0};
     char ucharPortStr[1024] = {0};
 
-    ipmiCmdOutput = UtoolIPMIExecCommand(option, IPMI_GET_HTTPS_PORT_RAW_CMD, result);
-    if (result->broken) {
+    UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
+        .netfun = IPMI_GET_HTTPS_PORT_NETFUN,
+        .command = IPMI_GET_HTTPS_PORT_CMD,
+        .data = IPMI_GET_HTTPS_PORT_DATA,
+    };
+
+    ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
+    if (!result->broken) {
+        hexPortString[0] = ipmiCmdOutput[157];
+        hexPortString[1] = ipmiCmdOutput[158];
+        hexPortString[2] = ipmiCmdOutput[160];
+        hexPortString[3] = ipmiCmdOutput[161];
+        hexPortString[4] = '\0';
+
+        hexstr2uchar(hexPortString, ucharPortStr);
+        port = ((ucharPortStr[1] << 8) & 0x0000FF00) + (ucharPortStr[0] & 0x000000FF);
+    } else {
+        /* ignore error */
         FREE_OBJ(result->desc)
-        return port;
     }
 
-    hexPortString[0] = ipmiCmdOutput[157];
-    hexPortString[1] = ipmiCmdOutput[158];
-    hexPortString[2] = ipmiCmdOutput[160];
-    hexPortString[3] = ipmiCmdOutput[161];
-    hexPortString[4] = '\0';
-
-    hexstr2uchar(hexPortString, ucharPortStr);
-    port = ((ucharPortStr[1] << 8) & 0x0000FF00) + (ucharPortStr[0] & 0x000000FF);
-
-    if((port <= 0) || (port > 65535)) {
+    if ((port <= 0) || (port > 65535)) {
         port = 443;
         ZF_LOGI("Failed to get HTTPS port through ipmi, use default port 443");
     }
@@ -123,5 +162,3 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     FREE_OBJ(ipmiCmdOutput)
     return port;
 }
-
-//db 07 00 00 01 00 79 01 01 02 00 71 02 16 00 03 00 75 04 02 00 00 00 01 00 79 01 01 02 00 71 02 50 00 03 00 75 04 09 00 00 00 01 00 79 01 01 02 00 71 02 bb 01 03 00 75 04 0b 00 00 00

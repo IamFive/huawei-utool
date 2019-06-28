@@ -164,6 +164,14 @@ typedef struct _RedfishTask
     UtoolRedfishMessage *message;
 } UtoolRedfishTask;
 
+/* IPMI option */
+typedef struct _IPMIRawCmdOption {
+    char *command;
+    char *data;
+    char *netfun;
+    char *bridge;
+    char *target;
+} UtoolIPMIRawCmdOption;
 
 #ifdef __cplusplus
 }

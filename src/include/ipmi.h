@@ -17,8 +17,9 @@ extern "C" {
 #include <typedefs.h>
 
 #define MAX_IPMI_CMD_LEN 2048
-#define IPMI_GET_HTTPS_PORT_RAW_CMD \
-    "raw 0x30 0x93 0xdb 0x07 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00"
+#define IPMI_GET_HTTPS_PORT_NETFUN "0x30"
+#define IPMI_GET_HTTPS_PORT_CMD "0x93"
+#define IPMI_GET_HTTPS_PORT_DATA "0xdb 0x07 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00"
 
 /**
 * execute a ipmi command
@@ -28,7 +29,8 @@ extern "C" {
 * @param result
 * @return
 */
-char *UtoolIPMIExecCommand(UtoolCommandOption *option, const char *ipmiSubCommand, UtoolResult *result);
+char *
+UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result);
 
 
 /**

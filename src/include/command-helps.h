@@ -17,18 +17,6 @@ extern "C" {
 #include "constants.h"
 
 /**
- * parse sub-command argv
- *
- * @param commandOption
- * @param options
- * @param usage
- * @return
- */
-int UtoolParseSubCommandArgv(const UtoolCommandOption *commandOption,
-                             struct argparse_option *options,
-                             const char *const *usage);
-
-/**
  * get help action handler
  *
  * @param self
@@ -45,6 +33,15 @@ int UtoolGetHelpOptionCallback(struct argparse *self, const struct argparse_opti
  * @return
  */
 int UtoolGetVersionOptionCallback(struct argparse *self, const struct argparse_option *option);
+
+/**
+ * validate IPMI connect option
+ *
+ * @param commandOption
+ * @param result
+ * @return
+ */
+int UtoolValidateIPMIConnectOptions(UtoolCommandOption *commandOption, char **result);
 
 
 /**
