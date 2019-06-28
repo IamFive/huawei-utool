@@ -68,7 +68,7 @@ static const UtoolOutputMapping getProductMappings[] = {
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
         {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
-        {.sourceXpath = "/HostingRole", .targetKeyValue="HostingRole"},
+        //{.sourceXpath = "/HostingRole", .targetKeyValue="HostingRole"},
         {.sourceXpath = "/Oem/Huawei/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
         {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
         {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},

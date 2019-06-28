@@ -119,21 +119,16 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr) {
         cJSON *name = cJSON_GetObjectItem(service, "Name");
 
         /** IPMI has port2 property */
+        bool port2Set = false;
         if (UtoolStringEquals(name->valuestring, "IPMI")) {
             cJSON *ipmiPort2Node = cJSONUtils_GetPointer(oem, "/IPMI/Port2");
-            if (ipmiPort2Node == NULL) {
-                cJSON *port2Node = cJSON_AddNullToObject(service, "Port2");
-                result->code = UtoolAssetCreatedJsonNotNull(port2Node);
-                if (result->code != UTOOLE_OK) {
-                    goto FAILURE;
-                }
-            }
-            else {
+            if (ipmiPort2Node != NULL) {
                 cJSON_AddItemReferenceToObject(service, "Port2", ipmiPort2Node);
+                port2Set = true;
             }
-            continue;
         }
-        else {
+
+        if(!port2Set) {
             cJSON *port2Node = cJSON_AddNullToObject(service, "Port2");
             result->code = UtoolAssetCreatedJsonNotNull(port2Node);
             if (result->code != UTOOLE_OK) {
@@ -141,22 +136,28 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr) {
             }
         }
 
-        /** KVMIP should Load ssl-enabled through another API */
+
         if (UtoolStringEquals(name->valuestring, "KVMIP")) {
+            /** KVMIP should Load ssl-enabled through another API */
             UtoolRedfishGet(server, "/Managers/%s/KvmService", service, getKVMIPSslEnabledMappings, result);
             if (result->broken) {
                 goto FAILURE;
             }
             FREE_CJSON(result->data)
         }
-
-        /** VirtualMedia should Load ssl-enabled through another API */
-        if (UtoolStringEquals(name->valuestring, "VirtualMedia")) {
+        else if (UtoolStringEquals(name->valuestring, "VirtualMedia")) {
+            /** VirtualMedia should Load ssl-enabled through another API */
             UtoolRedfishGet(server, "/Managers/%s/VirtualMedia/CD", service, getVMSslEnabledMappings, result);
             if (result->broken) {
                 goto FAILURE;
             }
             FREE_CJSON(result->data)
+        } else {
+            cJSON *sslEnabledNode = cJSON_AddNullToObject(service, "SSLEnabled");
+            result->code = UtoolAssetCreatedJsonNotNull(sslEnabledNode);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
         }
     }
 

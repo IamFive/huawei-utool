@@ -12,6 +12,12 @@
 extern "C" {
 #endif
 
+#ifdef _WIN32
+    #define FILEPATH_SEP '\\'
+#else
+    #define FILEPATH_SEP '/'
+#endif
+
 
 #define MAX_URL_LEN 256
 #define MAX_HEADER_LEN 64

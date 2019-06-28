@@ -107,7 +107,7 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    cJSON *members = cJSON_GetObjectItem(powerJson, "Voltages");
+    cJSON *members = cJSON_GetObjectItem(powerJson, "Voltage");
     int memberCount = cJSON_GetArraySize(members);
     for (int idx = 0; idx < memberCount; idx++) {
         cJSON *member = cJSON_GetArrayItem(members, idx);

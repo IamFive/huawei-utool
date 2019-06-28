@@ -70,7 +70,7 @@ static const UtoolOutputMapping getControllerMapping[] = {
 static const UtoolOutputMapping getNetworkPortMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/AssociatedNetworkAddresses/0", .targetKeyValue="MACAddress"},
-        {.sourceXpath = "/Oem/Huawei/PortType", .targetKeyValue="PortType"},
+        {.sourceXpath = "/Oem/Huawei/PortType", .targetKeyValue="MediaType"},
         {.sourceXpath = "/LinkStatus", .targetKeyValue="LinkStatus"},
         NULL
 };

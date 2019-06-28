@@ -38,6 +38,7 @@ typedef struct _CollectBoardInfoOption
 {
     char *exportToFileUrl;
     char *bmcTempFileUrl;
+    char *localExportToFileUrl;
     int isLocalFile;
 
 } UtoolCollectBoardInfoOption;
@@ -163,6 +164,7 @@ FAILURE:
     goto DONE;
 
 DONE:
+    FREE_OBJ(opt->localExportToFileUrl)
     FREE_OBJ(opt->bmcTempFileUrl)
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
@@ -204,18 +206,31 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
     }
     else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        int fd = open(opt->exportToFileUrl, O_RDWR | O_CREAT, 0664);
+
+        opt->localExportToFileUrl = (char *) malloc(PATH_MAX);
+        char end = opt->exportToFileUrl[strnlen(opt->exportToFileUrl, PATH_MAX) -1];
+        if (end == FILEPATH_SEP) { /* Folder path */
+            char nowStr[100];
+            time_t now = time(NULL);
+            struct tm *tm_now = localtime(&now);
+            strftime(nowStr, sizeof(nowStr) - 1, "%Y%m%dT%H%M%S%z", tm_now);
+            snprintf(opt->localExportToFileUrl, PATH_MAX, "%s%s.tar.gz", opt->exportToFileUrl, nowStr);
+        } else {
+            snprintf(opt->localExportToFileUrl, PATH_MAX, "%s", opt->exportToFileUrl);
+        }
+
+        int fd = open(opt->localExportToFileUrl, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
-            ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
+            ZF_LOGI("%s is not a valid local file path.", opt->localExportToFileUrl);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
         else {
             opt->isLocalFile = 1;
-            ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
+            ZF_LOGI("%s is a valid local file.", opt->localExportToFileUrl);
             if (close(fd) < 0) {
-                ZF_LOGE("Failed to close fd of %s.", opt->exportToFileUrl);
+                ZF_LOGE("Failed to close fd of %s.", opt->localExportToFileUrl);
                 result->code = UTOOLE_INTERNAL;
                 goto FAILURE;
             }
@@ -255,7 +270,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
     }
     else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        int fd = open(opt->exportToFileUrl, O_RDWR | O_CREAT, 0644);
+        int fd = open(opt->localExportToFileUrl, O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
@@ -264,7 +279,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
         }
         else {
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
-            char *filename = basename(opt->exportToFileUrl);
+            char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
                 snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
