@@ -43,12 +43,12 @@ set(LIBCURL_PATH third-party/curl)
 set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
 
 ## use, i.e. don't skip the full RPATH for the build tree
-#SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-## when building, don't use the install RPATH already
-## (but later on when installing)
-#SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-## the RPATH to be used when installing
-#SET(CMAKE_INSTALL_RPATH "")
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+# the RPATH to be used when installing
+SET(CMAKE_INSTALL_RPATH "\$ORIGIN/libs")
 # don't add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -140,8 +140,8 @@ set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 #install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
-install_symlink("${UTOOL_BIN_DIR}/libs/libcurl.so.4.5.0" "${UTOOL_BIN_DIR}/libs/libcurl.so.4")
-install_symlink("${UTOOL_BIN_DIR}/libs/libcurl.so.4.5.0" "${UTOOL_BIN_DIR}/libs/libcurl.so")
+install_symlink("./libcurl.so.4.5.0" "../bin/libs/libcurl.so.4")
+install_symlink("./libcurl.so.4.5.0" "../bin/libs/libcurl.so")
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     # debug purpose, should remove before release
