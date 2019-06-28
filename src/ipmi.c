@@ -10,7 +10,6 @@
 #include <zf_log.h>
 #include <commons.h>
 
-#define MAX_IPMI_CMD_LEN 1024
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
 #define IPMITOOL_CMD "./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"

@@ -23,12 +23,45 @@ static const char *const usage[] = {
         NULL,
 };
 
+static int TimePropertyHandler(cJSON *target, const char *key, cJSON *node) {
+    char orig[20] = {0};
+    if (cJSON_IsString(node)) {
+        snprintf(orig, sizeof(orig), "%s", node->valuestring);
+        orig[10] = ' ';
+        orig[19] = '\0';
+        char *time = orig;
+
+        FREE_CJSON(node)
+        cJSON *newNode = cJSON_AddStringToObject(target, key, time);
+        return UtoolAssetCreatedJsonNotNull(newNode);
+    }
+
+    cJSON_AddItemToObject(target, key, node);
+    return UTOOLE_OK;
+}
+
+static int TimezonePropertyHandler(cJSON *target, const char *key, cJSON *node) {
+    if (cJSON_IsString(node)) {
+        cJSON *newNode = cJSON_AddStringToObject(target, key, (char *) (node->valuestring + 19));
+        FREE_CJSON(node)
+        return UtoolAssetCreatedJsonNotNull(newNode);
+    }
+
+    cJSON_AddItemToObject(target, key, node);
+    return UTOOLE_OK;
+}
+
 
 static const UtoolOutputMapping getTimeInfoMappings[] = {
-        {.sourceXpath = "/DateTime", .targetKeyValue="Time"},
-        {.sourceXpath = "/DateTimeLocalOffset", .targetKeyValue="Timezone"},
+        {.sourceXpath = "/DateTime", .targetKeyValue="Time", .handle=TimePropertyHandler},
+        {.sourceXpath = "/DateTime", .targetKeyValue="Timezone", .handle=TimezonePropertyHandler},
         NULL
 };
+
+/*{
+"Time":"2019-04-11 10:20:55",
+"Timezone":"+08:00"
+}*/
 
 
 /**
@@ -38,8 +71,7 @@ static const UtoolOutputMapping getTimeInfoMappings[] = {
 * @param outputStr
 * @return
 */
-int UtoolCmdGetTime(UtoolCommandOption *commandOption, char **outputStr)
-{
+int UtoolCmdGetTime(UtoolCommandOption *commandOption, char **outputStr) {
     cJSON *output = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
