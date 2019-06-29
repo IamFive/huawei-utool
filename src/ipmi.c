@@ -11,7 +11,7 @@
 #include <commons.h>
 
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
-#define IPMITOOL_CMD "./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"
 
 
@@ -117,8 +117,8 @@ unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
     binLen = hexLen / 2;
     hexLen = binLen * 2;
 
-    for (int index = 0; index < hexLen; index += 2) {
-        binstr[index / 2] = ((hex2uchar(hexstr[index]) << 4) & 0xF0) + hex2uchar(hexstr[index + 1]);
+    for (int idx = 0; idx < hexLen; idx += 2) {
+        binstr[idx / 2] = ((hex2uchar(hexstr[idx]) << 4) & 0xF0) + hex2uchar(hexstr[idx + 1]);
     }
 
     return binLen;
