@@ -208,12 +208,20 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
 
         opt->localExportToFileUrl = (char *) malloc(PATH_MAX);
+        if (opt->localExportToFileUrl == NULL) {
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
         char end = opt->exportToFileUrl[strnlen(opt->exportToFileUrl, PATH_MAX) -1];
         if (end == FILEPATH_SEP) { /* Folder path */
-            char nowStr[100];
+            char nowStr[100] = {0};
             time_t now = time(NULL);
             struct tm *tm_now = localtime(&now);
-            strftime(nowStr, sizeof(nowStr) - 1, "%Y%m%dT%H%M%S%z", tm_now);
+            if (tm_now == NULL) {
+                result->code = UTOOLE_INTERNAL;
+                goto FAILURE;
+            }
+            strftime(nowStr, sizeof(nowStr), "%Y%m%dT%H%M%S%z", tm_now);
             snprintf(opt->localExportToFileUrl, PATH_MAX, "%s%s.tar.gz", opt->exportToFileUrl, nowStr);
         } else {
             snprintf(opt->localExportToFileUrl, PATH_MAX, "%s", opt->exportToFileUrl);

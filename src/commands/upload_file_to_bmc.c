@@ -28,8 +28,6 @@ static const char *const usage[] = {
 
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
-
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
 
@@ -69,5 +67,5 @@ FAILURE:
 
 DONE:
     UtoolFreeRedfishServer(server);
-    return ret;
+    return result->code;
 }

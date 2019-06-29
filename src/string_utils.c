@@ -166,7 +166,7 @@ void UtoolStringToUpper(char *str)
 * @param split
 * @return
 */
-char *UtoolStringLastSplit(char *source, char split)
+char *UtoolStringLastSplit(const char *source, char split)
 {
     char *pLastSlash = strrchr(source, split);
     char *pLastSplit = pLastSlash ? pLastSlash + 1 : source;

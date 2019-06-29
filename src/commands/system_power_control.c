@@ -32,9 +32,9 @@ static const char *const usage[] = {
         NULL,
 };
 
-static cJSON *BuildPayload(char *resetType, UtoolResult *result);
+static cJSON *BuildPayload(const char *resetType, UtoolResult *result);
 
-static void ValidateSubcommandOptions(char *resetType, UtoolResult *result);
+static void ValidateSubcommandOptions(const char *resetType, UtoolResult *result);
 
 /**
 * OS system power control, command handler for `powercontrol`
@@ -118,7 +118,7 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(char *resetType, UtoolResult *result)
+static void ValidateSubcommandOptions(const char *resetType, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(resetType)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_RESET_TYPE_REQUIRED),
@@ -139,7 +139,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(char *resetType, UtoolResult *result)
+static cJSON *BuildPayload(const char *resetType, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);

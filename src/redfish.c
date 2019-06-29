@@ -40,7 +40,7 @@
  * @param response
  * @return
  */
-static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response);
+static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response);
 
 /**
  * Common CURL write header function.
@@ -52,7 +52,7 @@ static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, Uto
  * @param response
  * @return
  */
-static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
+static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
 
 static int
 UtoolCurlPrintUploadProgressCallback(void *adapterp, double dltotal, double dlnow, double ultotal, double ulnow);
@@ -180,7 +180,7 @@ static size_t WriteStreamToFP(void *buffer, size_t size, size_t nmemb, UtoolCurl
         return written;
     }
     else {
-        return UtoolCurlGetRespCallback(buffer, size, nmemb, response);
+        return (size_t) UtoolCurlGetRespCallback(buffer, size, nmemb, response);
     }
 }
 
@@ -289,8 +289,8 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (UtoolStringEquals(header->name, HEADER_IF_MATCH)) {
             ifMatchHeader = header;
         }
-        char buffer[MAX_URL_LEN] = {0};
-        snprintf(buffer, MAX_URL_LEN, "%s: %s", header->name, header->value);
+        char buffer[MAX_HEADER_LEN] = {0};
+        snprintf(buffer, MAX_HEADER_LEN, "%s: %s", header->name, header->value);
         curlHeaderList = curl_slist_append(curlHeaderList, buffer);
     }
 
@@ -306,7 +306,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
             }
 
             char ifMatch[MAX_HEADER_LEN] = {0};
-            snprintf(ifMatch, MAX_URL_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
+            snprintf(ifMatch, MAX_HEADER_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
             curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
             UtoolFreeCurlResponse(response);
         }
@@ -369,10 +369,10 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
         if (strstr(resourceURL, "%s") != NULL) {
             char _resourceURL[MAX_URL_LEN] = {0};
             snprintf(_resourceURL, MAX_URL_LEN, resourceURL, server->systemId);
-            strncat(fullURL, _resourceURL, strlen(_resourceURL));
+            strncat(fullURL, _resourceURL, strnlen(_resourceURL, MAX_URL_LEN));
         }
         else {
-            strncat(fullURL, resourceURL, strlen(resourceURL));
+            strncat(fullURL, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
         }
 
         ZF_LOGI("[%s] %s", httpMethod, fullURL);
@@ -587,13 +587,24 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
         return UTOOLE_INTERNAL;
     }
     snprintf(baseUrl, MAX_URL_LEN, "https://%s:%d", option->host, option->port);
-
     server->baseUrl = baseUrl;
+
     server->host = (char *) malloc(strlen(option->host) + 1);
+    if (server->host == NULL) {
+        return UTOOLE_INTERNAL;
+    }
     strncpy(server->host, option->host, strlen(option->host) + 1);
+
     server->username = (char *) malloc(strlen(option->username) + 1);
+    if (server->username == NULL) {
+        return UTOOLE_INTERNAL;
+    }
     strncpy(server->username, option->username, strlen(option->username) + 1);
+
     server->password = (char *) malloc(strlen(option->password) + 1);
+    if (server->password == NULL) {
+        return UTOOLE_INTERNAL;
+    }
     strncpy(server->password, option->password, strlen(option->password) + 1);
 
     char resourceUrl[MAX_URL_LEN] = "/Systems";
@@ -640,39 +651,7 @@ DONE:
 }
 
 
-static int UtoolCurlGetRespCallback(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
-{
-    // realloc method is forbidden in HUAWEI developing documents.
-    // because CURL may response multiple times to write response content
-    // so we malloc enough memory according to content length header directly
-    unsigned long fullSize = size * nmemb;
-    if (response->content == NULL) {
-        unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
-        response->content = (char *) malloc(length + 1);
-        response->content[0] = '\0';
-        response->size = length;
-    }
-
-    strncat(response->content, (char *) buffer, fullSize);
-
-    // get response content
-    //char *content = (char *) malloc(fullSize + 1);
-    //memcpy(content, buffer, fullSize);
-    //content[fullSize] = '\0';
-
-    // log to file in debug level
-    //ZF_LOGD("Redfish response: %s", content);
-
-    // setup structure
-    //response->content = content;
-    //response->size = fullSize;
-
-    // return content size
-    return fullSize;
-}
-
-
-static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
+static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response)
 {
     if (buffer != NULL) {
         if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_LENGTH)) {
@@ -686,7 +665,7 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
             //char *contentLength = (char *) malloc(len);
             //memcpy(contentLength, content + strlen(HEADER_CONTENT_LENGTH), len);
 
-            char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
+            const char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
             response->contentLength = strtol(length, NULL, 10);
         }
 
@@ -724,6 +703,7 @@ static int UtoolCurlGetHeaderCallback(char *buffer, size_t size, size_t nitems, 
     return nitems * size;
 }
 
+
 static int
 UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
 {
@@ -742,6 +722,37 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
     }
 
     return 0;
+}
+
+static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
+{
+    // realloc method is forbidden in HUAWEI developing documents.
+    // because CURL may response multiple times to write response content
+    // so we malloc enough memory according to content length header directly
+    unsigned long fullSize = size * nmemb;
+    if (response->content == NULL) {
+        unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
+        response->content = (char *) malloc(length + 1);
+        response->content[0] = '\0';
+        response->size = length;
+    }
+
+    strncat(response->content, (char *) buffer, fullSize);
+
+    // get response content
+    //char *content = (char *) malloc(fullSize + 1);
+    //memcpy(content, buffer, fullSize);
+    //content[fullSize] = '\0';
+
+    // log to file in debug level
+    //ZF_LOGD("Redfish response: %s", content);
+
+    // setup structure
+    //response->content = content;
+    //response->size = fullSize;
+
+    // return content size
+    return fullSize;
 }
 
 void UtoolRedfishProcessRequest(UtoolRedfishServer *server,

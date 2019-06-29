@@ -327,6 +327,7 @@ CPLD --- 版本
 
 
 
+configure: error: --with-ssl was given but OpenSSL could not be detected
 
 
 

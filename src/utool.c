@@ -311,8 +311,12 @@ FAILURE:
     // we can not use cJSON to build result here, because it may cause problems...
     // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
-    snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
-    *result = buffer;
+    if (buffer != NULL) {
+        snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
+        *result = buffer;
+    } else {
+        *result = OUTPUT_INTERNAL_FAILED_JSON;
+    }
     goto DONE;
 
 DONE:

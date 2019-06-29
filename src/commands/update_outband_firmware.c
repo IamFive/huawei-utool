@@ -515,6 +515,10 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
 
     char folderName[NAME_MAX];
     struct tm *tm_now = localtime(&updateFirmwareOption->startTime);
+    if (tm_now == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
     snprintf(folderName, NAME_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
 
@@ -653,13 +657,8 @@ FAILURE:
 static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                            UtoolResult *result) {
 
-    // build payload
-    cJSON *payload = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
+    cJSON *payload = NULL;
+    FILE *imageFileFP = NULL;
     char *imageUri = updateFirmwareOption->imageURI;
 
     // only output if not command help action is requested.
@@ -673,9 +672,16 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     struct stat fileInfo;
     UtoolParsedUrl *parsedUrl = NULL;
 
+    // build payload
+    payload = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(payload);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
     bool isLocalFile = false;
     /** try to treat imageURI as a local file */
-    FILE *imageFileFP = fopen(imageUri, "rb"); /* open file to upload */
+    imageFileFP = fopen(imageUri, "rb"); /* open file to upload */
     if (imageFileFP) {
         if (fstat(fileno(imageFileFP), &fileInfo) == 0) {
             isLocalFile = true;
@@ -789,17 +795,16 @@ WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char 
 
 static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, const char *note) {
     /* get current timestamp */
-    char nowStr[100];
+    char nowStr[100] = {0};
     time_t now = time(NULL);
     struct tm *tm_now = localtime(&now);
-    strftime(nowStr, sizeof(nowStr) - 1, "%Y%m%dT%H%M%S%z", tm_now);
-
-    //char entry[MAX_LOG_ENTRY_LEN];
-    //snprintf(entry, MAX_LOG_ENTRY_LEN, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
+    if (tm_now != NULL) {
+        strftime(nowStr, sizeof(nowStr), "%Y%m%dT%H%M%S%z", tm_now);
+        //char entry[MAX_LOG_ENTRY_LEN];
+        //snprintf(entry, MAX_LOG_ENTRY_LEN, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
+    }
 
     /* write log file head content*/
     fprintf(option->logFileFP, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
     fflush(option->logFileFP);
 }
-
-// {\n\t"Time": "%s", \n\t"Stage": "%s",\n\t"State": "%s","Note": \n\t"%s"\n}

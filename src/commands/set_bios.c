@@ -231,7 +231,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
 
         /** parse file content */
         payload = cJSON_Parse(fileContent);
-        if (size <= 0 || !payload) {
+        if (size != numbytes || !payload) {
             ZF_LOGI("File format is illegal, not well json formed, position: %s.", cJSON_GetErrorPtr());
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_ILLEGAL), &(result->desc));
             goto FAILURE;

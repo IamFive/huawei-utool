@@ -74,7 +74,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
     }
 
     commandOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
-    if (result->broken) {
+    if (result->broken || commandOutput == NULL) {
         goto FAILURE;
     }
 
@@ -91,11 +91,11 @@ DONE:
     return result->code;
 }
 
-void replace_char(char* str, char find, char replace){
-    char *current_pos = strchr(str,find);
-    while (current_pos){
-        *current_pos = replace;
-        current_pos = strchr(current_pos,find);
+void ReplaceChar(const char *str, char find, char replace) {
+    char *currentPos = strchr(str, find);
+    while (currentPos) {
+        *currentPos = replace;
+        currentPos = strchr(currentPos, find);
     }
 }
 
@@ -135,8 +135,14 @@ static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult
     /* replace all dot in data to space */
     if (!UtoolStringIsEmpty(option->data)) {
         char *data = strndup(option->data, strnlen(option->data, MAX_IPMI_CMD_LEN));
-        replace_char(data, ',', ' ');
-        option->data = data;
+        if (data != NULL) {
+            ReplaceChar(data, ',', ' ');
+            option->data = data;
+        }
+        else {
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
     }
 
     return;

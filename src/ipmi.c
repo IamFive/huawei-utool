@@ -96,15 +96,15 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
 unsigned char hex2uchar(unsigned char hexChar) {
     if (hexChar >= '0' && hexChar <= '9') {
-        return hexChar - '0';
+        return (unsigned char) (hexChar - '0');
     }
 
     if (hexChar >= 'a' && hexChar <= 'f') {
-        return hexChar - 'a' + 10;
+        return (unsigned char) (hexChar - 'a' + 10);
     }
 
     if (hexChar >= 'A' && hexChar <= 'F') {
-        return hexChar - 'A' + 10;
+        return (unsigned char) (hexChar - 'A' + 10);
     }
 
     ZF_LOGE("Convert hex char %c failed", hexChar);
@@ -137,7 +137,7 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
     };
 
     ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
-    if (!result->broken) {
+    if (!result->broken && ipmiCmdOutput != NULL) {
         hexPortString[0] = ipmiCmdOutput[157];
         hexPortString[1] = ipmiCmdOutput[158];
         hexPortString[2] = ipmiCmdOutput[160];

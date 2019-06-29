@@ -20,7 +20,7 @@ extern "C" {
 
 
 #define MAX_URL_LEN 256
-#define MAX_HEADER_LEN 64
+#define MAX_HEADER_LEN 128
 #define MAX_COMMAND_NAME_LEN 50
 #define MAX_FAILURE_MSG_LEN 1024
 #define MAX_OUTPUT_LEN 2048
@@ -51,6 +51,7 @@ extern "C" {
 
 #define OUTPUT_JSON "{\"State\": \"%s\", \"Message\": [\"%s: %s\"]}"
 #define OUTPUT_SUCCESS_JSON "{\"State\": \"Success\", \"Message\": [\"Success: Successfully Completed Request\"]}"
+#define OUTPUT_INTERNAL_FAILED_JSON "{\"State\": \"Failure\", \"Message\": [\"Error: internal error\"]}"
 
 #define NOTHING_TO_PATCH "Error: nothing to update, at least one update option must be specified"
 

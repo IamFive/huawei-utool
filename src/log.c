@@ -18,7 +18,7 @@
 
 FILE *g_UtoolLogFileFP = NULL;
 
-static void LogToFileOutputCallback(const zf_log_message *msg, void *arg)
+static void LogToFileOutputCallback(const zf_log_message *msg, const void *arg)
 {
     (void) arg;
     *msg->p = '\n';

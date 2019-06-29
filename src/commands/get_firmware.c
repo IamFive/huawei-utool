@@ -70,14 +70,13 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node) {
 }
 
 static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
-    if (cJSON_IsNull(node)) {
+    char *version = node->valuestring;
+    if (cJSON_IsNull(node) || version == NULL) {
         cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
     }
 
-    char *version = node->valuestring;
     char **segments = UtoolStringSplit(version, '.');
-
     char *first = *segments == NULL ? "00" : *segments;
     char *second = *(segments + 1) == NULL ? "00" : *(segments + 1);
     char *third = *(segments + 2) == NULL ? "00" : *(segments + 2);
