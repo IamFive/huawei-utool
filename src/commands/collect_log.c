@@ -112,7 +112,7 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     // download file to local if necessary
     if (opt->isLocalFile) {
         ZF_LOGI("Try to download collect file from BMC now.");
-        UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
+        UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->localExportToFileUrl, result);
         if (result->broken) {
             goto FAILURE;
         }
@@ -278,7 +278,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             goto FAILURE;
         }
         else {
-            ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
+            ZF_LOGI("%s is a valid local file.", opt->localExportToFileUrl);
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
