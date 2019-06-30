@@ -27,6 +27,7 @@ static const UtoolOutputMapping getPCIeDeviceMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/Huawei/FunctionType", .targetKeyValue="Type"},
         {.sourceXpath = "/Links/PCIeFunctions/0/@odata.id", .targetKeyValue="PCIeFunction"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
@@ -34,7 +35,6 @@ static const UtoolOutputMapping getPCIeDeviceMappings[] = {
 };
 
 static const UtoolOutputMapping getPCIeFunctionMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/AssociatedResource", .targetKeyValue="Type"},
         {.sourceXpath = "/Oem/Huawei/BusNumber", .targetKeyValue="SlotBus"},
         {.sourceXpath = "/Oem/Huawei/DeviceNumber", .targetKeyValue="SlotDevice"},
         {.sourceXpath = "/Oem/Huawei/FunctionNumber", .targetKeyValue="SlotFunction"},

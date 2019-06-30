@@ -507,10 +507,11 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         updateFirmwareOption->psn = sn->valuestring;
     }
     else {
-        ZF_LOGE("Failed to get product SN, please make sure product SN is correct.");
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(PRODUCT_SN_IS_NOT_SET),
-                                              &(result->desc));
-        goto FAILURE;
+        updateFirmwareOption->psn = "";
+        //ZF_LOGE("Failed to get product SN, please make sure product SN is correct.");
+        //result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(PRODUCT_SN_IS_NOT_SET),
+        //                                      &(result->desc));
+        //goto FAILURE;
     }
 
     char folderName[NAME_MAX];
@@ -799,7 +800,7 @@ static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const
     time_t now = time(NULL);
     struct tm *tm_now = localtime(&now);
     if (tm_now != NULL) {
-        strftime(nowStr, sizeof(nowStr), "%Y%m%dT%H%M%S%z", tm_now);
+        strftime(nowStr, sizeof(nowStr), "%Y-%m-%dT%H%M%S%z", tm_now);
         //char entry[MAX_LOG_ENTRY_LEN];
         //snprintf(entry, MAX_LOG_ENTRY_LEN, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
     }
