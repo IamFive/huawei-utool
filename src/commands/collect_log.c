@@ -227,7 +227,15 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
             snprintf(opt->localExportToFileUrl, PATH_MAX, "%s", opt->exportToFileUrl);
         }
 
-        int fd = open(opt->localExportToFileUrl, O_RDWR | O_CREAT, 0664);
+        char realFilepath[PATH_MAX] = {0};
+        realpath(opt->localExportToFileUrl, realFilepath);
+        if (realFilepath == NULL) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+
+        int fd = open(realFilepath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->localExportToFileUrl);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
@@ -278,7 +286,15 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
     }
     else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        int fd = open(opt->localExportToFileUrl, O_RDWR | O_CREAT, 0644);
+        char realFilepath[PATH_MAX] = {0};
+        realpath(opt->localExportToFileUrl, realFilepath);
+        if (realFilepath == NULL) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+
+        int fd = open(realFilepath, O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),

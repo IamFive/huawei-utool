@@ -192,7 +192,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
     cJSON *payload = NULL;
     FILE *infile = NULL;
     char *fileContent = NULL;
-    long numbytes;
+    size_t numbytes;
 
     attributes = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(attributes);

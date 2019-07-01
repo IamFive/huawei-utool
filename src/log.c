@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <zconf.h>
+#include <errno.h>
 #include "zf_log.h"
 
 
@@ -35,9 +36,10 @@ static void CloseLogFileOutput(void)
 int UtoolSetLogFilePath(const char *const log_file_path)
 {
     if (!g_UtoolLogFileFP) {
-        //char path[PATH_MAX] = {0};
-        //if (realpath(log_file_path, path) != NULL) {
-            g_UtoolLogFileFP = fopen(log_file_path, "a");
+        char realFilepath[PATH_MAX] = {0};
+        realpath(log_file_path, realFilepath);
+        if (realFilepath != NULL) {
+            g_UtoolLogFileFP = fopen(realFilepath, "a");
             if (!g_UtoolLogFileFP) {
                 ZF_LOGW("Failed to open log file %s", log_file_path);
                 return 1;
@@ -46,9 +48,10 @@ int UtoolSetLogFilePath(const char *const log_file_path)
             zf_log_set_output_v(ZF_LOG_PUT_STD, 0, LogToFileOutputCallback);
             ZF_LOGI("Log to file %s initialize succeed.", log_file_path);
             return 0;
-        //} else {
-        //    return 1;
-        //}
+        } else {
+            perror("failed to create log file");
+            return 1;
+        }
     }
 
     return 0;

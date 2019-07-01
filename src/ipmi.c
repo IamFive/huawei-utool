@@ -111,9 +111,9 @@ unsigned char hex2uchar(unsigned char hexChar) {
     return 0x00;
 }
 
-unsigned int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
-    unsigned int binLen = 0;
-    unsigned int hexLen = strlen((char *) hexstr);
+int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
+    int binLen = 0;
+    int hexLen = strlen((char *) hexstr);
     binLen = hexLen / 2;
     hexLen = binLen * 2;
 

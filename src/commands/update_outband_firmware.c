@@ -102,6 +102,7 @@ static const char *OPTION_TYPE_ILLEGAL = "Error: option `firmware-type` is illeg
 static const char *PRODUCT_SN_IS_NOT_SET = "Error: product SN is not correct.";
 static const char *FAILED_TO_CREATE_FOLDER = "Error: failed to create log folder.";
 static const char *FAILED_TO_CREATE_FILE = "Error: failed to create log file.";
+static const char *LOG_FILE_PATH_ILLEGAL = "Error: log file path is illegal.";
 
 static const char *const usage[] = {
         "fwupdate -u image-uri -e activate-mode [-t firmware-type]",
@@ -532,9 +533,17 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     }
 
 
-    char filepath[PATH_MAX];
+    char filepath[PATH_MAX] = {0};
+    char realFilepath[PATH_MAX] = {0};
     snprintf(filepath, PATH_MAX, "%s/update-firmware.log", folderName);
-    updateFirmwareOption->logFileFP = fopen(filepath, "a");
+    realpath(filepath, realFilepath);
+    if (realFilepath == NULL) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(LOG_FILE_PATH_ILLEGAL),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+
+    updateFirmwareOption->logFileFP = fopen(realFilepath, "a");
     if (!updateFirmwareOption->logFileFP) {
         ZF_LOGW("Failed to create log file %s.", filepath);
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FILE),
@@ -632,20 +641,24 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
         }
     }
 
+    updateFirmwareOption->isLocalFile = false;
 
     /** try to treat imageURI as a local file */
     struct stat fileInfo;
     char *imageUri = updateFirmwareOption->imageURI;
-    FILE *imageFileFP = fopen(imageUri, "rb"); /* open file to upload */
-    updateFirmwareOption->isLocalFile = false;
-    if (imageFileFP) {
-        if (fstat(fileno(imageFileFP), &fileInfo) == 0) {
-            updateFirmwareOption->isLocalFile = true;
+    char realFilepath[PATH_MAX] = {0};
+    realpath(imageUri, realFilepath);
+    if (realFilepath != NULL) {
+        FILE *imageFileFP = fopen(realFilepath, "rb"); /* open file to upload */
+        if (imageFileFP) {
+            if (fstat(fileno(imageFileFP), &fileInfo) == 0) {
+                updateFirmwareOption->isLocalFile = true;
+            }
         }
-    }
 
-    if (imageFileFP != NULL) {
-        fclose(imageFileFP);
+        if (imageFileFP != NULL) {
+            fclose(imageFileFP);
+        }
     }
 
     return;

@@ -90,7 +90,14 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     struct stat fileInfo;
     struct curl_slist *curlHeaderList = NULL;
 
-    FILE *uploadFileFp = fopen(uploadFilePath, "rb"); /* open file to upload */
+    char path[PATH_MAX] = {0};
+    realpath(uploadFilePath, path);
+    if (path == NULL) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
+    }
+
+    FILE *uploadFileFp = fopen(path, "rb"); /* open file to upload */
     if (!uploadFileFp) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
@@ -173,7 +180,7 @@ DONE:
 
 static char *DOWNLOAD_BMC_FILE_PAYLOAD = "{ \"TransferProtocol\" : \"HTTPS\", \"Path\" : \"%s\" }";
 
-static size_t WriteStreamToFP(void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
+static size_t WriteStreamToFP(const void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
 {
     if (UtoolStringEquals("application/octet-stream", response->contentType)) {
         size_t written = fwrite(buffer, size, nmemb, response->downloadToFP);
@@ -189,6 +196,14 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 {
 
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    char realFilepath[PATH_MAX] = {0};
+    realpath(localFileUri, realFilepath);
+    if (realFilepath == NULL) {
+        result->broken = 1;
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        return;
+    }
 
     FILE *outputFileFP = fopen(localFileUri, "wb");
     if (!outputFileFP) {
@@ -733,8 +748,12 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
     if (response->content == NULL) {
         unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
         response->content = (char *) malloc(length + 1);
-        response->content[0] = '\0';
-        response->size = length;
+        if (response->content != NULL) {
+            response->content[0] = '\0';
+            response->size = length;
+        } else {
+            return 0;
+        }
     }
 
     strncat(response->content, (char *) buffer, fullSize);
