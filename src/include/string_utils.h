@@ -94,7 +94,7 @@ void UtoolStringToUpper(char *str);
 * @param split
 * @return the last split string segment
 */
-char *UtoolStringLastSplit(const char *source, char split);
+char *UtoolStringLastSplit(char *source, char split);
 
 /**
 * find a string in an array ignore case
