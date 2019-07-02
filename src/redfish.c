@@ -83,6 +83,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
 {
     ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
+    FILE *uploadFileFp = NULL;
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
     CURL *curl = NULL;
@@ -97,7 +98,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
         goto FAILURE;
     }
 
-    FILE *uploadFileFp = fopen(path, "rb"); /* open file to upload */
+    uploadFileFp = fopen(path, "rb"); /* open file to upload */
     if (!uploadFileFp) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
@@ -205,7 +206,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
         return;
     }
 
-    FILE *outputFileFP = fopen(localFileUri, "wb");
+    FILE *outputFileFP = fopen(realFilepath, "wb");
     if (!outputFileFP) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
