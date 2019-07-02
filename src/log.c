@@ -12,7 +12,7 @@
 #include "log.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <zconf.h>
+#include <limits.h>
 #include <errno.h>
 #include "zf_log.h"
 
