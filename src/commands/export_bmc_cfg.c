@@ -200,14 +200,14 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
     }
     else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
-        char realFilepath[PATH_MAX] = {0};
-        realpath(opt->exportToFileUrl, realFilepath);
-        if (realFilepath == NULL) {
+        char realFilePath[PATH_MAX] = {0};
+        realpath(opt->exportToFileUrl, realFilePath);
+        if (realFilePath == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
-        int fd = open(realFilepath, O_RDWR | O_CREAT, 0664);
+        int fd = open(realFilePath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),

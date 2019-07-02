@@ -21,7 +21,7 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-#define MB 1024 * 1024
+#define MB (1024 * 1024)
 
 static const char *OPT_VALUE_REQUIRED = "Error: option `value` is required when `attribute` option present.";
 static const char *OPT_ATTR_REQUIRED = "Error: option `attribute` is required when `value` option present.";
@@ -146,7 +146,15 @@ static void ValidateSubcommandOptions(UtoolSetBiosAttrOption *option, UtoolResul
     if (!UtoolStringIsEmpty(option->fileURI)) {
         ZF_LOGI("Validate file %s now.", option->fileURI);
         struct stat fileInfo;
-        uploadFileFp = fopen(option->fileURI, "rb"); /* open file to upload */
+
+        char realFilePath[PATH_MAX] = {0};
+        realpath(option->fileURI, realFilePath);
+        if (realFilePath == NULL) {
+            result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+            goto FAILURE;
+        }
+
+        uploadFileFp = fopen(realFilePath, "rb"); /* open file to upload */
         if (!uploadFileFp) {
             ZF_LOGE("Could not open file %s.", option->fileURI);
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
