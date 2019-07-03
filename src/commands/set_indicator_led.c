@@ -31,7 +31,7 @@ static const char *OPT_FEQ_ILLEGAL = "Error: option `frequency` is illegal, valu
 static const char *OPT_FEQ_NO_USE = "Error: option `frequency` should not be set when state is not Blink.";
 
 static const char *const usage[] = {
-        "locateserver -s led-state [-f frequency]",
+        "locateserver -s led-state",
         NULL,
 };
 
@@ -65,9 +65,9 @@ int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr)
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_STRING ('s', "led-state", &(option->state),
                         "specifies indicator LED state, available choices: {On, Off, Blink}", NULL, 0, 0),
-            OPT_INTEGER('f', "frequency", &(option->frequency),
+           /* OPT_INTEGER('f', "frequency", &(option->frequency),
                         "specifies blink period (in seconds) when state is blink, value range: 1~255.",
-                        NULL, 0, 0),
+                        NULL, 0, 0),*/
             OPT_END()
     };
 
