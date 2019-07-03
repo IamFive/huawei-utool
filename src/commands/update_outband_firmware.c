@@ -694,10 +694,10 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     }
 
     bool isLocalFile = false;
-    char realFilepath[PATH_MAX] = {0};
-    realpath(imageUri, realFilepath);
-    if (realFilepath != NULL) { /** try to treat imageURI as a local file */
-        imageFileFP = fopen(imageUri, "rb"); /* open file to upload */
+    char realFilePath[PATH_MAX] = {0};
+    realpath(imageUri, realFilePath);
+    if (realFilePath != NULL) { /** try to treat imageURI as a local file */
+        imageFileFP = fopen(realFilePath, "rb"); /* open file to upload */
         if (imageFileFP) {
             if (fstat(fileno(imageFileFP), &fileInfo) == 0) {
                 isLocalFile = true;

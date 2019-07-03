@@ -210,7 +210,13 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
 
     if (!UtoolStringIsEmpty(option->fileURI)) {
         ZF_LOGI("Try to parse file %s now.", option->fileURI);
-        infile = fopen(option->fileURI, "rb");
+        char realFilePath[PATH_MAX] = {0};
+        realpath(option->fileURI, realFilePath);
+        if (realFilePath == NULL) {
+            result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+            goto FAILURE;
+        }
+        infile = fopen(realFilePath, "rb");
         if (!infile) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
