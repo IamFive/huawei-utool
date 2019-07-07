@@ -290,7 +290,9 @@
 #else
 	#include <unistd.h>
 	#include <sys/time.h>
-	#if defined(__linux__)
+    #if defined(__CYGWIN__ )
+        #include <limits.h>
+	#elif defined(__linux__)
 		#include <linux/limits.h>
 	#else
 		#include <sys/syslimits.h>
