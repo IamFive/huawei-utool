@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLINFO_SPEED_UPLOAD_T 3 "March 31, 2018" "libcurl 7.65.1" "curl_easy_getinfo options"
-
+.TH CURLINFO_SPEED_UPLOAD_T 3 "25 May 2017" "libcurl 7.55.0" "curl_easy_getinfo options"
 .SH NAME
 CURLINFO_SPEED_UPLOAD_T \- get upload speed
 .SH SYNOPSIS
@@ -45,7 +44,7 @@ if(curl) {
     curl_off_t speed;
     res = curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD_T, &speed);
     if(!res) {
-      printf("Upload speed %" CURL_FORMAT_CURL_OFF_T " bytes/sec\\n", speed);
+      printf("Upload speed " CURL_FORMAT_CURL_OFF_T " bytes/sec\\n", ul);
     }
   }
 }

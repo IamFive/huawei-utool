@@ -3,7 +3,6 @@
 <keywords>
 HTTP
 HTTP GET
-HTTP/0.9
 </keywords>
 </info>
 # Server-side
@@ -22,7 +21,7 @@ http
 HTTP GET without headers in the response
  </name>
  <command>
-http://%HOSTIP:%HTTPPORT/66 --http0.9
+http://%HOSTIP:%HTTPPORT/66
 </command>
 </client>
 

@@ -3,7 +3,6 @@
 <keywords>
 HTTP
 HTTP HEAD
-HTTP/0.9
 </keywords>
 </info>
 
@@ -47,7 +46,7 @@ http
 HTTP HEAD, receive no headers only body
  </name>
  <command>
--I http://%HOSTIP:%HTTPPORT/1144 --http0.9
+-I http://%HOSTIP:%HTTPPORT/1144
 </command>
 </client>
 

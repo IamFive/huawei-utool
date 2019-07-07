@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -22,22 +22,22 @@
 #include <winver.h>
 #include "../include/curl/curlver.h"
 
-LANGUAGE  0, 0
+LANGUAGE  0x09,0x01
 
 #define RC_VERSION  LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH, 0
 
 VS_VERSION_INFO VERSIONINFO
   FILEVERSION     RC_VERSION
   PRODUCTVERSION  RC_VERSION
-  FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+  FILEFLAGSMASK   0x3fL
 #if defined(DEBUGBUILD) || defined(_DEBUG)
-  FILEFLAGS VS_FF_DEBUG
+  FILEFLAGS 1
 #else
-  FILEFLAGS 0L
+  FILEFLAGS 0
 #endif
   FILEOS      VOS__WINDOWS32
   FILETYPE    VFT_DLL
-  FILESUBTYPE 0L
+  FILESUBTYPE 0x0L
 
 BEGIN
   BLOCK "StringFileInfo"

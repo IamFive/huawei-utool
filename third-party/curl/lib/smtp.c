@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -28,7 +28,6 @@
  * RFC4954 SMTP Authentication
  * RFC5321 SMTP protocol
  * RFC6749 OAuth 2.0 Authorization Framework
- * RFC8314 Use of TLS for Email Submission and Access
  * Draft   SMTP URL Interface   <draft-earhart-url-smtp-00.txt>
  * Draft   LOGIN SASL Mechanism <draft-murchison-sasl-login-00.txt>
  *
@@ -208,12 +207,8 @@ static bool smtp_endofresp(struct connectdata *conn, char *line, size_t len,
      Section 4. Examples of RFC-4954 but some e-mail servers ignore this and
      only send the response code instead as per Section 4.2. */
   if(line[3] == ' ' || len == 5) {
-    char tmpline[6];
-
     result = TRUE;
-    memset(tmpline, '\0', sizeof(tmpline));
-    memcpy(tmpline, line, (len == 5 ? 5 : 3));
-    *resp = curlx_sltosi(strtol(tmpline, NULL, 10));
+    *resp = curlx_sltosi(strtol(line, NULL, 10));
 
     /* Make sure real server never sends internal value */
     if(*resp == 1)
@@ -237,30 +232,23 @@ static bool smtp_endofresp(struct connectdata *conn, char *line, size_t len,
  */
 static void smtp_get_message(char *buffer, char **outptr)
 {
-  size_t len = strlen(buffer);
+  size_t len = 0;
   char *message = NULL;
 
-  if(len > 4) {
-    /* Find the start of the message */
-    len -= 4;
-    for(message = buffer + 4; *message == ' ' || *message == '\t';
-        message++, len--)
-      ;
+  /* Find the start of the message */
+  for(message = buffer + 4; *message == ' ' || *message == '\t'; message++)
+    ;
 
-    /* Find the end of the message */
-    for(; len--;)
-      if(message[len] != '\r' && message[len] != '\n' && message[len] != ' ' &&
-         message[len] != '\t')
-        break;
+  /* Find the end of the message */
+  for(len = strlen(message); len--;)
+    if(message[len] != '\r' && message[len] != '\n' && message[len] != ' ' &&
+       message[len] != '\t')
+      break;
 
-    /* Terminate the message */
-    if(++len) {
-      message[len] = '\0';
-    }
+  /* Terminate the message */
+  if(++len) {
+    message[len] = '\0';
   }
-  else
-    /* junk input => zero length output */
-    message = &buffer[len];
 
   *outptr = message;
 }
@@ -709,6 +697,7 @@ static CURLcode smtp_state_ehlo_resp(struct connectdata *conn, int smtpcode,
   struct smtp_conn *smtpc = &conn->proto.smtpc;
   const char *line = data->state.buffer;
   size_t len = strlen(line);
+  size_t wordlen;
 
   (void)instate; /* no use for this yet */
 
@@ -743,7 +732,6 @@ static CURLcode smtp_state_ehlo_resp(struct connectdata *conn, int smtpcode,
       /* Loop through the data line */
       for(;;) {
         size_t llen;
-        size_t wordlen;
         unsigned int mechbit;
 
         while(len &&
@@ -960,7 +948,7 @@ static CURLcode smtp_state_data_resp(struct connectdata *conn, int smtpcode,
     Curl_pgrsSetUploadSize(data, data->state.infilesize);
 
     /* SMTP upload */
-    Curl_setup_transfer(data, -1, -1, FALSE, FIRSTSOCKET);
+    Curl_setup_transfer(conn, -1, -1, FALSE, NULL, FIRSTSOCKET, NULL);
 
     /* End of DO phase */
     state(conn, SMTP_STOP);
@@ -1085,20 +1073,19 @@ static CURLcode smtp_multi_statemach(struct connectdata *conn, bool *done)
       return result;
   }
 
-  result = Curl_pp_statemach(&smtpc->pp, FALSE, FALSE);
+  result = Curl_pp_statemach(&smtpc->pp, FALSE);
   *done = (smtpc->state == SMTP_STOP) ? TRUE : FALSE;
 
   return result;
 }
 
-static CURLcode smtp_block_statemach(struct connectdata *conn,
-                                     bool disconnecting)
+static CURLcode smtp_block_statemach(struct connectdata *conn)
 {
   CURLcode result = CURLE_OK;
   struct smtp_conn *smtpc = &conn->proto.smtpc;
 
   while(smtpc->state != SMTP_STOP && !result)
-    result = Curl_pp_statemach(&smtpc->pp, TRUE, disconnecting);
+    result = Curl_pp_statemach(&smtpc->pp, TRUE);
 
   return result;
 }
@@ -1219,7 +1206,7 @@ static CURLcode smtp_done(struct connectdata *conn, CURLcode status,
        returned CURLE_AGAIN, we duplicate the EOB now rather than when the
        bytes written doesn't equal len. */
     if(smtp->trailing_crlf || !conn->data->state.infilesize) {
-      eob = strdup(&SMTP_EOB[2]);
+      eob = strdup(SMTP_EOB + 2);
       len = SMTP_EOB_LEN - 2;
     }
     else {
@@ -1246,15 +1233,20 @@ static CURLcode smtp_done(struct connectdata *conn, CURLcode status,
     }
     else {
       /* Successfully sent so adjust the response timeout relative to now */
-      pp->response = Curl_now();
+      pp->response = Curl_tvnow();
 
       free(eob);
     }
 
     state(conn, SMTP_POSTDATA);
 
-    /* Run the state-machine */
-    result = smtp_block_statemach(conn, FALSE);
+    /* Run the state-machine
+
+       TODO: when the multi interface is used, this _really_ should be using
+       the smtp_multi_statemach function but we have no general support for
+       non-blocking DONE operations!
+    */
+    result = smtp_block_statemach(conn);
   }
 
   /* Clear the transfer mode for the next request */
@@ -1289,11 +1281,6 @@ static CURLcode smtp_perform(struct connectdata *conn, bool *connected,
 
   /* Store the first recipient (or NULL if not specified) */
   smtp->rcpt = data->set.mail_rcpt;
-
-  /* Initial data character is the first character in line: it is implicitly
-     preceded by a virtual CRLF. */
-  smtp->trailing_crlf = TRUE;
-  smtp->eob = 2;
 
   /* Start the first command in the DO phase */
   if((data->set.upload || data->set.mimepost.kind) && data->set.mail_rcpt)
@@ -1361,7 +1348,7 @@ static CURLcode smtp_disconnect(struct connectdata *conn, bool dead_connection)
      point! */
   if(!dead_connection && smtpc->pp.conn && smtpc->pp.conn->bits.protoconnstart)
     if(!smtp_perform_quit(conn))
-      (void)smtp_block_statemach(conn, TRUE); /* ignore errors on QUIT */
+      (void)smtp_block_statemach(conn); /* ignore errors on QUIT */
 
   /* Disconnect from the server */
   Curl_pp_disconnect(&smtpc->pp);
@@ -1384,7 +1371,7 @@ static CURLcode smtp_dophase_done(struct connectdata *conn, bool connected)
 
   if(smtp->transfer != FTPTRANSFER_BODY)
     /* no data to transfer */
-    Curl_setup_transfer(conn->data, -1, -1, FALSE, -1);
+    Curl_setup_transfer(conn, -1, -1, FALSE, NULL, -1, NULL);
 
   return CURLE_OK;
 }
@@ -1442,6 +1429,7 @@ static CURLcode smtp_regular_transfer(struct connectdata *conn,
 
 static CURLcode smtp_setup_connection(struct connectdata *conn)
 {
+  struct Curl_easy *data = conn->data;
   CURLcode result;
 
   /* Clear the TLS upgraded flag */
@@ -1451,6 +1439,8 @@ static CURLcode smtp_setup_connection(struct connectdata *conn)
   result = smtp_init(conn);
   if(result)
     return result;
+
+  data->state.path++;   /* don't include the initial slash */
 
   return CURLE_OK;
 }
@@ -1505,7 +1495,7 @@ static CURLcode smtp_parse_url_path(struct connectdata *conn)
   /* The SMTP struct is already initialised in smtp_connect() */
   struct Curl_easy *data = conn->data;
   struct smtp_conn *smtpc = &conn->proto.smtpc;
-  const char *path = &data->state.up.path[1]; /* skip leading path */
+  const char *path = data->state.path;
   char localhost[HOSTNAME_MAX + 1];
 
   /* Calculate the path if necessary */
@@ -1561,14 +1551,13 @@ CURLcode Curl_smtp_escape_eob(struct connectdata *conn, const ssize_t nread)
   if(!scratch || data->set.crlf) {
     oldscratch = scratch;
 
-    scratch = newscratch = malloc(2 * data->set.upload_buffer_size);
+    scratch = newscratch = malloc(2 * data->set.buffer_size);
     if(!newscratch) {
       failf(data, "Failed to alloc scratch buffer!");
 
       return CURLE_OUT_OF_MEMORY;
     }
   }
-  DEBUGASSERT(data->set.upload_buffer_size >= (size_t)nread);
 
   /* Have we already sent part of the EOB? */
   eob_sent = smtp->eob;

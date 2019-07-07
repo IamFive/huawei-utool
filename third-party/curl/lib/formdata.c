@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -24,14 +24,14 @@
 
 #include <curl/curl.h>
 
-#include "formdata.h"
-#if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_MIME)
+#ifndef CURL_DISABLE_HTTP
 
 #if defined(HAVE_LIBGEN_H) && defined(HAVE_BASENAME)
 #include <libgen.h>
 #endif
 
 #include "urldata.h" /* for struct Curl_easy */
+#include "formdata.h"
 #include "mime.h"
 #include "non-ascii.h"
 #include "vtls/vtls.h"
@@ -39,12 +39,15 @@
 #include "sendf.h"
 #include "strdup.h"
 #include "rand.h"
-#include "warnless.h"
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
 #include "curl_memory.h"
 #include "memdebug.h"
 
+
+/* What kind of Content-Type to use on un-specified files with unrecognized
+   extensions. */
+#define HTTPPOST_CONTENTTYPE_DEFAULT "application/octet-stream"
 
 #define HTTPPOST_PTRNAME CURL_HTTPPOST_PTRNAME
 #define HTTPPOST_FILENAME CURL_HTTPPOST_FILENAME
@@ -148,6 +151,60 @@ static FormInfo * AddFormInfo(char *value,
   }
 
   return form_info;
+}
+
+/***************************************************************************
+ *
+ * ContentTypeForFilename()
+ *
+ * Provides content type for filename if one of the known types (else
+ * (either the prevtype or the default is returned).
+ *
+ * Returns some valid contenttype for filename.
+ *
+ ***************************************************************************/
+static const char *ContentTypeForFilename(const char *filename,
+                                          const char *prevtype)
+{
+  const char *contenttype = NULL;
+  unsigned int i;
+  /*
+   * No type was specified, we scan through a few well-known
+   * extensions and pick the first we match!
+   */
+  struct ContentType {
+    const char *extension;
+    const char *type;
+  };
+  static const struct ContentType ctts[]={
+    {".gif",  "image/gif"},
+    {".jpg",  "image/jpeg"},
+    {".jpeg", "image/jpeg"},
+    {".txt",  "text/plain"},
+    {".html", "text/html"},
+    {".xml", "application/xml"}
+  };
+
+  if(prevtype)
+    /* default to the previously set/used! */
+    contenttype = prevtype;
+  else
+    contenttype = HTTPPOST_CONTENTTYPE_DEFAULT;
+
+  if(filename) { /* in case a NULL was passed in */
+    for(i = 0; i<sizeof(ctts)/sizeof(ctts[0]); i++) {
+      if(strlen(filename) >= strlen(ctts[i].extension)) {
+        if(strcasecompare(filename +
+                          strlen(filename) - strlen(ctts[i].extension),
+                          ctts[i].extension)) {
+          contenttype = ctts[i].type;
+          break;
+        }
+      }
+    }
+  }
+  /* we have a contenttype by now */
+  return contenttype;
 }
 
 /***************************************************************************
@@ -302,8 +359,7 @@ CURLFORMcode FormAdd(struct curl_httppost **httppost,
        * Set the contents property.
        */
     case CURLFORM_PTRCONTENTS:
-      current_form->flags |= HTTPPOST_PTRCONTENTS;
-      /* FALLTHROUGH */
+      current_form->flags |= HTTPPOST_PTRCONTENTS; /* fall through */
     case CURLFORM_COPYCONTENTS:
       if(current_form->value)
         return_value = CURL_FORMADD_OPTION_TWICE;
@@ -569,17 +625,11 @@ CURLFORMcode FormAdd(struct curl_httppost **httppost,
       if(((form->flags & HTTPPOST_FILENAME) ||
           (form->flags & HTTPPOST_BUFFER)) &&
          !form->contenttype) {
-        char *f = (form->flags & HTTPPOST_BUFFER)?
+        char *f = form->flags & HTTPPOST_BUFFER?
           form->showfilename : form->value;
-        char const *type;
-        type = Curl_mime_contenttype(f);
-        if(!type)
-          type = prevtype;
-        if(!type)
-          type = FILE_CONTENTTYPE_DEFAULT;
 
         /* our contenttype is missing */
-        form->contenttype = strdup(type);
+        form->contenttype = strdup(ContentTypeForFilename(f, prevtype));
         if(!form->contenttype) {
           return_value = CURL_FORMADD_MEMORY;
           break;
@@ -723,7 +773,7 @@ int curl_formget(struct curl_httppost *form, void *arg,
 
   while(!result) {
     char buffer[8192];
-    size_t nread = Curl_mime_read(buffer, 1, sizeof(buffer), &toppart);
+    size_t nread = Curl_mime_read(buffer, 1, sizeof buffer, &toppart);
 
     if(!nread)
       break;
@@ -810,6 +860,7 @@ CURLcode Curl_getformdata(struct Curl_easy *data,
 {
   CURLcode result = CURLE_OK;
   curl_mime *form = NULL;
+  curl_mime *multipart;
   curl_mimepart *part;
   struct curl_httppost *file;
 
@@ -828,7 +879,7 @@ CURLcode Curl_getformdata(struct Curl_easy *data,
   /* Process each top part. */
   for(; !result && post; post = post->next) {
     /* If we have more than a file here, create a mime subpart and fill it. */
-    curl_mime *multipart = form;
+    multipart = form;
     if(post->more) {
       part = curl_mime_addpart(form);
       if(!part)
@@ -880,8 +931,7 @@ CURLcode Curl_getformdata(struct Curl_easy *data,
                compatibility: use of "-" pseudo file name should be avoided. */
             result = curl_mime_data_cb(part, (curl_off_t) -1,
                                        (curl_read_callback) fread,
-                                       CURLX_FUNCTION_CAST(curl_seek_callback,
-                                                           fseek),
+                                       (curl_seek_callback) fseek,
                                        NULL, (void *) stdin);
           }
           else
@@ -921,8 +971,7 @@ CURLcode Curl_getformdata(struct Curl_easy *data,
   return result;
 }
 
-#else
-/* if disabled */
+#else  /* CURL_DISABLE_HTTP */
 CURLFORMcode curl_formadd(struct curl_httppost **httppost,
                           struct curl_httppost **last_post,
                           ...)
@@ -947,4 +996,5 @@ void curl_formfree(struct curl_httppost *form)
   /* does nothing HTTP is disabled */
 }
 
-#endif  /* if disabled */
+
+#endif  /* !defined(CURL_DISABLE_HTTP) */

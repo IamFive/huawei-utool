@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 2012 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 2012 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  * Copyright (C) 2010 - 2011, Hoi-Ho Chan, <hoiho.chan@gmail.com>
  *
  * This software is licensed as described in the file COPYING, which
@@ -55,7 +55,6 @@
 #include "select.h"
 #include "strcase.h"
 #include "polarssl_threadlock.h"
-#include "multiif.h"
 #include "curl_printf.h"
 #include "curl_memory.h"
 /* The last #include file should be: */
@@ -186,11 +185,14 @@ set_ssl_version_min_max(struct connectdata *conn, int sockindex)
     case CURL_SSLVERSION_DEFAULT:
     case CURL_SSLVERSION_TLSv1:
       ssl_version = CURL_SSLVERSION_TLSv1_0;
+      ssl_version_max = CURL_SSLVERSION_MAX_TLSv1_2;
       break;
   }
 
   switch(ssl_version_max) {
     case CURL_SSLVERSION_MAX_NONE:
+      ssl_version_max = ssl_version << 16;
+      break;
     case CURL_SSLVERSION_MAX_DEFAULT:
       ssl_version_max = CURL_SSLVERSION_MAX_TLSv1_2;
       break;
@@ -498,7 +500,7 @@ polarssl_connect_step2(struct connectdata *conn,
 
     if(ret & BADCERT_REVOKED) {
       failf(data, "Cert verify failed: BADCERT_REVOKED");
-      return CURLE_PEER_FAILED_VERIFICATION;
+      return CURLE_SSL_CACERT;
     }
 
     if(ret & BADCERT_CN_MISMATCH)
@@ -594,8 +596,6 @@ polarssl_connect_step2(struct connectdata *conn,
     }
     else
       infof(data, "ALPN, server did not agree to a protocol\n");
-    Curl_multiuse_state(conn, conn->negnpn == CURL_HTTP_VERSION_2 ?
-                        BUNDLE_MULTIPLEX : BUNDLE_NO_MULTIUSE);
   }
 #endif
 
@@ -620,9 +620,11 @@ polarssl_connect_step3(struct connectdata *conn,
     ssl_session *our_ssl_sessionid;
     void *old_ssl_sessionid = NULL;
 
-    our_ssl_sessionid = calloc(1, sizeof(ssl_session));
+    our_ssl_sessionid = malloc(sizeof(ssl_session));
     if(!our_ssl_sessionid)
       return CURLE_OUT_OF_MEMORY;
+
+    memset(our_ssl_sessionid, 0, sizeof(ssl_session));
 
     ret = ssl_get_session(&BACKEND->ssl, our_ssl_sessionid);
     if(ret) {
@@ -719,9 +721,9 @@ static void Curl_polarssl_session_free(void *ptr)
 static size_t Curl_polarssl_version(char *buffer, size_t size)
 {
   unsigned int version = version_get_number();
-  return msnprintf(buffer, size, "%s/%d.%d.%d",
-                   version >= 0x01030A00?"mbedTLS":"PolarSSL",
-                   version>>24, (version>>16)&0xff, (version>>8)&0xff);
+  return snprintf(buffer, size, "%s/%d.%d.%d",
+                  version >= 0x01030A00?"mbedTLS":"PolarSSL",
+                  version>>24, (version>>16)&0xff, (version>>8)&0xff);
 }
 
 static CURLcode
@@ -880,14 +882,13 @@ static bool Curl_polarssl_data_pending(const struct connectdata *conn,
   return ssl_get_bytes_avail(&BACKEND->ssl) != 0;
 }
 
-static CURLcode Curl_polarssl_sha256sum(const unsigned char *input,
+static void Curl_polarssl_sha256sum(const unsigned char *input,
                                     size_t inputlen,
                                     unsigned char *sha256sum,
                                     size_t sha256len UNUSED_PARAM)
 {
   (void)sha256len;
   sha256(input, inputlen, sha256sum, 0);
-  return CURLE_OK;
 }
 
 static void *Curl_polarssl_get_internals(struct ssl_connect_data *connssl,
@@ -900,8 +901,11 @@ static void *Curl_polarssl_get_internals(struct ssl_connect_data *connssl,
 const struct Curl_ssl Curl_ssl_polarssl = {
   { CURLSSLBACKEND_POLARSSL, "polarssl" }, /* info */
 
-  SSLSUPP_CA_PATH |
-  SSLSUPP_PINNEDPUBKEY,
+  1, /* have_ca_path */
+  0, /* have_certinfo */
+  1, /* have_pinnedpubkey */
+  0, /* have_ssl_ctx */
+  0, /* support_https_proxy */
 
   sizeof(struct ssl_backend_data),
 
@@ -911,7 +915,9 @@ const struct Curl_ssl Curl_ssl_polarssl = {
   Curl_none_check_cxn,               /* check_cxn */
   Curl_none_shutdown,                /* shutdown */
   Curl_polarssl_data_pending,        /* data_pending */
-  /* This might cause libcurl to use a weeker random! */
+  /* This might cause libcurl to use a weeker random!
+   * TODO: use Polarssl's CTR-DRBG or HMAC-DRBG
+  */
   Curl_none_random,                  /* random */
   Curl_none_cert_status_request,     /* cert_status_request */
   Curl_polarssl_connect,             /* connect */

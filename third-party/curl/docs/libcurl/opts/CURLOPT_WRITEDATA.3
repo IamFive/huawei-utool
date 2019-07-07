@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_WRITEDATA 3 "August 11, 2018" "libcurl 7.65.1" "curl_easy_setopt options"
-
+.TH CURLOPT_WRITEDATA 3 "16 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
 .SH NAME
 CURLOPT_WRITEDATA \- custom pointer passed to the write callback
 .SH SYNOPSIS
@@ -38,7 +37,7 @@ callback's 4th argument. If you don't use a write callback, you must make
 The internal \fICURLOPT_WRITEFUNCTION(3)\fP will write the data to the FILE *
 given with this option, or to stdout if this option hasn't been set.
 
-If you're using libcurl as a win32 DLL, you \fBMUST\fP use a
+If you're using libcurl as a win32 DLL, you \fBMUST\fP use the
 \fICURLOPT_WRITEFUNCTION(3)\fP if you set this option or you will experience
 crashes.
 .SH DEFAULT

@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -73,7 +73,7 @@
    and later. If you're building for an older cat, well, sorry. */
 #  define COMMON_DIGEST_FOR_OPENSSL
 #  include <CommonCrypto/CommonDigest.h>
-#elif defined(WIN32)
+#elif defined(_WIN32)
 /* For Windows: If no other crypto library is provided, we fallback
    to the hash functions provided within the Microsoft Windows CryptoAPI */
 #  include <wincrypt.h>
@@ -243,10 +243,10 @@ static int nss_hash_init(void **pctx, SECOidTag hash_alg)
 {
   PK11Context *ctx;
 
-  /* we have to initialize NSS if not initialized already */
+  /* we have to initialize NSS if not initialized alraedy */
   if(!NSS_IsInitialized() && !nss_context) {
     static NSSInitParameters params;
-    params.length = sizeof(params);
+    params.length = sizeof params;
     nss_context = NSS_InitContext("", "", "", "", &params, NSS_INIT_READONLY
         | NSS_INIT_NOCERTDB   | NSS_INIT_NOMODDB       | NSS_INIT_FORCEOPEN
         | NSS_INIT_NOROOTINIT | NSS_INIT_OPTIMIZESPACE | NSS_INIT_PK11RELOAD);
@@ -380,7 +380,7 @@ static void SHA256_Final(unsigned char digest[32], SHA256_CTX *ctx)
   sha256_finish(ctx, digest);
 }
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 
 static void win32_crypto_final(struct win32_crypto_hash *ctx,
                                unsigned char *digest,
@@ -463,9 +463,9 @@ static void SHA256_Final(unsigned char digest[32], SHA256_CTX *ctx)
 
 const digest_params MD5_DIGEST_PARAMS[] = {
   {
-    CURLX_FUNCTION_CAST(Curl_digest_init_func, MD5_Init),
-    CURLX_FUNCTION_CAST(Curl_digest_update_func, MD5_Update),
-    CURLX_FUNCTION_CAST(Curl_digest_final_func, MD5_Final),
+    (Curl_digest_init_func) MD5_Init,
+    (Curl_digest_update_func) MD5_Update,
+    (Curl_digest_final_func) MD5_Final,
     sizeof(MD5_CTX),
     16
   }
@@ -473,9 +473,9 @@ const digest_params MD5_DIGEST_PARAMS[] = {
 
 const digest_params SHA1_DIGEST_PARAMS[] = {
   {
-    CURLX_FUNCTION_CAST(Curl_digest_init_func, SHA1_Init),
-    CURLX_FUNCTION_CAST(Curl_digest_update_func, SHA1_Update),
-    CURLX_FUNCTION_CAST(Curl_digest_final_func, SHA1_Final),
+    (Curl_digest_init_func) SHA1_Init,
+    (Curl_digest_update_func) SHA1_Update,
+    (Curl_digest_final_func) SHA1_Final,
     sizeof(SHA_CTX),
     20
   }
@@ -483,9 +483,9 @@ const digest_params SHA1_DIGEST_PARAMS[] = {
 
 const digest_params SHA256_DIGEST_PARAMS[] = {
   {
-    CURLX_FUNCTION_CAST(Curl_digest_init_func, SHA256_Init),
-    CURLX_FUNCTION_CAST(Curl_digest_update_func, SHA256_Update),
-    CURLX_FUNCTION_CAST(Curl_digest_final_func, SHA256_Final),
+    (Curl_digest_init_func) SHA256_Init,
+    (Curl_digest_update_func) SHA256_Update,
+    (Curl_digest_final_func) SHA256_Final,
     sizeof(SHA256_CTX),
     32
   }
@@ -524,7 +524,7 @@ digest_context *Curl_digest_init(const digest_params *dparams)
   digest_context *ctxt;
 
   /* Create digest context */
-  ctxt = malloc(sizeof(*ctxt));
+  ctxt = malloc(sizeof *ctxt);
 
   if(!ctxt)
     return ctxt;
@@ -539,7 +539,6 @@ digest_context *Curl_digest_init(const digest_params *dparams)
   ctxt->digest_hash = dparams;
 
   if(dparams->digest_init(ctxt->digest_hashctx) != 1) {
-    free(ctxt->digest_hashctx);
     free(ctxt);
     return NULL;
   }
@@ -558,8 +557,7 @@ int Curl_digest_update(digest_context *context,
 
 int Curl_digest_final(digest_context *context, unsigned char *result)
 {
-  if(result)
-    (*context->digest_hash->digest_final)(result, context->digest_hashctx);
+  (*context->digest_hash->digest_final)(result, context->digest_hashctx);
 
   free(context->digest_hashctx);
   free(context);
@@ -624,7 +622,6 @@ static int check_hash(const char *filename,
   result = malloc(digest_def->dparams->digest_resultlen);
   if(!result) {
     close(fd);
-    Curl_digest_final(dctx, NULL);
     return -1;
   }
   while(1) {
@@ -693,8 +690,6 @@ static metalink_checksum *new_metalink_checksum_from_hex_digest
     chksum->digest_def = digest_def;
     chksum->digest = digest;
   }
-  else
-    free(digest);
   return chksum;
 }
 
@@ -786,24 +781,8 @@ static metalinkfile *new_metalinkfile(metalink_file_t *fileinfo)
          curl_strequal((*p)->type, "ftp") ||
          curl_strequal((*p)->type, "ftps")) {
         res = new_metalink_resource((*p)->url);
-        if(res) {
-          tail->next = res;
-          tail = res;
-        }
-        else {
-          tail = root.next;
-
-          /* clean up the linked list */
-          while(tail) {
-            res = tail->next;
-            free(tail->url);
-            free(tail);
-            tail = res;
-          }
-          free(f->filename);
-          free(f);
-          return NULL;
-        }
+        tail->next = res;
+        tail = res;
       }
     }
     f->resource = root.next;

@@ -38,3 +38,4 @@ extern const struct Curl_handler Curl_handler_file;
 #endif
 
 #endif /* HEADER_CURL_FILE_H */
+

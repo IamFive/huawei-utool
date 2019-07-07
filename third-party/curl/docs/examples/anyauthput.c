@@ -26,18 +26,15 @@
  */
 #include <stdio.h>
 #include <fcntl.h>
+#ifdef WIN32
+#  include <io.h>
+#else
+#  include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <curl/curl.h>
-
-#ifdef WIN32
-#  include <io.h>
-#  define READ_3RD_ARG unsigned int
-#else
-#  include <unistd.h>
-#  define READ_3RD_ARG size_t
-#endif
 
 #if LIBCURL_VERSION_NUM < 0x070c03
 #error "upgrade your libcurl to no less than 7.12.3"
@@ -86,7 +83,7 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *stream)
   int *fdp = (int *)stream;
   int fd = *fdp;
 
-  retcode = read(fd, ptr, (READ_3RD_ARG)(size * nmemb));
+  retcode = read(fd, ptr, size * nmemb);
 
   nread = (curl_off_t)retcode;
 

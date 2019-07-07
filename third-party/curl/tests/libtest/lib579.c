@@ -39,6 +39,7 @@ struct WriteThis {
 static int progress_callback(void *clientp, double dltotal, double dlnow,
                              double ultotal, double ulnow)
 {
+  FILE *moo;
   static int prev_ultotal = -1;
   static int prev_ulnow = -1;
   (void)clientp; /* UNUSED */
@@ -52,7 +53,7 @@ static int progress_callback(void *clientp, double dltotal, double dlnow,
   if((prev_ultotal != (int)ultotal) ||
      (prev_ulnow != (int)ulnow)) {
 
-    FILE *moo = fopen(libtest_arg2, "ab");
+    moo = fopen(libtest_arg2, "ab");
     if(moo) {
       fprintf(moo, "Progress callback called with UL %d out of %d\n",
               (int)ulnow, (int)ultotal);

@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_PROXY_SSL_CIPHER_LIST 3 "October 10, 2018" "libcurl 7.65.1" "curl_easy_setopt options"
-
+.TH CURLOPT_PROXY_SSL_CIPHER_LIST 3 "16 Nov 2016" "libcurl 7.52.0" "curl_easy_setopt options"
 .SH NAME
 CURLOPT_PROXY_SSL_CIPHER_LIST \- specify ciphers to use for proxy TLS
 .SH SYNOPSIS
@@ -77,6 +76,5 @@ If built TLS enabled.
 Returns CURLE_OK if TLS is supported, CURLE_UNKNOWN_OPTION if not, or
 CURLE_OUT_OF_MEMORY if there was insufficient heap space.
 .SH "SEE ALSO"
-.BR CURLOPT_PROXY_TLS13_CIPHERS "(3), " CURLOPT_PROXY_SSLVERSION "(3), "
-.BR CURLOPT_SSL_CIPHER_LIST "(3), " CURLOPT_TLS13_CIPHERS "(3), "
+.BR CURLOPT_PROXY_SSLVERSION "(3), " CURLOPT_USE_SSL "(3), "
 .BR CURLOPT_SSLVERSION "(3), "

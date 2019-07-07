@@ -118,7 +118,8 @@ if(NOT UNIX)
 
     set(HAVE_SIGACTION 0)
     set(HAVE_MACRO_SIGSETJMP 0)
-  else()
+  else(WIN32)
     message("This file should be included on Windows platform only")
-  endif()
-endif()
+  endif(WIN32)
+endif(NOT UNIX)
+

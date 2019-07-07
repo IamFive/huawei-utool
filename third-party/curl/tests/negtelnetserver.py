@@ -9,6 +9,7 @@ import argparse
 import os
 import sys
 import logging
+import struct
 try:  # Python 2
     import SocketServer as socketserver
 except ImportError:  # Python 3
@@ -21,8 +22,8 @@ IDENT = "NTEL"
 
 
 # The strings that indicate the test framework is checking our aliveness
-VERIFIED_REQ = "verifiedserver"
-VERIFIED_RSP = "WE ROOLZ: {pid}"
+VERIFIED_REQ = b"verifiedserver"
+VERIFIED_RSP = b"WE ROOLZ: {pid}"
 
 
 def telnetserver(options):
@@ -33,7 +34,7 @@ def telnetserver(options):
     if options.pidfile:
         pid = os.getpid()
         with open(options.pidfile, "w") as f:
-            f.write(str(pid))
+            f.write(b"{0}".format(pid))
 
     local_bind = (HOST, options.port)
     log.info("Listening on %s", local_bind)
@@ -67,10 +68,9 @@ class NegotiatingTelnetHandler(socketserver.BaseRequestHandler):
             data = neg.recv(1024)
             log.debug("Incoming data: %r", data)
 
-            if VERIFIED_REQ.encode('ascii') in data:
+            if VERIFIED_REQ in data:
                 log.debug("Received verification request from test framework")
-                response = VERIFIED_RSP.format(pid=os.getpid())
-                response_data = response.encode('ascii')
+                response_data = VERIFIED_RSP.format(pid=os.getpid())
             else:
                 log.debug("Received normal request - echoing back")
                 response_data = data.strip()
@@ -113,9 +113,11 @@ class Negotiator(object):
                 # TCP failed to give us any data. Break out.
                 break
 
-            for byte_int in bytearray(data):
+            for byte in data:
+                byte_int = self.byte_to_int(byte)
+
                 if self.state == self.NO_NEG:
-                    self.no_neg(byte_int, buffer)
+                    self.no_neg(byte, byte_int, buffer)
                 elif self.state == self.START_NEG:
                     self.start_neg(byte_int)
                 elif self.state in [self.WILL, self.WONT, self.DO, self.DONT]:
@@ -129,7 +131,10 @@ class Negotiator(object):
 
         return buffer
 
-    def no_neg(self, byte_int, buffer):
+    def byte_to_int(self, byte):
+        return struct.unpack(b'B', byte)[0]
+
+    def no_neg(self, byte, byte_int, buffer):
         # Not negotiating anything thus far. Check to see if we
         # should.
         if byte_int == NegTokens.IAC:
@@ -138,7 +143,7 @@ class Negotiator(object):
             self.state = self.START_NEG
         else:
             # Just append the incoming byte to the buffer
-            buffer.append(byte_int)
+            buffer.append(byte)
 
     def start_neg(self, byte_int):
         # In a negotiation.
@@ -187,8 +192,12 @@ class Negotiator(object):
                       self.state)
             self.state = self.NO_NEG
 
-    def send_message(self, message_ints):
-        self.tcp.sendall(bytearray(message_ints))
+    def send_message(self, message):
+        packed_message = self.pack(message)
+        self.tcp.sendall(packed_message)
+
+    def pack(self, arr):
+        return struct.pack(b'{0}B'.format(len(arr)), *arr)
 
     def send_iac(self, arr):
         message = [NegTokens.IAC]

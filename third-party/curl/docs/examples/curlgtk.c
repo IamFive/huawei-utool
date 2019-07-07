@@ -45,12 +45,14 @@ int my_progress_func(GtkWidget *bar,
 void *my_thread(void *ptr)
 {
   CURL *curl;
+  CURLcode res;
+  FILE *outfile;
+  gchar *url = ptr;
 
   curl = curl_easy_init();
   if(curl) {
-    gchar *url = ptr;
     const char *filename = "test.curl";
-    FILE *outfile = fopen(filename, "wb");
+    outfile = fopen(filename, "wb");
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, outfile);
@@ -60,7 +62,7 @@ void *my_thread(void *ptr)
     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, my_progress_func);
     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, Bar);
 
-    curl_easy_perform(curl);
+    res = curl_easy_perform(curl);
 
     fclose(outfile);
     /* always cleanup */
@@ -104,3 +106,4 @@ int main(int argc, char **argv)
   gdk_threads_leave();
   return 0;
 }
+

@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -46,9 +46,11 @@ static char *my_get_line(FILE *fp);
 /* return 0 on everything-is-fine, and non-zero otherwise */
 int parseconfig(const char *filename, struct GlobalConfig *global)
 {
-  FILE *file = NULL;
+  int res;
+  FILE *file;
   char filebuffer[512];
   bool usedarg = FALSE;
+  char *home;
   int rc = 0;
   struct OperationConfig *operation = global->first;
 
@@ -56,12 +58,12 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
     /* NULL or no file name attempts to load .curlrc from the homedir! */
 
 #ifndef __AMIGA__
-    char *home = homedir();    /* portable homedir finder */
     filename = CURLRC;   /* sensible default */
+    home = homedir();    /* portable homedir finder */
     if(home) {
       if(strlen(home) < (sizeof(filebuffer) - strlen(CURLRC))) {
-        msnprintf(filebuffer, sizeof(filebuffer),
-                  "%s%s%s", home, DIR_CHAR, CURLRC);
+        snprintf(filebuffer, sizeof(filebuffer),
+                 "%s%s%s", home, DIR_CHAR, CURLRC);
 
 #ifdef WIN32
         /* Check if the file exists - if not, try CURLRC in the same
@@ -69,6 +71,7 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
          */
         file = fopen(filebuffer, FOPEN_READTEXT);
         if(file != NULL) {
+          fclose(file);
           filename = filebuffer;
         }
         else {
@@ -76,9 +79,8 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
            * already declared via inclusions done in setup header file.
            * We assume that we are using the ASCII version here.
            */
-          unsigned long len = GetModuleFileNameA(0, filebuffer,
-                                                 sizeof(filebuffer));
-          if(len > 0 && len < sizeof(filebuffer)) {
+          int n = GetModuleFileNameA(0, filebuffer, sizeof(filebuffer));
+          if(n > 0 && n < (int)sizeof(filebuffer)) {
             /* We got a valid filename - get the directory part */
             char *lastdirchar = strrchr(filebuffer, '\\');
             if(lastdirchar) {
@@ -87,9 +89,11 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
               /* If we have enough space, build the RC filename */
               remaining = sizeof(filebuffer) - strlen(filebuffer);
               if(strlen(CURLRC) < remaining - 1) {
-                msnprintf(lastdirchar, remaining,
-                          "%s%s", DIR_CHAR, CURLRC);
-                /* Don't bother checking if it exists - we do that later */
+                snprintf(lastdirchar, remaining,
+                         "%s%s", DIR_CHAR, CURLRC);
+                /* Don't bother checking if it exists - we do
+                 * that later
+                 */
                 filename = filebuffer;
               }
             }
@@ -110,12 +114,10 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
 #endif
   }
 
-  if(!file) { /* WIN32: no need to fopen() again */
-    if(strcmp(filename, "-"))
-      file = fopen(filename, FOPEN_READTEXT);
-    else
-      file = stdin;
-  }
+  if(strcmp(filename, "-"))
+    file = fopen(filename, FOPEN_READTEXT);
+  else
+    file = stdin;
 
   if(file) {
     char *line;
@@ -123,13 +125,13 @@ int parseconfig(const char *filename, struct GlobalConfig *global)
     char *option;
     char *param;
     int lineno = 0;
+    bool alloced_param;
     bool dashed_option;
 
     while(NULL != (aline = my_get_line(file))) {
-      int res;
-      bool alloced_param = FALSE;
       lineno++;
       line = aline;
+      alloced_param = FALSE;
 
       /* line with # in the first non-blank column is a comment! */
       while(*line && ISSPACE(*line))
@@ -356,3 +358,4 @@ static char *my_get_line(FILE *fp)
 
   return line;
 }
+

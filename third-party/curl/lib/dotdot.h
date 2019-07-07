@@ -22,4 +22,4 @@
  *
  ***************************************************************************/
 char *Curl_dedotdotify(const char *input);
-#endif /* HEADER_CURL_DOTDOT_H */
+#endif

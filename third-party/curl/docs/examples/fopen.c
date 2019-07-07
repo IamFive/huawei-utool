@@ -237,9 +237,11 @@ URL_FILE *url_fopen(const char *url, const char *operation)
   URL_FILE *file;
   (void)operation;
 
-  file = calloc(1, sizeof(URL_FILE));
+  file = malloc(sizeof(URL_FILE));
   if(!file)
     return NULL;
+
+  memset(file, 0, sizeof(URL_FILE));
 
   file->handle.file = fopen(url, operation);
   if(file->handle.file)

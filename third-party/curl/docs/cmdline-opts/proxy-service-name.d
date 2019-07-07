@@ -1,4 +1,4 @@
-Long: proxy-service-name
+long: proxy-service-name
 Arg: <name>
 Help: SPNEGO proxy service name
 Added: 7.43.0

@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_FAILONERROR 3 "April 17, 2018" "libcurl 7.65.1" "curl_easy_setopt options"
-
+.TH CURLOPT_FAILONERROR 3 "17 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
 .SH NAME
 CURLOPT_FAILONERROR \- request failure on HTTP response >= 400
 .SH SYNOPSIS
@@ -56,7 +55,7 @@ if(curl) {
   curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
   ret = curl_easy_perform(curl);
   if(ret == CURLE_HTTP_RETURNED_ERROR) {
-    /* an HTTP response error problem */
+    /* a HTTP response error problem */
   }
 }
 .fi

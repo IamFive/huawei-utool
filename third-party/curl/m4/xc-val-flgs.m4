@@ -240,3 +240,4 @@ AC_DEFUN([XC_CHECK_BUILD_FLAGS], [
      AC_MSG_WARN([Continuing even with errors mentioned immediately above this line.])
   fi
 ])
+

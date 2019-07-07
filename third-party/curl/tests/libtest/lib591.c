@@ -23,7 +23,9 @@
 
 /* lib591 is used for test cases 591, 592, 593 and 594 */
 
+#ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
 
 #include <fcntl.h>
 

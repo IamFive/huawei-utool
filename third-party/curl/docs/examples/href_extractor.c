@@ -26,7 +26,7 @@
  * </DESC>
  */
 /*
- * The HTML parser is found at https://github.com/arjunc77/htmlstreamparser
+ * The HTML parser is found at http://code.google.com/p/htmlstreamparser/
  */
 
 #include <stdio.h>

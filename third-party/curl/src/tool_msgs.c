@@ -42,12 +42,9 @@ static void voutf(struct GlobalConfig *config,
   if(!config->mute) {
     size_t len;
     char *ptr;
-    char *print_buffer;
+    char print_buffer[256];
 
-    print_buffer = curlx_mvaprintf(fmt, ap);
-    if(!print_buffer)
-      return;
-    len = strlen(print_buffer);
+    len = vsnprintf(print_buffer, sizeof(print_buffer), fmt, ap);
 
     ptr = print_buffer;
     while(len > 0) {
@@ -67,14 +64,13 @@ static void voutf(struct GlobalConfig *config,
         (void)fwrite(ptr, cut + 1, 1, config->errors);
         fputs("\n", config->errors);
         ptr += cut + 1; /* skip the space too */
-        len -= cut + 1;
+        len -= cut;
       }
       else {
         fputs(ptr, config->errors);
         len = 0;
       }
     }
-    curl_free(print_buffer);
   }
 }
 
@@ -109,8 +105,8 @@ void warnf(struct GlobalConfig *config, const char *fmt, ...)
 
 void helpf(FILE *errors, const char *fmt, ...)
 {
+  va_list ap;
   if(fmt) {
-    va_list ap;
     va_start(ap, fmt);
     fputs("curl: ", errors); /* prefix it */
     vfprintf(errors, fmt, ap);
@@ -122,3 +118,4 @@ void helpf(FILE *errors, const char *fmt, ...)
 #endif
           "for more information\n");
 }
+

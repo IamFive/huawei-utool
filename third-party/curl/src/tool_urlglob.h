@@ -74,3 +74,4 @@ CURLcode glob_match_url(char **, char *, URLGlob *);
 void glob_cleanup(URLGlob* glob);
 
 #endif /* HEADER_CURL_TOOL_URLGLOB_H */
+

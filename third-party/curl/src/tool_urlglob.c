@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -33,6 +33,8 @@
 
 #define GLOBERROR(string, column, code) \
   glob->error = string, glob->pos = column, code
+
+void glob_cleanup(URLGlob* glob);
 
 static CURLcode glob_fixed(URLGlob *glob, char *fixed, size_t len)
 {
@@ -114,7 +116,7 @@ static CURLcode glob_set(URLGlob *glob, char **patternp,
       if(multiply(amount, pat->content.Set.size + 1))
         return GLOBERROR("range overflow", 0, CURLE_URL_MALFORMAT);
 
-      /* FALLTHROUGH */
+      /* fall-through */
     case ',':
 
       *buf = '\0';
@@ -157,7 +159,7 @@ static CURLcode glob_set(URLGlob *glob, char **patternp,
         ++pattern;
         ++(*posp);
       }
-      /* FALLTHROUGH */
+      /* intentional fallthrough */
     default:
       *buf++ = *pattern++;              /* copy character to set element */
       ++(*posp);
@@ -365,11 +367,9 @@ static CURLcode glob_parse(URLGlob *glob, char *pattern,
     size_t sublen = 0;
     while(*pattern && *pattern != '{') {
       if(*pattern == '[') {
-        /* skip over IPv6 literals and [] */
-        size_t skip = 0;
-        if(!peek_ipv6(pattern, &skip) && (pattern[1] == ']'))
-          skip = 2;
-        if(skip) {
+        /* Skip over potential IPv6 literals. */
+        size_t skip;
+        if(peek_ipv6(pattern, &skip)) {
           memcpy(buf, pattern, skip);
           buf += skip;
           pattern += skip;
@@ -459,19 +459,18 @@ CURLcode glob_url(URLGlob **glob, char *url, unsigned long *urlnum,
     *urlnum = amount;
   else {
     if(error && glob_expand->error) {
-      char text[512];
+      char text[128];
       const char *t;
       if(glob_expand->pos) {
-        msnprintf(text, sizeof(text), "%s in URL position %zu:\n%s\n%*s^",
-                  glob_expand->error,
-                  glob_expand->pos, url, glob_expand->pos - 1, " ");
+        snprintf(text, sizeof(text), "%s in column %zu", glob_expand->error,
+                 glob_expand->pos);
         t = text;
       }
       else
         t = glob_expand->error;
 
       /* send error description to the error-stream */
-      fprintf(error, "curl: (%d) %s\n", res, t);
+      fprintf(error, "curl: (%d) [globbing] %s\n", res, t);
     }
     /* it failed, we cleanup */
     glob_cleanup(glob_expand);
@@ -553,7 +552,8 @@ CURLcode glob_next_url(char **globbed, URLGlob *glob)
       }
     }
     if(carry) {         /* first pattern ptr has run into overflow, done! */
-      return CURLE_OK;
+      /* TODO: verify if this should actally return CURLE_OK. */
+      return CURLE_OK; /* CURLE_OK to match previous behavior */
     }
   }
 
@@ -562,8 +562,8 @@ CURLcode glob_next_url(char **globbed, URLGlob *glob)
     switch(pat->type) {
     case UPTSet:
       if(pat->content.Set.elements) {
-        msnprintf(buf, buflen, "%s",
-                  pat->content.Set.elements[pat->content.Set.ptr_s]);
+        snprintf(buf, buflen, "%s",
+                 pat->content.Set.elements[pat->content.Set.ptr_s]);
         len = strlen(buf);
         buf += len;
         buflen -= len;
@@ -577,9 +577,9 @@ CURLcode glob_next_url(char **globbed, URLGlob *glob)
       }
       break;
     case UPTNumRange:
-      msnprintf(buf, buflen, "%0*lu",
-                pat->content.NumRange.padlength,
-                pat->content.NumRange.ptr_n);
+      snprintf(buf, buflen, "%0*ld",
+               pat->content.NumRange.padlength,
+               pat->content.NumRange.ptr_n);
       len = strlen(buf);
       buf += len;
       buflen -= len;
@@ -602,7 +602,7 @@ CURLcode glob_match_url(char **result, char *filename, URLGlob *glob)
   char *target;
   size_t allocsize;
   char numbuf[18];
-  char *appendthis = (char *)"";
+  char *appendthis = NULL;
   size_t appendlen = 0;
   size_t stringlen = 0;
 
@@ -620,12 +620,12 @@ CURLcode glob_match_url(char **result, char *filename, URLGlob *glob)
 
   while(*filename) {
     if(*filename == '#' && ISDIGIT(filename[1])) {
+      unsigned long i;
       char *ptr = filename;
       unsigned long num = strtoul(&filename[1], &filename, 10);
       URLPattern *pat = NULL;
 
       if(num < glob->size) {
-        unsigned long i;
         num--; /* make it zero based */
         /* find the correct glob entry */
         for(i = 0; i<glob->size; i++) {
@@ -652,9 +652,9 @@ CURLcode glob_match_url(char **result, char *filename, URLGlob *glob)
           appendlen = 1;
           break;
         case UPTNumRange:
-          msnprintf(numbuf, sizeof(numbuf), "%0*lu",
-                    pat->content.NumRange.padlength,
-                    pat->content.NumRange.ptr_n);
+          snprintf(numbuf, sizeof(numbuf), "%0*lu",
+                   pat->content.NumRange.padlength,
+                   pat->content.NumRange.ptr_n);
           appendthis = numbuf;
           appendlen = strlen(numbuf);
           break;

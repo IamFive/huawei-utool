@@ -18,10 +18,6 @@ Funny-head: yesyes
 
 moooooooooooo
 </data>
-<datacheck>
-HTTP/1.1 200 OK swsclose
-Date: Thu, 09 Nov 2010 14:49:00 GMT
-</datacheck>
 </reply>
 
 #
@@ -31,7 +27,7 @@ Date: Thu, 09 Nov 2010 14:49:00 GMT
 http
 </server>
  <name>
-HTTP response with negative Content-Length
+simple HTTP GET with negative Content-Length
  </name>
  <command>
 http://%HOSTIP:%HTTPPORT/178
@@ -50,8 +46,5 @@ Host: %HOSTIP:%HTTPPORT
 Accept: */*
 
 </protocol>
-<errorcode>
-8
-</errorcode>
 </verify>
 </testcase>

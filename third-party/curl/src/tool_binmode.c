@@ -49,3 +49,4 @@ void set_binmode(FILE *stream)
 }
 
 #endif /* HAVE_SETMODE */
+

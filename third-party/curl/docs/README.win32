@@ -21,3 +21,5 @@ README.win32
         curl -M >manual.txt
 
   Read the INSTALL file for instructions on how to compile curl self.
+
+

@@ -57,9 +57,9 @@ int main(int argc, char **argv)
     return 0;
   }
   else if(isdigit(*name)) {
-    int id = atoi(name);
+    curl_sslbackend id = (curl_sslbackend)atoi(name);
 
-    result = curl_global_sslset((curl_sslbackend)id, NULL, NULL);
+    result = curl_global_sslset(id, NULL, NULL);
   }
   else
     result = curl_global_sslset(-1, name, NULL);

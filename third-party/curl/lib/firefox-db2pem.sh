@@ -51,3 +51,4 @@ while read nickname; \
  do echo $nickname | sed -e "s/Builtin Object Token://g"; \
 eval certutil -d $db -L -n "$nickname" -a ; \
 done >> $out
+

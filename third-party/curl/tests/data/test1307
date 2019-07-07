@@ -15,7 +15,6 @@ none
 </server>
 <features>
 unittest
-ftp
 </features>
  <name>
 internal Curl_fnmatch() testing

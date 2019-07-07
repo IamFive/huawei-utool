@@ -30,15 +30,15 @@
 
 int main(int argc, char **argv)
 {
+  int rc;
   char  *part;
-  size_t partlen;
+  size_t partlen, i;
 
   if(argc< 3) {
     printf("./testpart main sub\n");
   }
   else {
-    int rc = getpart(&part, &partlen, argv[1], argv[2], stdin);
-    size_t i;
+    rc = getpart(&part, &partlen, argv[1], argv[2], stdin);
     if(rc)
       return rc;
     for(i = 0; i < partlen; i++)
@@ -47,3 +47,4 @@ int main(int argc, char **argv)
   }
   return 0;
 }
+

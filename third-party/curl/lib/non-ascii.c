@@ -30,7 +30,6 @@
 #include "formdata.h"
 #include "sendf.h"
 #include "urldata.h"
-#include "multiif.h"
 
 #include "curl_memory.h"
 /* The last #include file should be: */
@@ -78,17 +77,14 @@ CURLcode Curl_convert_clone(struct Curl_easy *data,
 
 /*
  * Curl_convert_to_network() is an internal function for performing ASCII
- * conversions on non-ASCII platforms. It converts the buffer _in place_.
+ * conversions on non-ASCII platforms. It convers the buffer _in place_.
  */
 CURLcode Curl_convert_to_network(struct Curl_easy *data,
                                  char *buffer, size_t length)
 {
   if(data && data->set.convtonetwork) {
     /* use translation callback */
-    CURLcode result;
-    Curl_set_in_callback(data, true);
-    result = data->set.convtonetwork(buffer, length);
-    Curl_set_in_callback(data, false);
+    CURLcode result = data->set.convtonetwork(buffer, length);
     if(result) {
       failf(data,
             "CURLOPT_CONV_TO_NETWORK_FUNCTION callback returned %d: %s",
@@ -144,17 +140,14 @@ CURLcode Curl_convert_to_network(struct Curl_easy *data,
 
 /*
  * Curl_convert_from_network() is an internal function for performing ASCII
- * conversions on non-ASCII platforms. It converts the buffer _in place_.
+ * conversions on non-ASCII platforms. It convers the buffer _in place_.
  */
 CURLcode Curl_convert_from_network(struct Curl_easy *data,
                                    char *buffer, size_t length)
 {
   if(data && data->set.convfromnetwork) {
     /* use translation callback */
-    CURLcode result;
-    Curl_set_in_callback(data, true);
-    result = data->set.convfromnetwork(buffer, length);
-    Curl_set_in_callback(data, false);
+    CURLcode result = data->set.convfromnetwork(buffer, length);
     if(result) {
       failf(data,
             "CURLOPT_CONV_FROM_NETWORK_FUNCTION callback returned %d: %s",
@@ -217,10 +210,7 @@ CURLcode Curl_convert_from_utf8(struct Curl_easy *data,
 {
   if(data && data->set.convfromutf8) {
     /* use translation callback */
-    CURLcode result;
-    Curl_set_in_callback(data, true);
-    result = data->set.convfromutf8(buffer, length);
-    Curl_set_in_callback(data, false);
+    CURLcode result = data->set.convfromutf8(buffer, length);
     if(result) {
       failf(data,
             "CURLOPT_CONV_FROM_UTF8_FUNCTION callback returned %d: %s",

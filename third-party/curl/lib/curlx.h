@@ -7,7 +7,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -40,6 +40,16 @@
 #include "strtoofft.h"
 /* "strtoofft.h" provides this function: curlx_strtoofft(), returns a
    curl_off_t number from a given string.
+*/
+
+#include "timeval.h"
+/*
+  "timeval.h" sets up a 'struct timeval' even for platforms that otherwise
+  don't have one and has protos for these functions:
+
+  curlx_tvnow()
+  curlx_tvdiff()
+  curlx_tvdiff_secs()
 */
 
 #include "nonblock.h"
@@ -81,23 +91,25 @@
 # undef printf
 # undef fprintf
 # undef sprintf
-# undef msnprintf
+# undef snprintf
 # undef vprintf
 # undef vfprintf
 # undef vsprintf
-# undef mvsnprintf
+# undef vsnprintf
 # undef aprintf
 # undef vaprintf
 
 # define printf curlx_mprintf
 # define fprintf curlx_mfprintf
 # define sprintf curlx_msprintf
-# define msnprintf curlx_msnprintf
+# define snprintf curlx_msnprintf
 # define vprintf curlx_mvprintf
 # define vfprintf curlx_mvfprintf
-# define mvsnprintf curlx_mvsnprintf
+# define vsprintf curlx_mvsprintf
+# define vsnprintf curlx_mvsnprintf
 # define aprintf curlx_maprintf
 # define vaprintf curlx_mvaprintf
 #endif /* ENABLE_CURLX_PRINTF */
 
 #endif /* HEADER_CURL_CURLX_H */
+

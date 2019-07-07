@@ -90,9 +90,8 @@ CURLcode Curl_sspi_global_init(void)
       return CURLE_FAILED_INIT;
 
     /* Get address of the InitSecurityInterfaceA function from the SSPI dll */
-    pInitSecurityInterface =
-      CURLX_FUNCTION_CAST(INITSECURITYINTERFACE_FN,
-                          (GetProcAddress(s_hSecDll, SECURITYENTRYPOINT)));
+    pInitSecurityInterface = (INITSECURITYINTERFACE_FN)
+      GetProcAddress(s_hSecDll, SECURITYENTRYPOINT);
     if(!pInitSecurityInterface)
       return CURLE_FAILED_INIT;
 
@@ -132,7 +131,7 @@ void Curl_sspi_global_cleanup(void)
  * Parameters:
  *
  * userp    [in]     - The user name in the format User or Domain\User.
- * passwdp  [in]     - The user's password.
+ * passdwp  [in]     - The user's password.
  * identity [in/out] - The identity structure.
  *
  * Returns CURLE_OK on success.

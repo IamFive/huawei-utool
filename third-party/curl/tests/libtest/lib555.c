@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -35,15 +35,7 @@
 
 #define TEST_HANG_TIMEOUT 60 * 1000
 
-static const char uploadthis[] =
-#ifdef CURL_DOES_CONVERSIONS
-  /* ASCII representation with escape sequences for non-ASCII platforms */
-  "\x74\x68\x69\x73\x20\x69\x73\x20\x74\x68\x65\x20\x62\x6c\x75\x72"
-  "\x62\x20\x77\x65\x20\x77\x61\x6e\x74\x20\x74\x6f\x20\x75\x70\x6c"
-  "\x6f\x61\x64\x0a";
-#else
-  "this is the blurb we want to upload\n";
-#endif
+#define UPLOADTHIS "this is the blurb we want to upload\n"
 
 static size_t readcallback(void  *ptr,
                            size_t size,
@@ -59,10 +51,10 @@ static size_t readcallback(void  *ptr,
   }
   (*counter)++; /* bump */
 
-  if(size * nmemb > strlen(uploadthis)) {
+  if(size * nmemb > strlen(UPLOADTHIS)) {
     fprintf(stderr, "READ!\n");
-    strcpy(ptr, uploadthis);
-    return strlen(uploadthis);
+    strcpy(ptr, UPLOADTHIS);
+    return strlen(UPLOADTHIS);
   }
   fprintf(stderr, "READ NOT FINE!\n");
   return 0;
@@ -106,9 +98,13 @@ int test(char *URL)
   easy_setopt(curl, CURLOPT_READDATA, &counter);
   /* We CANNOT do the POST fine without setting the size (or choose
      chunked)! */
-  easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(uploadthis));
+  easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(UPLOADTHIS));
 
   easy_setopt(curl, CURLOPT_POST, 1L);
+#ifdef CURL_DOES_CONVERSIONS
+  /* Convert the POST data to ASCII. */
+  easy_setopt(curl, CURLOPT_TRANSFERTEXT, 1L);
+#endif
   easy_setopt(curl, CURLOPT_PROXY, libtest_arg2);
   easy_setopt(curl, CURLOPT_PROXYUSERPWD, libtest_arg3);
   easy_setopt(curl, CURLOPT_PROXYAUTH,
@@ -161,3 +157,4 @@ test_cleanup:
 
   return res;
 }
+

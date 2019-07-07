@@ -35,3 +35,4 @@ char *Curl_inet_ntop(int af, const void *addr, char *buf, size_t size);
 #endif
 
 #endif /* HEADER_CURL_INET_NTOP_H */
+

@@ -43,3 +43,4 @@ int tool_ftruncate64(int fd, curl_off_t where);
 int tool_seek_cb(void *userdata, curl_off_t offset, int whence);
 
 #endif /* HEADER_CURL_TOOL_CB_SEE_H */
+

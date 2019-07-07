@@ -1,4 +1,4 @@
-Long: ssl
+long: ssl
 Help: Try SSL/TLS
 Protocols: FTP IMAP POP3 SMTP
 Added: 7.20.0

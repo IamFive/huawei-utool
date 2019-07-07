@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -21,11 +21,6 @@
  ***************************************************************************/
 
 #include "curl_setup.h"
-
-/***********************************************************************
- * Only for plain IPv4 builds
- **********************************************************************/
-#ifdef CURLRES_IPV4 /* plain IPv4 code coming up */
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -58,6 +53,10 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
+/***********************************************************************
+ * Only for plain IPv4 builds
+ **********************************************************************/
+#ifdef CURLRES_IPV4 /* plain IPv4 code coming up */
 /*
  * Curl_ipvalid() checks what CURL_IPRESOLVE_* requirements that might've
  * been set and returns TRUE if they are OK.
@@ -145,7 +144,7 @@ Curl_addrinfo *Curl_ipv4_resolve_r(const char *hostname,
     hints.ai_family = PF_INET;
     hints.ai_socktype = SOCK_STREAM;
     if(port) {
-      msnprintf(sbuf, sizeof(sbuf), "%d", port);
+      snprintf(sbuf, sizeof(sbuf), "%d", port);
       sbufptr = sbuf;
     }
 

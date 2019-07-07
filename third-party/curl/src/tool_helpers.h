@@ -32,3 +32,4 @@ void customrequest_helper(struct OperationConfig *config, HttpReq req,
                           char *method);
 
 #endif /* HEADER_CURL_TOOL_HELPERS_H */
+

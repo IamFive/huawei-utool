@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_CLOSESOCKETFUNCTION 3 "November 07, 2018" "libcurl 7.65.1" "curl_easy_setopt options"
-
+.TH CURLOPT_CLOSESOCKETFUNCTION 3 "16 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
 .SH NAME
 CURLOPT_CLOSESOCKETFUNCTION \- callback to socket close replacement function
 .SH SYNOPSIS
@@ -51,7 +50,7 @@ All
 .nf
 static int closesocket(void *clientp, curl_socket_t item)
 {
-  printf("libcurl wants to close %d now\\n", (int)item);
+  printf("libcurl wants to close %d now\n", (int)item);
   return 0;
 }
 

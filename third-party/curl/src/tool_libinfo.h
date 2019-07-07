@@ -31,3 +31,4 @@ extern long built_in_protos;
 CURLcode get_libcurl_info(void);
 
 #endif /* HEADER_CURL_TOOL_LIBINFO_H */
+

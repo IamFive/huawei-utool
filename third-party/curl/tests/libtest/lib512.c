@@ -29,13 +29,15 @@
 int test(char *URL)
 {
   CURLcode code;
+  CURL *curl;
+  CURL *curl2;
   int rc = 99;
 
   code = curl_global_init(CURL_GLOBAL_ALL);
   if(code == CURLE_OK) {
-    CURL *curl = curl_easy_init();
+
+    curl = curl_easy_init();
     if(curl) {
-      CURL *curl2;
 
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
       curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
@@ -72,3 +74,4 @@ int test(char *URL)
 
   return rc;
 }
+

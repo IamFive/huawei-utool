@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2011, 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -22,7 +22,6 @@
 #include "curlcheck.h"
 
 #include "splay.h"
-#include "warnless.h"
 
 
 static CURLcode unit_setup(void)
@@ -73,7 +72,6 @@ UNITTEST_START
 
   struct Curl_tree *root, *removed;
   struct Curl_tree nodes[NUM_NODES*3];
-  size_t storage[NUM_NODES*3];
   int rc;
   int i, j;
   struct curltime tv_now = {0, 0};
@@ -82,11 +80,13 @@ UNITTEST_START
   /* add nodes */
   for(i = 0; i < NUM_NODES; i++) {
     struct curltime key;
+    size_t payload;
 
     key.tv_sec = 0;
     key.tv_usec = (541*i)%1023;
-    storage[i] = key.tv_usec;
-    nodes[i].payload = &storage[i];
+    payload = (size_t) key.tv_usec;
+
+    nodes[i].payload = (void *)payload; /* for simplicity */
     root = Curl_splayinsert(key, root, &nodes[i]);
   }
 
@@ -97,8 +97,8 @@ UNITTEST_START
     int rem = (i + 7)%NUM_NODES;
     printf("Tree look:\n");
     splayprint(root, 0, 1);
-    printf("remove pointer %d, payload %zu\n", rem,
-           *(size_t *)nodes[rem].payload);
+    printf("remove pointer %d, payload %ld\n", rem,
+           (long)(nodes[rem].payload));
     rc = Curl_splayremovebyaddr(root, &nodes[rem], &root);
     if(rc) {
       /* failed! */
@@ -118,8 +118,8 @@ UNITTEST_START
 
     /* add some nodes with the same key */
     for(j = 0; j <= i % 3; j++) {
-      storage[i * 3 + j] = key.tv_usec*10 + j;
-      nodes[i * 3 + j].payload = &storage[i * 3 + j];
+      size_t payload = key.tv_usec*10 + j;
+      nodes[i * 3 + j].payload = (void *)payload; /* for simplicity */
       root = Curl_splayinsert(key, root, &nodes[i * 3 + j]);
     }
   }
@@ -130,9 +130,8 @@ UNITTEST_START
     tv_now.tv_usec = i;
     root = Curl_splaygetbest(tv_now, root, &removed);
     while(removed != NULL) {
-      printf("removed payload %zu[%zu]\n",
-             (*(size_t *)removed->payload) / 10,
-             (*(size_t *)removed->payload) % 10);
+      printf("removed payload %ld[%ld]\n", (long)(removed->payload) / 10,
+             (long)(removed->payload) % 10);
       root = Curl_splaygetbest(tv_now, root, &removed);
     }
   }
@@ -140,3 +139,7 @@ UNITTEST_START
   fail_unless(root == NULL, "tree not empty when it should be");
 
 UNITTEST_STOP
+
+
+
+

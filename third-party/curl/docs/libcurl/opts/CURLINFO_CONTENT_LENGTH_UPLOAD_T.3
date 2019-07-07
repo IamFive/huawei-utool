@@ -20,8 +20,7 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLINFO_CONTENT_LENGTH_UPLOAD_T 3 "March 31, 2018" "libcurl 7.65.1" "curl_easy_getinfo options"
-
+.TH CURLINFO_CONTENT_LENGTH_UPLOAD_T 3 "25 May 2017" "libcurl 7.55.0" "curl_easy_getinfo options"
 .SH NAME
 CURLINFO_CONTENT_LENGTH_UPLOAD_T \- get the specified size of the upload
 .SH SYNOPSIS
@@ -48,7 +47,7 @@ if(curl) {
     curl_off_t cl;
     res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_UPLOAD_T, &cl);
     if(!res) {
-      printf("Upload size: %" CURL_FORMAT_CURL_OFF_T "\\n", cl);
+      printf("Size: " CURL_FORMAT_CURL_OFF_T "\\n", cl);
     }
   }
 }

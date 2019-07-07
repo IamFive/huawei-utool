@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 =begin comment
 
@@ -158,7 +158,7 @@ sub single {
             print STDERR "WARN: unrecognized line in $f, ignoring:\n:'$_';"
         }
     }
-    my @desc;
+    my @dest;
     while(<F>) {
         push @desc, $_;
     }
@@ -202,9 +202,6 @@ sub single {
         my @m=split(/ /, $seealso);
         my $mstr;
         for my $k (@m) {
-            if(!$helplong{$k}) {
-                print STDERR "WARN: $f see-alsos a non-existing option: $k\n";
-            }
             my $l = manpageify($k);
             $mstr .= sprintf "%s$l", $mstr?" and ":"";
         }
@@ -219,9 +216,6 @@ sub single {
         my @m=split(/ /, $mutexed);
         my $mstr;
         for my $k (@m) {
-            if(!$helplong{$k}) {
-                print STDERR "WARN: $f mutexes a non-existing option: $k\n";
-            }
             my $l = manpageify($k);
             $mstr .= sprintf "%s$l", $mstr?" and ":"";
         }
@@ -388,3 +382,4 @@ sub getargs {
 indexoptions();
 
 getargs();
+

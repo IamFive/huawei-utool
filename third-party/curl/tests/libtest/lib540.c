@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2018, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -30,7 +30,9 @@
 
 #include "test.h"
 
+#ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
 
 #include "testutil.h"
 #include "warnless.h"
@@ -198,7 +200,7 @@ int test(char *URL)
   if(test_argc < 4)
     return 99;
 
-  msnprintf(buffer, sizeof(buffer), "Host: %s", HOST);
+  snprintf(buffer, sizeof(buffer), "Host: %s", HOST);
 
   /* now add a custom Host: header */
   headers = curl_slist_append(headers, buffer);

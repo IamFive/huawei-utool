@@ -34,8 +34,6 @@ Transfer-Encoding: chunked
 Connection: mooo
 
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccc
-chunky-trailer: header data
-another-header: yes
 </datacheck>
 </reply>
 

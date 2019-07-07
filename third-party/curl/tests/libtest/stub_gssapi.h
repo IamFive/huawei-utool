@@ -180,3 +180,4 @@ OM_uint32 gss_display_status(OM_uint32 * /*minor_status*/,
                              gss_buffer_t /*status_string*/);
 
 #endif /* HEADER_CURL_GSSAPI_STUBS_H */
+

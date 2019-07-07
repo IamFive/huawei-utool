@@ -118,15 +118,14 @@ int tool_seek_cb(void *userdata, curl_off_t offset, int whence)
 
 int tool_ftruncate64(int fd, curl_off_t where)
 {
-  intptr_t handle = _get_osfhandle(fd);
-
   if(_lseeki64(fd, where, SEEK_SET) < 0)
     return -1;
 
-  if(!SetEndOfFile((HANDLE)handle))
+  if(!SetEndOfFile((HANDLE)_get_osfhandle(fd)))
     return -1;
 
   return 0;
 }
 
 #endif /* WIN32  && ! __MINGW64__ */
+

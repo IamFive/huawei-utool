@@ -1,4 +1,4 @@
-Long: retry-max-time
+long: retry-max-time
 Arg: <seconds>
 Help: Retry only within this period
 Added: 7.12.3
