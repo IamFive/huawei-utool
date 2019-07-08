@@ -489,7 +489,7 @@ const char *UtoolGetStringError(UtoolCode code)
  * @return
  */
 const char *UtoolFileRealpath(const char *path, char *resolved) {
-#ifdef defined(__CYGWIN__ )
+#if defined(__CYGWIN__) || defined(__MINGW32__)
     snprintf(resolved, PATH_MAX, "%s", path);
     return resolved;
 #else
