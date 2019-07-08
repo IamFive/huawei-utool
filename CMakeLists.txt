@@ -32,6 +32,7 @@ set(PROJECT_VERSION_PATCH 0)
 set(UTOOL_SO_VERSION 1)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
+set(CYGWIN64_BIN_PATH "c:/cygwin64/bin")
 set(UTOOL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
 set(UTOOL_BIN_DIR ${PROJECT_SOURCE_DIR}/bin)
 set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
@@ -122,11 +123,15 @@ install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_LIB_DIR}")
 install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_BIN_DIR}")
 
 # static library
-#add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
-#set_target_properties(${LIB_NAME}-static PROPERTIES OUTPUT_NAME ${LIB_NAME})
-#set_target_properties(${LIB_NAME}-static PROPERTIES LINKER_LANGUAGE C)
-#install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
-#install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
+add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
+set_target_properties(${LIB_NAME}-static PROPERTIES OUTPUT_NAME ${LIB_NAME})
+set_target_properties(${LIB_NAME}-static PROPERTIES LINKER_LANGUAGE C)
+set_target_properties("${LIB_NAME}-static"
+        PROPERTIES
+        SOVERSION "${UTOOL_SO_VERSION}"
+        VERSION "${PROJECT_VERSION}")
+install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
 
 macro(install_symlink filepath sympath)
     install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${filepath} ${sympath})")
@@ -138,14 +143,16 @@ add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
+
+# debug purpose, should not present in release
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_executable(${LIB_NAME}-debug src/main-debug.c ${SOURCE_FILES})
+    set_target_properties(${LIB_NAME}-debug PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
+    #install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
+ENDIF()
+
 #install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES "${IPMITOOL_BIN_PATH}" DESTINATION "${UTOOL_BIN_DIR}")
 install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
 install_symlink("./libcurl.so.4.5.0" "../bin/libs/libcurl.so.4")
 install_symlink("./libcurl.so.4.5.0" "../bin/libs/libcurl.so")
-
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    # debug purpose, should remove before release
-    add_executable(utool-debug src/main-debug.c ${SOURCE_FILES})
-    #install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
-ENDIF()

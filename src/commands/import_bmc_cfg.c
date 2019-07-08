@@ -190,7 +190,7 @@ static void ValidateSubcommandOptions(UtoolImportBMCCfgOption *opt, UtoolResult 
         ZF_LOGI("Could not detect schema from import file URI. Try to treat it as local file.");
         struct stat fileInfo;
         char realFilePath[PATH_MAX] = {0};
-        realpath(opt->importFileUrl, realFilePath);
+        UtoolFileRealpath(opt->importFileUrl, realFilePath);
         if (realFilePath == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;

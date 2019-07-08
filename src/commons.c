@@ -5,6 +5,7 @@
 * Create: 2019-06-16
 * Notes:
 */
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include <commons.h>
@@ -475,4 +476,23 @@ const char *UtoolGetStringError(UtoolCode code)
         default:
             return "Unknown error";
     }
+}
+
+/**
+ *  a wrap of realpath.
+ *
+ *  realpath has no meaning in utool project.
+ *  But Huawei codex will report ERROR if fopen filepath directly.
+ *
+ * @param path
+ * @param resolved
+ * @return
+ */
+const char *UtoolFileRealpath(const char *path, char *resolved) {
+#ifdef defined(__CYGWIN__ )
+    snprintf(resolved, PATH_MAX, "%s", path);
+    return resolved;
+#else
+    return realpath(path, resolved);
+#endif
 }

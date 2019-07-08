@@ -536,7 +536,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     char filepath[PATH_MAX] = {0};
     char realFilepath[PATH_MAX] = {0};
     snprintf(filepath, PATH_MAX, "%s/update-firmware.log", folderName);
-    realpath(filepath, realFilepath);
+    UtoolFileRealpath(filepath, realFilepath);
     if (realFilepath == NULL) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(LOG_FILE_PATH_ILLEGAL),
                                               &(result->desc));
@@ -647,7 +647,7 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
     struct stat fileInfo;
     char *imageUri = updateFirmwareOption->imageURI;
     char realFilepath[PATH_MAX] = {0};
-    realpath(imageUri, realFilepath);
+    UtoolFileRealpath(imageUri, realFilepath);
     if (realFilepath != NULL) {
         FILE *imageFileFP = fopen(realFilepath, "rb"); /* open file to upload */
         if (imageFileFP) {
@@ -695,7 +695,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
     bool isLocalFile = false;
     char realFilePath[PATH_MAX] = {0};
-    realpath(imageUri, realFilePath);
+    UtoolFileRealpath(imageUri, realFilePath);
     if (realFilePath != NULL) { /** try to treat imageURI as a local file */
         imageFileFP = fopen(realFilePath, "rb"); /* open file to upload */
         if (imageFileFP) {

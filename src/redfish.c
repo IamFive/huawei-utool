@@ -92,7 +92,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     struct curl_slist *curlHeaderList = NULL;
 
     char path[PATH_MAX] = {0};
-    realpath(uploadFilePath, path);
+    UtoolFileRealpath(uploadFilePath, path);
     if (path == NULL) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
@@ -199,7 +199,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
     char realFilepath[PATH_MAX] = {0};
-    realpath(localFileUri, realFilepath);
+    UtoolFileRealpath(localFileUri, realFilepath);
     if (realFilepath == NULL) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;

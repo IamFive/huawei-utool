@@ -14,12 +14,13 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <commons.h>
 #include "zf_log.h"
 
 
 FILE *g_UtoolLogFileFP = NULL;
 
-static void LogToFileOutputCallback(const zf_log_message *msg, const void *arg)
+static void LogToFileOutputCallback(const zf_log_message *msg, void *arg)
 {
     (void) arg;
     *msg->p = '\n';
@@ -37,7 +38,7 @@ int UtoolSetLogFilePath(const char *const log_file_path)
 {
     if (!g_UtoolLogFileFP) {
         char realFilepath[PATH_MAX] = {0};
-        realpath(log_file_path, realFilepath);
+        UtoolFileRealpath(log_file_path, realFilepath);
         if (realFilepath != NULL) {
             g_UtoolLogFileFP = fopen(realFilepath, "a");
             if (!g_UtoolLogFileFP) {

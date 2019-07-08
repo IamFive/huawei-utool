@@ -257,6 +257,18 @@ char *UtoolGetOverallHealth(cJSON *items, const char *xpath);
 */
 const char *UtoolGetStringError(UtoolCode code);
 
+/**
+ *  a wrap of realpath.
+ *
+ *  realpath has no meaning in utool project.
+ *  But Huawei codex will report ERROR if fopen filepath directly.
+ *
+ * @param path
+ * @param resolved
+ * @return
+ */
+const char *UtoolFileRealpath(const char *path, char *resolved);
+
 
 #ifdef __cplusplus
 }

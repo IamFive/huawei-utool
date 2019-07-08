@@ -228,7 +228,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
         }
 
         char realFilepath[PATH_MAX] = {0};
-        realpath(opt->localExportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath);
         if (realFilepath == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
@@ -287,7 +287,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
     else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
-        realpath(opt->localExportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath);
         if (realFilepath == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
