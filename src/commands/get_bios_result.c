@@ -86,6 +86,8 @@ static int ApplyDetailPropertyHandler(cJSON *target, const char *key, cJSON *nod
     }
 
     cJSON_AddItemToObject(target, key, outputArray);
+    FREE_CJSON(node);
+    return ret;
 
 FAILURE:
     FREE_CJSON(outputArray)
