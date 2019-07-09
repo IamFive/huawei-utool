@@ -326,11 +326,9 @@ CPLD --- 版本
 升级后 
 
 
-
 configure: error: --with-ssl was given but OpenSSL could not be detected
-
-
 mingw64-x86_64-gcc-core
+-DCMAKE_SH="CMAKE_SH-NOTFOUND"
 
 
 

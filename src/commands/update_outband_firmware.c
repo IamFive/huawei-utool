@@ -58,6 +58,10 @@
 #define MSG_STARTUP_TO_EXCEED "BMC does not startup in 7 minutes. timeout exceed."
 #define MSG_SHUTDOWN_TO_EXCEED "BMC does not shutdown in 2 minutes, timeout exceed."
 
+#if defined(__linux__)
+    #define _off_t __off_t
+#endif
+
 typedef struct _UpdateFirmwareOption {
     char *imageURI;
     char *activateMode;
@@ -317,7 +321,7 @@ DONE:
 
     if (updateFirmwareOption->logFileFP != NULL) {
         fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
-        __off_t position = ftello(updateFirmwareOption->logFileFP);
+        _off_t position = ftello(updateFirmwareOption->logFileFP);
         int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
         if (ret != 0) {
             ZF_LOGE("Failed to truncate update firmware log file");
@@ -515,17 +519,21 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         //goto FAILURE;
     }
 
-    char folderName[NAME_MAX];
+    char folderName[PATH_MAX];
     struct tm *tm_now = localtime(&updateFirmwareOption->startTime);
     if (tm_now == NULL) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    snprintf(folderName, NAME_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
+    snprintf(folderName, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
              tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
 
     ZF_LOGE("Try to create folder for current updating, folder: %s.", folderName);
+#if defined(__MINGW32__)
+    int ret = mkdir(folderName);
+#else
     int ret = mkdir(folderName, 0777);
+#endif
     if (ret != 0) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FOLDER),
                                               &(result->desc));

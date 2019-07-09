@@ -273,3 +273,29 @@ char **UtoolStringSplit(char *source, const char delim)
 
     return result;
 }
+
+/**
+ * strndup implementation.
+ *
+ * due to strndup is present in glibc extension. so, mingw64 does not have it.
+ *
+ * @param str
+ * @param size
+ * @return
+ */
+char *UtoolStringNDup(char *str, size_t size)
+{
+    int n;
+    char *buffer;
+
+    buffer = (char *) malloc(size +1);
+    if (buffer)
+    {
+        for (n = 0; ((n < size) && (str[n] != 0)); n++) {
+            buffer[n] = str[n];
+        }
+        buffer[n] = 0;
+    }
+
+    return buffer;
+}

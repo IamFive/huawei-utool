@@ -134,7 +134,7 @@ static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult
 
     /* replace all dot in data to space */
     if (!UtoolStringIsEmpty(option->data)) {
-        char *data = strndup(option->data, strnlen(option->data, MAX_IPMI_CMD_LEN));
+        char *data = UtoolStringNDup(option->data, strnlen(option->data, MAX_IPMI_CMD_LEN));
         if (data != NULL) {
             ReplaceChar(data, ',', ' ');
             option->data = data;

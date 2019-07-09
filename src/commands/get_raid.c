@@ -36,7 +36,7 @@ static int SupportedRAIDLevelsHandler(cJSON *target, const char *key, cJSON *nod
         cJSON *next = node->child;
         while (next != NULL) {
             strncat(buffer, next->valuestring, strnlen(next->valuestring, 32));
-            strncat(buffer, ",", sizeof(char));
+            strcat(buffer, ",");
             next = next->next;
         }
         buffer[strnlen(buffer, 256) - 1] = '\0';

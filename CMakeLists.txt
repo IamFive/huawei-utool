@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
 set(LIB_NAME utool)
-
 project(${LIB_NAME} C)
 
 set(default_build_type "Release")
@@ -11,9 +10,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+    set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-set(CMAKE_BUILD_TYPEc "Release")
 message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
 #execute_process(COMMAND lsb_release -is
@@ -25,6 +24,10 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
+IF (WIN32)
+    message("Compile env is window.")
+    set(CMAKE_SH "CMAKE_SH-NOTFOUND")
+endif()
 
 set(PROJECT_VERSION_MAJOR 1)
 set(PROJECT_VERSION_MINOR 0)
@@ -82,6 +85,7 @@ include_directories(
 
 link_libraries(
         curl
+        pthread
 )
 
 file(GLOB THIRD_PARTY_SOURCE

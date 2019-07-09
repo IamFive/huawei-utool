@@ -126,6 +126,17 @@ bool UtoolStringIsNumeric(const char *str);
 */
 char **UtoolStringSplit(char *source, const char delim);
 
+/**
+ * strndup implementation.
+ *
+ * due to strndup is present in glibc extension. so, mingw64 does not have it.
+ *
+ * @param str
+ * @param size
+ * @return
+ */
+char *UtoolStringNDup(char *str, size_t size);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

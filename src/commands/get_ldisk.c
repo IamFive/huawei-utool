@@ -72,7 +72,7 @@ static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
 
         char *driveId = UtoolStringLastSplit(link->valuestring, '/');
         strncat(buffer, driveId, strnlen(driveId, 32));
-        strncat(buffer, ",", sizeof(char));
+        strcat(buffer, ",");
     }
 
     buffer[strnlen(buffer, 256) - 1] = '\0';

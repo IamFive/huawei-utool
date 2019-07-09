@@ -14,6 +14,9 @@
 #include <typedefs.h>
 #include <command-interfaces.h>
 #include "string_utils.h"
+#if defined(__MINGW32__)
+    #include <shlwapi.h>
+#endif
 
 const char *g_UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
 
@@ -260,7 +263,7 @@ int UtoolBuildStringOutputResult(const char *state, const char *messages, char *
 
 void UtoolBuildDefaultSuccessResult(char **result)
 {
-    *result = strndup(OUTPUT_SUCCESS_JSON, sizeof(OUTPUT_SUCCESS_JSON));
+    *result = UtoolStringNDup(OUTPUT_SUCCESS_JSON, sizeof(OUTPUT_SUCCESS_JSON));
 }
 
 
@@ -490,6 +493,7 @@ const char *UtoolGetStringError(UtoolCode code)
  */
 const char *UtoolFileRealpath(const char *path, char *resolved) {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
+    // PathCanonicalize(resolved, path);
     snprintf(resolved, PATH_MAX, "%s", path);
     return resolved;
 #else

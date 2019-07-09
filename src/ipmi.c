@@ -11,8 +11,12 @@
 #include <commons.h>
 
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
-#define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"
+#if defined(__MINGW32__)
+    #define IPMITOOL_CMD "ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#else
+    #define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#endif
 
 
 char *
