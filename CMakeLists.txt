@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5.0)
 set(LIB_NAME utool)
 project(${LIB_NAME} C)
 
+set(CMAKE_SH "CMAKE_SH-NOTFOUND")
 set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
@@ -24,10 +25,6 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
-IF (WIN32)
-    message("Compile env is window.")
-    set(CMAKE_SH "CMAKE_SH-NOTFOUND")
-endif()
 
 set(PROJECT_VERSION_MAJOR 1)
 set(PROJECT_VERSION_MINOR 0)
@@ -35,10 +32,18 @@ set(PROJECT_VERSION_PATCH 0)
 set(UTOOL_SO_VERSION 1)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
+
+set(MINGW_64_PATH "d:/tools/msys2/mingw64")
+#set(MINGW_64_PATH "/d/tools/msys2/mingw64")
 set(CYGWIN64_BIN_PATH "/cygdrive/c/cygwin64/bin")
 set(UTOOL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
 set(UTOOL_BIN_DIR ${PROJECT_SOURCE_DIR}/bin)
 set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
+
+IF (WIN32)
+    message("Compile env is window, will use mingw64 to compile utool.")
+    message("MinGW 64 path is ${MINGW_64_PATH}.")
+endif()
 
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
@@ -85,7 +90,6 @@ include_directories(
 
 link_libraries(
         curl
-        pthread
 )
 
 file(GLOB THIRD_PARTY_SOURCE
@@ -159,10 +163,19 @@ ENDIF()
 install(FILES "${IPMITOOL_BIN_PATH}" DESTINATION "${UTOOL_BIN_DIR}")
 
 # install libraries
-IF (CMAKE_SYSTEM_NAME MATCHES "CYGWIN")
-    install(FILES "${LIBCURL_PATH}/lib/.libs/cygcurl-4.dll" DESTINATION "${UTOOL_BIN_DIR}")
+IF (WIN32)
+    # libcurl
+    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl-4.dll" DESTINATION "${UTOOL_BIN_DIR}")
+    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
     install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.a" DESTINATION "${UTOOL_BIN_DIR}")
-    install(FILES "${CYGWIN64_BIN_PATH}/cygwin1.dll" DESTINATION "${UTOOL_BIN_DIR}")
+
+    #libwinpthread
+    install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.a" DESTINATION "${UTOOL_BIN_DIR}")
+    install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
+    install(FILES "${MINGW_64_PATH}/bin/libwinpthread-1.dll" DESTINATION "${UTOOL_BIN_DIR}")
+
+    # zlib1
+    install(FILES "${MINGW_64_PATH}/bin/zlib1.dll" DESTINATION "${UTOOL_BIN_DIR}")
 else()
     install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
     install_symlink("./libcurl.so.4.5.0" "../bin/libs/libcurl.so.4")
