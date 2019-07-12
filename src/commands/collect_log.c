@@ -122,43 +122,6 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
-    /**
-    cJSON *taskState = cJSON_GetObjectItem(result->data, "TaskState");
-    // if task is successfully complete
-    if (taskState != NULL && UtoolStringInArray(taskState->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
-        ZF_LOGI("collect diagnostic information task finished successfully");
-        // download file to local if necessary
-        if (opt->isLocalFile) {
-            ZF_LOGI("Try to download collect file from BMC now.");
-            UtoolDownloadFileFromBMC(server, opt->bmcTempFileUrl, opt->exportToFileUrl, result);
-            if (result->interrupt) {
-                goto FAILURE;
-            }
-        }
-
-        // output to outputStr
-        UtoolBuildDefaultSuccessResult(&(result->desc));
-        goto DONE;
-    }
-    else {
-        // create output container
-        output = cJSON_CreateObject();
-        result->code = UtoolAssetCreatedJsonNotNull(output);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, g_UtoolGetTaskMappings);
-        FREE_CJSON(result->data)
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, output, &(result->desc));
-        goto DONE;
-    } */
-
-
 FAILURE:
     FREE_CJSON(output)
     goto DONE;
