@@ -337,7 +337,7 @@ C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\opt\bin
 mingw32-make.exe
  ./configure  --with-ssl --host=x86_64-w64-mingw32
 
- ./configure --host=x86_64-w64-mingw32 --enable-http --with-zlib --with-winssl
+ ./configure --host=x86_64-w64-mingw32 --with-zlib --with-winssl --without-ssl  --without-nghttp2 --without-libssh2 --without-gssapi --without-libidn2 --without-librtmp  --without-libpsl
 
 
 

@@ -25,7 +25,6 @@ please make sure git is ready in your ENV. Clone process may cause a long time a
 cd ${your-workspace}
 git clone https://github.com/IamFive/huawei-utool.git utool
 cd utool
-git submodule update --init
 ```
 
 ### Build curl

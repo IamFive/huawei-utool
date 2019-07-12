@@ -166,12 +166,12 @@ install(FILES "${IPMITOOL_BIN_PATH}" DESTINATION "${UTOOL_BIN_DIR}")
 IF (WIN32)
     # libcurl
     install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl-4.dll" DESTINATION "${UTOOL_BIN_DIR}")
-    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
-    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.a" DESTINATION "${UTOOL_BIN_DIR}")
+    #install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
+    #install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.a" DESTINATION "${UTOOL_BIN_DIR}")
 
     #libwinpthread
-    install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.a" DESTINATION "${UTOOL_BIN_DIR}")
-    install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
+    #install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.a" DESTINATION "${UTOOL_BIN_DIR}")
+    #install(FILES "${MINGW_64_PATH}/x86_64-w64-mingw32/lib/libwinpthread.dll.a" DESTINATION "${UTOOL_BIN_DIR}")
     install(FILES "${MINGW_64_PATH}/bin/libwinpthread-1.dll" DESTINATION "${UTOOL_BIN_DIR}")
 
     # zlib1
