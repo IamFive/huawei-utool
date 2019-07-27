@@ -49,7 +49,11 @@ set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
 set(LIBZFLOG_PATH third-party/zf_log/zf_log)
 set(LIBCURL_PATH third-party/curl)
-set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
+IF (WIN32)
+    set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool.exe)
+else()
+    set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
+endif()
 
 ## use, i.e. don't skip the full RPATH for the build tree
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -110,7 +114,7 @@ message(STATUS "Source files is ${SOURCE_FILES}")
 message(STATUS "Install dir prefix is: ${CMAKE_INSTALL_PREFIX}")
 
 # copy ipmitool
-configure_file(${IPMITOOL_BIN_PATH} ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file(${IPMITOOL_BIN_PATH} "${CMAKE_BINARY_DIR}/ipmitool" COPYONLY)
 
 # header files
 #aux_source_directory(include INCLUDE_FILES)
@@ -148,7 +152,7 @@ endmacro(install_symlink)
 
 # build & install executable utool bin
 add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
-set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
+set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME}-static)
 set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 
