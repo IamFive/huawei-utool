@@ -152,7 +152,7 @@ endmacro(install_symlink)
 
 # build & install executable utool bin
 add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
-set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME}-static)
+set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
 

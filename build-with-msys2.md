@@ -57,7 +57,7 @@ cd huawei-utool
 cd ${your-workspace}/huawei-utool
 cd third-party/curl
 ./buildconf
-./configure --host=x86_64-w64-mingw32 --with-zlib --with-winssl --without-ssl --without-nghttp2 --without-libssh2 --without-gssapi --without-libidn2 --without-librtmp  --without-libpsl
+./configure --host=x86_64-w64-mingw32 --with-zlib --with-winssl --without-ssl --without-axtls --without-nghttp2 --without-libssh2 --without-gssapi --without-libidn2 --without-librtmp  --without-libpsl
 mingw32-make
  ```
 
