@@ -117,6 +117,9 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
         goto FAILURE;
     }
 
+    /** reset CURL timeout for uploading file */
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_UPLOAD_TIMEOUT);
+
     // setup content type
     //curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
     //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);

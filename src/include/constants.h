@@ -31,7 +31,8 @@ extern "C" {
 #define IPMI_PORT 623
 #define HTTPS_PORT 443
 
-#define CURL_TIMEOUT 60
+#define CURL_TIMEOUT 120
+#define CURL_UPLOAD_TIMEOUT 300
 #define CURL_CONN_TIMEOUT 60
 
 #define CONTENT_TYPE_JSON "Content-Type: application/json"
