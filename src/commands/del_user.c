@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -134,8 +135,7 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
             foundUserWithName = true;
             ZF_LOGI("Current username is %s, matched.", username);
             break;
-        }
-        else {
+        } else {
             ZF_LOGI("Current username is %s, does not matched.", currentUsername);
         }
 
@@ -145,10 +145,10 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf(buffer, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists", username);
+        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
+                   username);
         ret = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, result);
-    }
-    else {
+    } else {
         // delete user
         const UtoolCurlHeader ifMatchHeader[] = {
                 {.name = HEADER_IF_MATCH, .value=getUserResponse->etag},

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -26,7 +27,7 @@ static const char *const usage[] = {
 static int TimePropertyHandler(cJSON *target, const char *key, cJSON *node) {
     char orig[20] = {0};
     if (cJSON_IsString(node)) {
-        snprintf(orig, sizeof(orig), "%s", node->valuestring);
+        snprintf_s(orig, sizeof(orig), sizeof(orig), "%s", node->valuestring);
         orig[10] = ' ';
         orig[19] = '\0';
         char *time = orig;

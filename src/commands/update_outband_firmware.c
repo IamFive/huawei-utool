@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -59,7 +60,7 @@
 #define MSG_SHUTDOWN_TO_EXCEED "BMC does not shutdown in 2 minutes, timeout exceed."
 
 #if defined(__linux__)
-    #define _off_t __off_t
+#define _off_t __off_t
 #endif
 
 typedef struct _UpdateFirmwareOption {
@@ -203,7 +204,7 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
          }*/
 
         char round[16];
-        snprintf(round, sizeof(round), "Round %d", retryTimes);
+        snprintf_s(round, sizeof(round), sizeof(round), "Round %d", retryTimes);
         WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_START, round);
 
         /* step1: build payload - upload local file if necessary */
@@ -378,8 +379,9 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
             goto FAILURE;
         }
 
-        char message[MAX_OUTPUT_LEN];
-        snprintf(message, MAX_OUTPUT_LEN, "Current %s version is %s", mapping->firmwareName, versionNode->valuestring);
+        char message[MAX_OUTPUT_LEN] = {0};
+        snprintf_s(message, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "Current %s version is %s", mapping->firmwareName,
+                   versionNode->valuestring);
         fprintf(stdout, "%s\n", message);
         fflush(stdout);
         WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, message);
@@ -470,7 +472,8 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
             }
 
             char message[MAX_OUTPUT_LEN];
-            snprintf(message, MAX_OUTPUT_LEN, "New %s version is %s", mapping->firmwareName, versionNode->valuestring);
+            snprintf_s(message, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "New %s version is %s", mapping->firmwareName,
+                       versionNode->valuestring);
             fprintf(stdout, "%s\n", message);
             fflush(stdout);
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_NEW_VERSION, message);
@@ -510,8 +513,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     if (sn != NULL && sn->valuestring != NULL) {
         ZF_LOGI("Parsing product SN, value is %s.", sn->valuestring);
         updateFirmwareOption->psn = sn->valuestring;
-    }
-    else {
+    } else {
         updateFirmwareOption->psn = "";
         //ZF_LOGE("Failed to get product SN, please make sure product SN is correct.");
         //result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(PRODUCT_SN_IS_NOT_SET),
@@ -525,8 +527,8 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    snprintf(folderName, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
-             tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
+    snprintf_s(folderName, PATH_MAX, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
+               tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
 
     ZF_LOGE("Try to create folder for current updating, folder: %s.", folderName);
 #if defined(__MINGW32__)
@@ -543,7 +545,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
 
     char filepath[PATH_MAX] = {0};
     char realFilepath[PATH_MAX] = {0};
-    snprintf(filepath, PATH_MAX, "%s/update-firmware.log", folderName);
+    snprintf_s(filepath, PATH_MAX, PATH_MAX, "%s/update-firmware.log", folderName);
     UtoolFileRealpath(filepath, realFilepath);
     if (realFilepath == NULL) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(LOG_FILE_PATH_ILLEGAL),
@@ -727,7 +729,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
         char *filename = basename(imageUri);
         char uploadFilePath[MAX_FILE_PATH_LEN];
-        snprintf(uploadFilePath, MAX_FILE_PATH_LEN, "/tmp/web/%s", filename);
+        snprintf_s(uploadFilePath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "/tmp/web/%s", filename);
 
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", uploadFilePath);
         result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
@@ -736,16 +738,14 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         }
 
         goto DONE;
-    }
-    else if (UtoolStringStartsWith(imageUri, "/tmp/")) { /** handle BMC tmp file */
+    } else if (UtoolStringStartsWith(imageUri, "/tmp/")) { /** handle BMC tmp file */
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", imageUri);
         result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
         goto DONE;
-    }
-    else { /** handle remote file */
+    } else { /** handle remote file */
         ZF_LOGI("Firmware image uri `%s` is not local file, will start update firmware directly now.", imageUri);
 
         /** parse url */
@@ -761,7 +761,8 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
         if (!UtoolStringCaseInArray(parsedUrl->scheme, IMAGE_PROTOCOL_CHOICES)) {
             char message[MAX_FAILURE_MSG_LEN];
-            snprintf(message, MAX_FAILURE_MSG_LEN, OPTION_IMAGE_URI_ILLEGAL_SCHEMA, parsedUrl->scheme);
+            snprintf_s(message, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, OPTION_IMAGE_URI_ILLEGAL_SCHEMA,
+                       parsedUrl->scheme);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message),
                                                   &(result->desc));
             WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_INVAILD_URI, message);
@@ -806,8 +807,7 @@ WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char 
                                   curl_easy_strerror(result->code) : UtoolGetStringError(result->code);
         WriteLogEntry(option, stage, state, errorString);
         return;
-    }
-    else {
+    } else {
         cJSON *output = cJSON_Parse(result->desc);
         if (output != NULL) {
             cJSON *message = cJSONUtils_GetPointer(output, "/Message/0");

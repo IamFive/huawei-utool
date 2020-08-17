@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <curl/curl.h>
 #include <cJSON_Utils.h>
+#include <securec.h>
 #include "commons.h"
 #include "redfish.h"
 #include "zf_log.h"
@@ -55,7 +56,7 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
 static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t nitems, UtoolCurlResponse *response);
 
 static int
-UtoolCurlPrintUploadProgressCallback(void *adapterp, double dltotal, double dlnow, double ultotal, double ulnow);
+UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow);
 
 /**
 * Setup a new Curl Request with common basic config for redfish API.
@@ -155,8 +156,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
             result->retryable = 1; // TODO?? should we only retry when BMC return failure?
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         const char *error = curl_easy_strerror((CURLcode) result->code);
         ZF_LOGE("Failed upload file to BMC, CURL code is %d, error is %s.", result->code, error);
         goto FAILURE;
@@ -189,8 +189,7 @@ static size_t WriteStreamToFP(const void *buffer, size_t size, size_t nmemb, Uto
     if (UtoolStringEquals("application/octet-stream", response->contentType)) {
         size_t written = fwrite(buffer, size, nmemb, response->downloadToFP);
         return written;
-    }
-    else {
+    } else {
         return (size_t) UtoolCurlGetRespCallback(buffer, size, nmemb, response);
     }
 }
@@ -232,8 +231,8 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
 
     // setup payload, payload should be freed by caller
-    char payload[MAX_PAYLOAD_LEN];
-    snprintf(payload, MAX_PAYLOAD_LEN, DOWNLOAD_BMC_FILE_PAYLOAD, bmcFileUri);
+    char payload[MAX_PAYLOAD_LEN] = {0};
+    snprintf_s(payload, MAX_PAYLOAD_LEN, MAX_PAYLOAD_LEN, DOWNLOAD_BMC_FILE_PAYLOAD, bmcFileUri);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
 
@@ -252,8 +251,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
             result->code = UtoolResolveFailureResponse(response, &(result->desc));
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         const char *error = curl_easy_strerror((CURLcode) result->code);
         ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", result->code, error);
         goto FAILURE;
@@ -309,7 +307,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
             ifMatchHeader = header;
         }
         char buffer[MAX_HEADER_LEN] = {0};
-        snprintf(buffer, MAX_HEADER_LEN, "%s: %s", header->name, header->value);
+        snprintf_s(buffer, MAX_HEADER_LEN, MAX_HEADER_LEN, "%s: %s", header->name, header->value);
         curlHeaderList = curl_slist_append(curlHeaderList, buffer);
     }
 
@@ -325,7 +323,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
             }
 
             char ifMatch[MAX_HEADER_LEN] = {0};
-            snprintf(ifMatch, MAX_HEADER_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
+            snprintf_s(ifMatch, MAX_HEADER_LEN, MAX_HEADER_LEN, "%s: %s", HEADER_IF_MATCH, response->etag);
             curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
             UtoolFreeCurlResponse(response);
         }
@@ -358,8 +356,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
     if (ret == CURLE_OK) {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
         ZF_LOGD("Response: %s", response->content);
-    }
-    else {
+    } else {
         const char *error = curl_easy_strerror((CURLcode) ret);
         ZF_LOGE("Failed to perform http request, CURL code is %d, error is %s", ret, error);
     }
@@ -380,18 +377,17 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
     if (curl) {
         // replace %s with redfish-system-id if necessary
         char fullURL[MAX_URL_LEN] = {0};
-        strncat(fullURL, server->baseUrl, strnlen(server->baseUrl, MAX_URL_LEN));
+        strncat_s(fullURL, MAX_URL_LEN, server->baseUrl, strnlen(server->baseUrl, MAX_URL_LEN));
         if (strstr(resourceURL, "/redfish/v1") == NULL) {
-            strcat(fullURL, "/redfish/v1");
+            strcat_s(fullURL, MAX_URL_LEN, "/redfish/v1");
         }
 
         if (strstr(resourceURL, "%s") != NULL) {
             char _resourceURL[MAX_URL_LEN] = {0};
-            snprintf(_resourceURL, MAX_URL_LEN, resourceURL, server->systemId);
-            strncat(fullURL, _resourceURL, strnlen(_resourceURL, MAX_URL_LEN));
-        }
-        else {
-            strncat(fullURL, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
+            snprintf_s(_resourceURL, MAX_URL_LEN, MAX_URL_LEN, resourceURL, server->systemId);
+            strncat_s(fullURL, MAX_URL_LEN, _resourceURL, strnlen(_resourceURL, MAX_URL_LEN));
+        } else {
+            strncat_s(fullURL, MAX_URL_LEN, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
         }
 
         ZF_LOGI("[%s] %s", httpMethod, fullURL);
@@ -420,8 +416,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, UtoolCurlGetRespCallback);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, response);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
-    }
-    else {
+    } else {
         ZF_LOGE("Failed to init curl, aboard request.");
     }
 
@@ -446,17 +441,13 @@ int UtoolResolveFailureResponse(UtoolCurlResponse *response, char **result)
     // handle standard internet errors
     if (403 == code) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NO_PRIVILEGE, result);
-    }
-    else if (412 == code) {
+    } else if (412 == code) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, result);
-    }
-    else if (413 == code) {
+    } else if (413 == code) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_ENTITY_TOO_LARGE, result);
-    }
-    else if (code == 500) {
+    } else if (code == 500) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, result);
-    }
-    else if (code == 501) {
+    } else if (code == 501) {
         return UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NOT_SUPPORT, result);
     }
 
@@ -491,20 +482,16 @@ bool UtoolResolvePartialFailureResponse(UtoolCurlResponse *response, UtoolResult
     if (403 == code) {
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NO_PRIVILEGE, &(result->desc));
         goto RESOLVED;
-    }
-    else if (412 == code) {
+    } else if (412 == code) {
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_PRE_CONDITION_FAILED, &(result->desc));
         goto RESOLVED;
-    }
-    else if (413 == code) {
+    } else if (413 == code) {
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_ENTITY_TOO_LARGE, &(result->desc));
         goto RESOLVED;
-    }
-    else if (code == 500) {
+    } else if (code == 500) {
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_INTERNAL_SERVICE_ERROR, &(result->desc));
         goto RESOLVED;
-    }
-    else if (code == 501) {
+    } else if (code == 501) {
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, FAIL_NOT_SUPPORT, &(result->desc));
         goto RESOLVED;
     }
@@ -572,14 +559,13 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
                 }
 
                 char buffer[MAX_FAILURE_MSG_LEN];
-                snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity->valuestring,
-                         message->valuestring, resolution->valuestring);
+                snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s",
+                           severity->valuestring, message->valuestring, resolution->valuestring);
 
                 cJSON *failure = cJSON_CreateString(buffer);
                 if (failure != NULL) {
                     cJSON_AddItemToArray(failures, failure);
-                }
-                else {
+                } else {
                     FREE_CJSON(failures);
                     ret = UTOOLE_INTERNAL;
                 }
@@ -605,26 +591,29 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
     if (baseUrl == NULL) {
         return UTOOLE_INTERNAL;
     }
-    snprintf(baseUrl, MAX_URL_LEN, "https://%s:%d", option->host, option->port);
+    snprintf_s(baseUrl, MAX_URL_LEN, MAX_URL_LEN, "https://%s:%d", option->host, option->port);
     server->baseUrl = baseUrl;
 
-    server->host = (char *) malloc(strlen(option->host) + 1);
+    size_t sizeHostUrl = strlen(option->host);
+    server->host = (char *) malloc(sizeHostUrl + 1);
     if (server->host == NULL) {
         return UTOOLE_INTERNAL;
     }
-    strncpy(server->host, option->host, strlen(option->host) + 1);
+    strncpy_s(server->host, sizeHostUrl + 1, option->host, sizeHostUrl);
 
-    server->username = (char *) malloc(strlen(option->username) + 1);
+    size_t sizeUsername = strlen(option->username);
+    server->username = (char *) malloc(sizeUsername + 1);
     if (server->username == NULL) {
         return UTOOLE_INTERNAL;
     }
-    strncpy(server->username, option->username, strlen(option->username) + 1);
+    strncpy_s(server->username, sizeUsername + 1, option->username, sizeUsername);
 
-    server->password = (char *) malloc(strlen(option->password) + 1);
+    size_t sizePassword = strlen(option->password);
+    server->password = (char *) malloc(sizePassword + 1);
     if (server->password == NULL) {
         return UTOOLE_INTERNAL;
     }
-    strncpy(server->password, option->password, strlen(option->password) + 1);
+    strncpy_s(server->password, sizePassword + 1, option->password, sizePassword);
 
     char resourceUrl[MAX_URL_LEN] = "/Systems";
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
@@ -649,14 +638,14 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 
         char *pSystemId = UtoolStringLastSplit(node->valuestring, '/');
         ZF_LOGI("Fetch redfish system id succeed, system id is: %s", pSystemId);
-        server->systemId = (char *) malloc(strlen(pSystemId) + 1);
+        size_t sizeSystemId = strlen(pSystemId);
+        server->systemId = (char *) malloc(sizeSystemId + 1);
         if (server->systemId == NULL) {
             ret = UTOOLE_INTERNAL;
             goto DONE;
         }
-        strncpy(server->systemId, pSystemId, strlen(pSystemId) + 1);
-    }
-    else {
+        strncpy_s(server->systemId, sizeSystemId + 1, pSystemId, sizeSystemId);
+    } else {
         ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror((CURLcode) ret));
         ret = UtoolResolveFailureResponse(response, result);
     }
@@ -677,7 +666,7 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
             // get response content
             unsigned long fullSize = size * nitems;
             char content[fullSize - 1];
-            memcpy(content, buffer, fullSize - 1);
+            memcpy_s(content, fullSize - 1, buffer, fullSize - 1);
             content[fullSize - 2] = '\0';
 
             //int len = strlen(content) - strlen(HEADER_CONTENT_LENGTH) + 1;
@@ -692,13 +681,13 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
             // get response content
             unsigned long fullSize = size * nitems;
             char content[fullSize - 1];
-            memcpy(content, buffer, fullSize - 1);
+            memcpy_s(content, fullSize - 1, buffer, fullSize - 1);
             content[fullSize - 2] = '\0';
 
             int len = strlen(content) - strlen(HEADER_ETAG) + 1;
             char *etag = (char *) malloc(len);
             if (etag != NULL) {
-                memcpy(etag, content + strlen(HEADER_ETAG), len);
+                memcpy_s(etag, len, content + strlen(HEADER_ETAG), len);
             }
             response->etag = etag;
         }
@@ -707,13 +696,13 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
             // get response content
             unsigned long fullSize = size * nitems;
             char content[fullSize - 1];
-            memcpy(content, buffer, fullSize - 1);
+            memcpy_s(content, fullSize - 1, buffer, fullSize - 1);
             content[fullSize - 2] = '\0';
 
             int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
             char *contentType = (char *) malloc(len);
             if (contentType != NULL) {
-                memcpy(contentType, content + strlen(HEADER_CONTENT_TYPE), len);
+                memcpy_s(contentType, len, content + strlen(HEADER_CONTENT_TYPE), len);
             }
             response->contentType = contentType;
         }
@@ -750,8 +739,8 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
     // because CURL may response multiple times to write response content
     // so we malloc enough memory according to content length header directly
     unsigned long fullSize = size * nmemb;
+    unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
     if (response->content == NULL) {
-        unsigned long length = response->contentLength > 0 ? response->contentLength : fullSize * 10;
         response->content = (char *) malloc(length + 1);
         if (response->content != NULL) {
             response->content[0] = '\0';
@@ -761,7 +750,7 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
         }
     }
 
-    strncat(response->content, (char *) buffer, fullSize);
+    strncat_s(response->content, length + 1, (char *) buffer, fullSize);
 
     // get response content
     //char *content = (char *) malloc(fullSize + 1);
@@ -933,19 +922,21 @@ DONE:
 */
 UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result)
 {
-    UtoolRedfishTask *task = (UtoolRedfishTask *) malloc(sizeof(UtoolRedfishTask));
+    size_t sizeRedfishTask = sizeof(UtoolRedfishTask);
+    UtoolRedfishTask *task = (UtoolRedfishTask *) malloc(sizeRedfishTask);
     if (task == NULL) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    memset(task, 0, sizeof(UtoolRedfishTask));
+    memset_s(task, sizeRedfishTask, 0, sizeRedfishTask);
 
-    task->message = (UtoolRedfishMessage *) malloc(sizeof(UtoolRedfishMessage));
+    size_t sizeRedfishMessage = sizeof(UtoolRedfishMessage);
+    task->message = (UtoolRedfishMessage *) malloc(sizeRedfishMessage);
     if (task->message == NULL) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    memset(task->message, 0, sizeof(UtoolRedfishMessage));
+    memset_s(task->message, sizeRedfishMessage, 0, sizeRedfishMessage);
 
     if (!cJSON_IsObject(cJSONTask)) {
         result->code = UTOOLE_UNKNOWN_JSON_FORMAT;
@@ -958,9 +949,10 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     if (result->code != UTOOLE_OK || node->valuestring == NULL) {
         goto FAILURE;
     }
-    task->url = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+    size_t sizeTaskUrl = strnlen(node->valuestring, 128);
+    task->url = (char *) malloc(sizeTaskUrl + 1);
     if (task->url != NULL) {
-        strncpy(task->url, node->valuestring, strnlen(node->valuestring, 128) + 1);
+        strncpy_s(task->url, sizeTaskUrl + 1, node->valuestring, sizeTaskUrl);
     }
 
     // id
@@ -969,9 +961,11 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     if (result->code != UTOOLE_OK || node->valuestring == NULL) {
         goto FAILURE;
     }
-    task->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
+
+    size_t sizeTaskId = strnlen(node->valuestring, 16) + 1;
+    task->id = (char *) malloc(sizeTaskId + 1);
     if (task->id != NULL) {
-        strncpy(task->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+        strncpy_s(task->id, sizeTaskId + 1, node->valuestring, sizeTaskId);
     }
 
     // name
@@ -980,35 +974,40 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     if (result->code != UTOOLE_OK || node->valuestring == NULL) {
         goto FAILURE;
     }
-    task->name = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+
+    size_t sizeTaskName = strnlen(node->valuestring, 128);
+    task->name = (char *) malloc(sizeTaskName + 1);
     if (task->name != NULL) {
-        strncpy(task->name, node->valuestring, strnlen(node->valuestring, 128) + 1);
+        strncpy_s(task->name, sizeTaskName + 1, node->valuestring, sizeTaskName);
     }
 
     // state
     node = cJSON_GetObjectItem(cJSONTask, "TaskState");
     if (node != NULL && node->valuestring != NULL) {
-        task->taskState = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        size_t sizeTaskState = strnlen(node->valuestring, 32);
+        task->taskState = (char *) malloc(sizeTaskState + 1);
         if (task->taskState != NULL) {
-            strncpy(task->taskState, node->valuestring, strnlen(node->valuestring, 32) + 1);
+            strncpy_s(task->taskState, sizeTaskState + 1, node->valuestring, sizeTaskState);
         }
     }
 
     // startTime
     node = cJSON_GetObjectItem(cJSONTask, "StartTime");
     if (node != NULL && node->valuestring != NULL) {
-        task->startTime = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        size_t sizeTaskStartTime = strnlen(node->valuestring, 32);
+        task->startTime = (char *) malloc(sizeTaskStartTime + 1);
         if (task->startTime != NULL) {
-            strncpy(task->startTime, node->valuestring, strnlen(node->valuestring, 32) + 1);
+            strncpy_s(task->startTime, sizeTaskStartTime + 1, node->valuestring, sizeTaskStartTime);
         }
     }
 
     // TaskPercent
     node = cJSONUtils_GetPointer(cJSONTask, "/Oem/Huawei/TaskPercentage");
     if (node != NULL && node->valuestring != NULL) {
-        task->taskPercentage = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+        size_t sizeTaskPercent = strnlen(node->valuestring, 32);
+        task->taskPercentage = (char *) malloc(sizeTaskPercent + 1);
         if (task->taskPercentage != NULL) {
-            strncpy(task->taskPercentage, node->valuestring, strnlen(node->valuestring, 32) + 1);
+            strncpy_s(task->taskPercentage, sizeTaskPercent + 1, node->valuestring, sizeTaskPercent);
         }
     }
 
@@ -1017,33 +1016,37 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     if (messages != NULL && !cJSON_IsNull(messages)) {
         node = cJSON_GetObjectItem(messages, "MessageId");
         if (node != NULL && node->valuestring != NULL) {
-            task->message->id = (char *) malloc(strnlen(node->valuestring, 16) + 1);
+            size_t sizeTaskMessageId = strnlen(node->valuestring, 16);
+            task->message->id = (char *) malloc(sizeTaskMessageId + 1);
             if (task->message->id != NULL) {
-                strncpy(task->message->id, node->valuestring, strnlen(node->valuestring, 16) + 1);
+                strncpy_s(task->message->id, sizeTaskMessageId + 1, node->valuestring, sizeTaskMessageId);
             }
         }
 
         node = cJSON_GetObjectItem(messages, "Message");
         if (node != NULL && node->valuestring != NULL) {
-            task->message->message = (char *) malloc(strnlen(node->valuestring, 128) + 1);
+            size_t sizeTaskMessage = strnlen(node->valuestring, 128);
+            task->message->message = (char *) malloc(sizeTaskMessage + 1);
             if (task->message->message != NULL) {
-                strncpy(task->message->message, node->valuestring, strnlen(node->valuestring, 128) + 1);
+                strncpy_s(task->message->message, sizeTaskMessage + 1, node->valuestring, sizeTaskMessage);
             }
         }
 
         node = cJSON_GetObjectItem(messages, "Severity");
         if (node != NULL && node->valuestring != NULL) {
-            task->message->severity = (char *) malloc(strnlen(node->valuestring, 32) + 1);
+            size_t sizeTaskSeverity = strnlen(node->valuestring, 32);
+            task->message->severity = (char *) malloc(sizeTaskSeverity + 1);
             if (task->message->severity != NULL) {
-                strncpy(task->message->severity, node->valuestring, strnlen(node->valuestring, 32) + 1);
+                strncpy_s(task->message->severity, sizeTaskSeverity + 1, node->valuestring, sizeTaskSeverity);
             }
         }
 
         node = cJSON_GetObjectItem(messages, "Resolution");
         if (node != NULL && node->valuestring != NULL) {
-            task->message->resolution = (char *) malloc(strnlen(node->valuestring, 256) + 1);
+            size_t sizeTaskResolution = strnlen(node->valuestring, 256);
+            task->message->resolution = (char *) malloc(sizeTaskResolution + 1);
             if (task->message->resolution != NULL) {
-                strncpy(task->message->resolution, node->valuestring, strnlen(node->valuestring, 256) + 1);
+                strncpy_s(task->message->resolution, sizeTaskResolution + 1, node->valuestring, sizeTaskResolution);
             }
         }
     }
@@ -1086,11 +1089,11 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
                 fprintf(stdout, "%-96s\r", task->message->message);
                 fflush(stdout);
             }
-        }
-        else {
+        } else {
             char *taskName = task->message->message == NULL ? task->name : task->message->message;
             char taskProgress[256] = {0};
-            snprintf(taskProgress, sizeof(taskProgress), "%s Progress: %s complete.", taskName, task->taskPercentage);
+            snprintf_s(taskProgress, sizeof(taskProgress), sizeof(taskProgress),
+                       "%s Progress: %s complete.", taskName, task->taskPercentage);
             fprintf(stdout, "%-96s\r", taskProgress);
             fflush(stdout);
         }

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -71,8 +72,8 @@ static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
         }
 
         char *driveId = UtoolStringLastSplit(link->valuestring, '/');
-        strncat(buffer, driveId, strnlen(driveId, 32));
-        strcat(buffer, ",");
+        strncat_s(buffer, 256, driveId, strnlen(driveId, 32));
+        strcat_s(buffer, 256, ",");
     }
 
     buffer[strnlen(buffer, 256) - 1] = '\0';
@@ -200,7 +201,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         // try to load volume members
         char volumesUrl[MAX_URL_LEN];
         char *url = storageLinkNode->valuestring;
-        snprintf(volumesUrl, MAX_URL_LEN, "%s/Volumes", url);
+        snprintf_s(volumesUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Volumes", url);
         ret = UtoolMakeCurlRequest(server, volumesUrl, HTTP_GET, NULL, NULL, getVolumesResponse);
         if (ret != UTOOLE_OK) {
             goto DONE;

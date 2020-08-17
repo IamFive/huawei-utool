@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -66,7 +67,7 @@ int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char url[MAX_URL_LEN];
-    snprintf(url, MAX_URL_LEN, "/TaskService/Tasks/%s", taskId);
+    snprintf_s(url, MAX_URL_LEN, MAX_URL_LEN, "/TaskService/Tasks/%s", taskId);
     UtoolRedfishGet(server, url, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "string_utils.h"
 #include "cJSON_Utils.h"
 #include "commons.h"
@@ -82,7 +83,7 @@ static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
     char *third = *(segments + 2) == NULL ? "00" : *(segments + 2);
 
     char output[16] = {0};
-    snprintf(output, sizeof(output), "%s.%s.%s", first, second, third);
+    snprintf_s(output, sizeof(output), sizeof(output), "%s.%s.%s", first, second, third);
 
     for (int idx = 0; *(segments + idx); idx++) {
         free(*(segments + idx));

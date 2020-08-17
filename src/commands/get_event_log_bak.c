@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -39,7 +40,7 @@ static const UtoolOutputMapping getEventMappings[] = {
 
 static const UtoolOutputMapping getEventArrayMappings[] = {
         {.sourceXpath = "/error/@Message.ExtendedInfo/0/Oem/Huawei/SelLogEntries", .targetKeyValue="EventLog",
-         .nestMapping=getEventMappings},
+                .nestMapping=getEventMappings},
         NULL
 };
 
@@ -100,7 +101,8 @@ int UtoolCmdGetEventLogBak(UtoolCommandOption *commandOption, char **outputStr)
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    snprintf(querySelLogUrl, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.QuerySelLogEntries", log0Url);
+    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.QuerySelLogEntries",
+               log0Url);
 
     /** query sel */
     int currentEntryId = 1;

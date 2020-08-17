@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -20,8 +21,7 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-typedef struct _SetUserOption
-{
+typedef struct _SetUserOption {
     char *username;
     char *roleId;
 } UtoolSetUserOption;
@@ -142,8 +142,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
             foundUserWithName = true;
             ZF_LOGI("Current username is %s, matched.", username);
             break;
-        }
-        else {
+        } else {
             ZF_LOGI("Current username is %s, does not matched.", username);
         }
 
@@ -153,10 +152,10 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf(buffer, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists", setPasswordOption->username);
+        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
+                   setPasswordOption->username);
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, &(result->desc));
-    }
-    else {
+    } else {
         // update user
         const UtoolCurlHeader ifMatchHeader[] = {
                 {.name = HEADER_IF_MATCH, .value=getUserResponse->etag},
@@ -199,12 +198,14 @@ DONE:
 static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *result)
 {
     if (UtoolStringIsEmpty(option->username)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("username")), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("username")),
+                                              &(result->desc));
         goto FAILURE;
     }
 
     if (UtoolStringIsEmpty(option->roleId)) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("role-id")), &(result->desc));
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("role-id")),
+                                              &(result->desc));
         goto FAILURE;
     }
 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -20,8 +21,7 @@
 #include "redfish.h"
 #include "string_utils.h"
 
-typedef struct _SetPasswordOption
-{
+typedef struct _SetPasswordOption {
     char *username;
     char *password;
     UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
@@ -65,7 +65,8 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('n', "username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0, 0),
+            OPT_STRING ('n', "username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0,
+                        0),
             OPT_STRING ('p', "new-password", &(setPasswordOption->password), "new password of user", NULL, 0, 0),
             OPT_END(),
     };
@@ -155,8 +156,7 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
             foundUserWithName = true;
             ZF_LOGI("Current username is %s, matched.", username);
             break;
-        }
-        else {
+        } else {
             ZF_LOGI("Current username is %s, does not matched.", username);
         }
 
@@ -166,10 +166,10 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf(buffer, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists", setPasswordOption->username);
+        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
+                   setPasswordOption->username);
         ret = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, result);
-    }
-    else {
+    } else {
         // update user
         const UtoolCurlHeader ifMatchHeader[] = {
                 {.name = HEADER_IF_MATCH, .value=getUserResponse->etag},

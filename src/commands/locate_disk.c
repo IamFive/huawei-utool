@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -93,7 +94,7 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char url[MAX_URL_LEN];
-    snprintf(url, sizeof(url), "/redfish/v1/Chassis/%s/Drives/%s", server->systemId, option->diskId);
+    snprintf_s(url, sizeof(url), sizeof(url), "/redfish/v1/Chassis/%s/Drives/%s", server->systemId, option->diskId);
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
 
     if (result->broken) {

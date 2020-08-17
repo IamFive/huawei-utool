@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <securec.h>
 #include "url_parser.h"
 
 /*
@@ -82,7 +83,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy(parsedUrl->scheme, curstr, len);
+    (void) strncpy_s(parsedUrl->scheme, len + 1, curstr, len);
     parsedUrl->scheme[len] = '\0';
     /* Make the character to lower if it is upper case. */
     for (i = 0; i < len; i++) {
@@ -113,8 +114,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             /* Username and pass are specified */
             userpassFlag = 1;
             break;
-        }
-        else if ('/' == *tmpstr) {
+        } else if ('/' == *tmpstr) {
             /* End of <host>:<port> specification */
             userpassFlag = 0;
             break;
@@ -135,7 +135,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy(parsedUrl->username, curstr, len);
+        (void) strncpy_s(parsedUrl->username, len + 1, curstr, len);
         parsedUrl->username[len] = '\0';
         /* Proceed current pointer */
         curstr = tmpstr;
@@ -153,7 +153,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
                 UtoolFreeParsedURL(parsedUrl);
                 return NULL;
             }
-            (void) strncpy(parsedUrl->password, curstr, len);
+            (void) strncpy_s(parsedUrl->password, len + 1, curstr, len);
             parsedUrl->password[len] = '\0';
             curstr = tmpstr;
         }
@@ -167,8 +167,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
 
     if ('[' == *curstr) {
         bracketFlag = 1;
-    }
-    else {
+    } else {
         bracketFlag = 0;
     }
     /* Proceed on by delimiters with reading host */
@@ -178,8 +177,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             /* End of IPv6 address. */
             tmpstr++;
             break;
-        }
-        else if (!bracketFlag && (':' == *tmpstr || '/' == *tmpstr)) {
+        } else if (!bracketFlag && (':' == *tmpstr || '/' == *tmpstr)) {
             /* Port number is specified. */
             break;
         }
@@ -191,7 +189,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy(parsedUrl->host, curstr, len);
+    (void) strncpy_s(parsedUrl->host, len + 1, curstr, len);
     parsedUrl->host[len] = '\0';
     curstr = tmpstr;
 
@@ -209,7 +207,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy(parsedUrl->port, curstr, len);
+        (void) strncpy_s(parsedUrl->port, len + 1, curstr, len);
         parsedUrl->port[len] = '\0';
         curstr = tmpstr;
     }
@@ -237,7 +235,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy(parsedUrl->path, curstr, len);
+    (void) strncpy_s(parsedUrl->path, len + 1, curstr, len);
     parsedUrl->path[len] = '\0';
     curstr = tmpstr;
 
@@ -256,7 +254,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy(parsedUrl->query, curstr, len);
+        (void) strncpy_s(parsedUrl->query, len + 1, curstr, len);
         parsedUrl->query[len] = '\0';
         curstr = tmpstr;
     }
@@ -276,7 +274,7 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy(parsedUrl->fragment, curstr, len);
+        (void) strncpy_s(parsedUrl->fragment, len + 1, curstr, len);
         parsedUrl->fragment[len] = '\0';
         curstr = tmpstr;
     }

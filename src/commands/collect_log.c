@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -185,9 +186,9 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
                 goto FAILURE;
             }
             strftime(nowStr, sizeof(nowStr), "%Y%m%dT%H%M%S%z", tm_now);
-            snprintf(opt->localExportToFileUrl, PATH_MAX, "%s%s.tar.gz", opt->exportToFileUrl, nowStr);
+            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s%s.tar.gz", opt->exportToFileUrl, nowStr);
         } else {
-            snprintf(opt->localExportToFileUrl, PATH_MAX, "%s", opt->exportToFileUrl);
+            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s", opt->exportToFileUrl);
         }
 
         char realFilepath[PATH_MAX] = {0};
@@ -269,7 +270,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+                snprintf_s(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

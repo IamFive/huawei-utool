@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <ipmi.h>
+#include <securec.h>
 
 static bool initialized = false;
 static pthread_mutex_t mutex;
@@ -168,14 +169,13 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
 
     if (commandOption->flag == FEAT_VERSION) {
         char buff[MAX_FAILURE_MSG_LEN] = {0};
-        snprintf(buff, MAX_FAILURE_MSG_LEN, "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
+        snprintf_s(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN,
+                   "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
-    }
-    else if (commandOption->flag == FEAT_HELP) {
+    } else if (commandOption->flag == FEAT_HELP) {
         //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
         return UTOOLE_OK;
-    }
-    else if (argc == 0) {
+    } else if (argc == 0) {
         ZF_LOGW("Option input error : sub-command is required.");
         commandOption->flag = ILLEGAL;
         return UtoolBuildOutputResult(STATE_FAILURE,
@@ -280,8 +280,7 @@ int utool_main(int argc, char *argv[], char **result) {
                 targetCommand = _command;
                 break;
             }
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -290,16 +289,16 @@ int utool_main(int argc, char *argv[], char **result) {
         ZF_LOGI("A command handler matched for %s found, try to execute now.", commandName);
         ret = targetCommand->pFuncExecute(commandOption, result);
         if (ret != UTOOLE_OK) {
-           goto FAILURE;
+            goto FAILURE;
         }
 
         // if ret is ok, it means everything has been processed by command handler
         goto DONE;
-    }
-    else {
+    } else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf(buffer, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.", commandName);
+        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.",
+                   commandName);
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
         goto DONE;
     }
@@ -312,7 +311,7 @@ FAILURE:
     // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
     if (buffer != NULL) {
-        snprintf(buffer, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
+        snprintf_s(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
         *result = buffer;
     } else {
         *result = OUTPUT_INTERNAL_FAILED_JSON;

@@ -9,18 +9,20 @@
 #include <stdio.h>
 #include <zf_log.h>
 #include <commons.h>
+#include <securec.h>
 
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"
 #if defined(__MINGW32__)
-    #define IPMITOOL_CMD "ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#define IPMITOOL_CMD "ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #else
-    #define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #endif
 
 
 char *
-UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result) {
+UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result)
+{
     FILE *fp = NULL;
     char *cmdOutput = NULL;
     char buffer[512] = {0};
@@ -33,38 +35,39 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     /* [-b channel] [-t target] */
     char ipmiRawCmd[MAX_IPMI_CMD_LEN] = {0};
     if (ipmiRawCmdOption->bridge != NULL) {
-        strcat(ipmiRawCmd, " -b ");
-        strncat(ipmiRawCmd, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
-        strcat(ipmiRawCmd, " ");
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -b ");
+        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     if (ipmiRawCmdOption->target != NULL) {
-        strcat(ipmiRawCmd, " -t ");
-        strncat(ipmiRawCmd, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
-        strcat(ipmiRawCmd, " ");
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -t ");
+        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     /* RAW Commands: raw <netfn> <cmd> [data] */
-    strcat(ipmiRawCmd, " raw ");
-    strncat(ipmiRawCmd, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
-    strcat(ipmiRawCmd, " ");
-    strncat(ipmiRawCmd, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 32));
+    strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " raw ");
+    strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
+    strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+    strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 32));
 
 
     if (ipmiRawCmdOption->data != NULL) {
-        strcat(ipmiRawCmd, " ");
-        strncat(ipmiRawCmd, ipmiRawCmdOption->data, strnlen(ipmiRawCmdOption->data, MAX_IPMI_CMD_LEN));
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->data,
+                  strnlen(ipmiRawCmdOption->data, MAX_IPMI_CMD_LEN - 1));
     }
 
 
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf(ipmiCmd, sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username, option->password, option->ipmiPort,
-             ipmiRawCmd);
+    snprintf_s(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username,
+               option->password, option->ipmiPort, ipmiRawCmd);
 
 
     char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf(secureIpmiCmd, sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host, option->username, "******",
-             option->ipmiPort, ipmiRawCmd);
+    snprintf_s(secureIpmiCmd, sizeof(secureIpmiCmd), sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host,
+               option->username, "******", option->ipmiPort, ipmiRawCmd);
     ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
 
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
@@ -83,7 +86,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
     *cmdOutput = '\0';
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        strncat(cmdOutput, buffer, sizeof(buffer));
+        strncat_s(cmdOutput, MAX_IPMI_CMD_OUTPUT_LEN, buffer, sizeof(buffer));
     }
 
     int ret = pclose(fp);
@@ -98,7 +101,8 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 }
 
 
-unsigned char hex2uchar(unsigned char hexChar) {
+unsigned char hex2uchar(unsigned char hexChar)
+{
     if (hexChar >= '0' && hexChar <= '9') {
         return (unsigned char) (hexChar - '0');
     }
@@ -115,7 +119,8 @@ unsigned char hex2uchar(unsigned char hexChar) {
     return 0x00;
 }
 
-int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
+int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr)
+{
     int binLen = 0;
     int hexLen = strlen((char *) hexstr);
     binLen = hexLen / 2;
@@ -128,16 +133,17 @@ int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr) {
     return binLen;
 }
 
-int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result) {
+int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result)
+{
     int port = 0;
     char *ipmiCmdOutput = NULL;
     unsigned char hexPortString[5] = {0};
     unsigned char ucharPortStr[1024] = {0};
 
     UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
-        .netfun = IPMI_GET_HTTPS_PORT_NETFUN,
-        .command = IPMI_GET_HTTPS_PORT_CMD,
-        .data = IPMI_GET_HTTPS_PORT_DATA,
+            .netfun = IPMI_GET_HTTPS_PORT_NETFUN,
+            .command = IPMI_GET_HTTPS_PORT_CMD,
+            .data = IPMI_GET_HTTPS_PORT_DATA,
     };
 
     ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);

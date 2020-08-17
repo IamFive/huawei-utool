@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -240,7 +241,7 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
     for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
         char *selectedPortStr = *(selectedPortStrArray + idx);
         char msg[MAX_FAILURE_MSG_LEN];
-        snprintf(msg, sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
+        snprintf_s(msg, sizeof(msg), sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
 
         char *nic = strtok(selectedPortStr, ",");
         char *left = strtok(NULL, "");

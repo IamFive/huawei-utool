@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -109,7 +110,7 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr) {
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    snprintf(querySelLogUrl, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.CollectSel", log0Url);
+    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.CollectSel", log0Url);
 
     UtoolRedfishPost(server, querySelLogUrl, payload, NULL, NULL, result);
     if (result->broken) {
@@ -180,8 +181,7 @@ static void ValidateSubcommandOptions(UtoolGetEventLog *opt, UtoolResult *result
                                                   &(result->desc));
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
         UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
@@ -197,8 +197,7 @@ static void ValidateSubcommandOptions(UtoolGetEventLog *opt, UtoolResult *result
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
-        }
-        else {
+        } else {
             opt->isLocalFile = 1;
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
             if (close(fd) < 0) {
@@ -238,8 +237,7 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
         UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
@@ -255,20 +253,18 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
-        }
-        else {
+        } else {
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+                snprintf_s(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
                 }
-            }
-            else {
+            } else {
                 ZF_LOGI("Could malloc memory for bmc temp file url");
                 result->code = UTOOLE_INTERNAL;
                 goto FAILURE;

@@ -11,6 +11,7 @@
 #include <string_utils.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <securec.h>
 
 
 /**

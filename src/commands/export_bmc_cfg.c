@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -240,7 +241,7 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result) {
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                snprintf(opt->bmcTempFileUrl, PATH_MAX, "/tmp/web/%s", filename);
+                snprintf_s(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

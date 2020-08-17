@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -35,8 +36,8 @@ static int SupportedRAIDLevelsHandler(cJSON *target, const char *key, cJSON *nod
         char buffer[256] = {'\0'};
         cJSON *next = node->child;
         while (next != NULL) {
-            strncat(buffer, next->valuestring, strnlen(next->valuestring, 32));
-            strcat(buffer, ",");
+            strncat_s(buffer, 256, next->valuestring, strnlen(next->valuestring, 32));
+            strcat_s(buffer, 256, ",");
             next = next->next;
         }
         buffer[strnlen(buffer, 256) - 1] = '\0';
@@ -44,8 +45,7 @@ static int SupportedRAIDLevelsHandler(cJSON *target, const char *key, cJSON *nod
         FREE_CJSON(node)
         cJSON *newNode = cJSON_AddStringToObject(target, key, buffer);
         return UtoolAssetCreatedJsonNotNull(newNode);
-    }
-    else {
+    } else {
         FREE_CJSON(node)
         return UTOOLE_UNKNOWN_JSON_FORMAT;
     }

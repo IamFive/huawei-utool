@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -75,7 +76,8 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
 
     /** send clear SEL request */
     char clearSELUrl[MAX_URL_LEN];
-    snprintf(clearSELUrl, MAX_URL_LEN, "%s/Actions/LogService.ClearLog", logService0LinkNode->valuestring);
+    snprintf_s(clearSELUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/LogService.ClearLog",
+               logService0LinkNode->valuestring);
     payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {

@@ -13,9 +13,11 @@
 #include <constants.h>
 #include <typedefs.h>
 #include <command-interfaces.h>
+#include <securec.h>
 #include "string_utils.h"
+
 #if defined(__MINGW32__)
-    #include <shlwapi.h>
+#include <shlwapi.h>
 #endif
 
 const char *g_UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
@@ -66,7 +68,6 @@ const char *g_UtoolRedfishTaskFailedStatus[] = {
 };
 
 
-
 int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsTrue(node)) {
@@ -103,8 +104,7 @@ static cJSON *UtoolBuildOutputJson(const char *const state, cJSON *messages)
 
     if (cJSON_IsArray(messages)) {
         cJSON_AddItemToObject(response, RESULT_KEY_MESSAGES, messages);
-    }
-    else {
+    } else {
         cJSON *_message = cJSON_AddArrayToObject(response, RESULT_KEY_MESSAGES);
         if (_message == NULL) {
             goto FAILURE;
@@ -182,12 +182,11 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
         /* if success, user do not need task structure anymore */
         //ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
         UtoolBuildDefaultSuccessResult(result);
-    }
-    else {
+    } else {
         char buffer[MAX_FAILURE_MSG_LEN];
         cJSON *messageIdNode = cJSONUtils_GetPointer(task, "/Messages/MessageId");
         if (cJSON_IsNull(messageIdNode)) {
-            snprintf(buffer, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
+            snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
         } else {
             cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
             cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
@@ -199,7 +198,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
             const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
             const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
-            snprintf(buffer, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error, resolution);
+            snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error,
+                       resolution);
         }
 
         cJSON *failure = cJSON_CreateString(buffer);
@@ -311,8 +311,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
             if (ret != UTOOLE_OK) {
                 return ret;
             }
-        }
-        else { /** nest array mapping */
+        } else { /** nest array mapping */
             cJSON *array = cJSON_GetObjectItem(target, mapping->targetKeyValue);
             if (array == NULL) {
                 array = cJSON_AddArrayToObject(target, mapping->targetKeyValue);
@@ -494,7 +493,7 @@ const char *UtoolGetStringError(UtoolCode code)
 const char *UtoolFileRealpath(const char *path, char *resolved) {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
     // PathCanonicalize(resolved, path);
-    snprintf(resolved, PATH_MAX, "%s", path);
+    snprintf_s(resolved, PATH_MAX, PATH_MAX, "%s", path);
     return resolved;
 #else
     return realpath(path, resolved);

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -79,7 +80,7 @@ static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
     }
 
     char value[64] = {0};
-    snprintf(value, sizeof(value), "%s-%s", raid, volume);
+    snprintf_s(value, sizeof(value), sizeof(value), "%s-%s", raid, volume);
     FREE_CJSON(node)
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, value);
