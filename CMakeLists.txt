@@ -48,6 +48,7 @@ endif()
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
 set(LIBZFLOG_PATH third-party/zf_log/zf_log)
+set(LIBBCF_PATH third-party/bounds_checking_function)
 set(LIBCURL_PATH third-party/curl)
 IF (WIN32)
     set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool.exe)
@@ -82,6 +83,7 @@ file(COPY "${LIBCURL_PATH}/lib/.libs/" DESTINATION "${ThirdPartyLibPath}")
 
 include_directories(
         ${UTOOL_INCLUDE_DIR}
+        ${LIBBCF_PATH}/include
         ${LIBARGPARSE_PATH}
         ${CJSON_PATH}
         ${LIBZFLOG_PATH}
@@ -97,6 +99,7 @@ link_libraries(
 )
 
 file(GLOB THIRD_PARTY_SOURCE
+        ${LIBBCF_PATH}/src/*.c
         ${LIBARGPARSE_PATH}/argparse.c
         ${LIBZFLOG_PATH}/zf_log.c
         ${CJSON_PATH}/cJSON.c
