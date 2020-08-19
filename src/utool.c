@@ -98,6 +98,7 @@ UtoolCommand g_UtoolCommands[] = {
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
+        {.name = "scp", .pFuncExecute = UtoolCmdScpFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
         {.name = "waittask", .pFuncExecute = UtoolCmdWaitRedfishTask, .type = DEBUG},
         {.name = "gettaskstate", .pFuncExecute = UtoolCmdGetTasks, .type = DEBUG},

@@ -15,6 +15,7 @@
 #include <curl/curl.h>
 #include <cJSON_Utils.h>
 #include <securec.h>
+#include <libgen.h>
 #include "commons.h"
 #include "redfish.h"
 #include "zf_log.h"
@@ -272,6 +273,130 @@ DONE:
     UtoolFreeCurlResponse(response);
 }
 
+
+/**
+ * CURL read function for reading local file
+ *
+ * @param ptr
+ * @param size
+ * @param nmemb
+ * @param stream
+ * @return
+ */
+static size_t CURLReadLocalFileToStream(void *ptr, size_t size, size_t nmemb, void *stream)
+{
+    FILE *f = (FILE *) stream;
+    size_t n;
+
+    if (ferror(f)) {
+        return CURL_READFUNC_ABORT;
+    }
+
+    n = fread(ptr, size, nmemb, f) * size;
+    return n;
+}
+
+
+void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result)
+{
+    ZF_LOGI("Try to sftp put local file `%s` to BMC /tmp/web folder now", uploadFilePath);
+
+    FILE *uploadFileFp = NULL;
+    char sftpRemoteFileUrl[MAX_URL_LEN] = {0};
+    cJSON *getNetworkProtocolRespJson = NULL;
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    CURL *curl = NULL;
+    struct stat fileInfo;
+
+    char path[PATH_MAX] = {0};
+    UtoolFileRealpath(uploadFilePath, path);
+    if (path == NULL) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
+    }
+
+    uploadFileFp = fopen(path, "rb"); /* open file to upload */
+    if (!uploadFileFp) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
+    } /* can't continue */
+
+    /* get the file size */
+    if (fstat(fileno(uploadFileFp), &fileInfo) != 0) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
+        goto FAILURE;
+    } /* can't continue */
+
+
+    UtoolRedfishGet(server, "/Managers/%s/NetworkProtocol", NULL, NULL, result);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+    getNetworkProtocolRespJson = result->data;
+    cJSON *isSshEnabledNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/ProtocolEnabled");
+    // we can scp file to bmc only when ssh protocol is enabled
+    if (isSshEnabledNode != NULL && cJSON_IsTrue(isSshEnabledNode)) {
+        cJSON *sshPortNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/Port");
+        int sshPort = sshPortNode->valueint;
+        // sftp://user:pwd@example.com:port/path/filename
+        char *encodedPassword = curl_easy_escape(NULL, server->password, strnlen(server->password, 64));
+        snprintf_s(sftpRemoteFileUrl, MAX_URL_LEN, MAX_URL_LEN, "sftp://%s:%s@%s:%d/tmp/web/%s",
+                   server->username, encodedPassword, server->host, sshPort, basename(uploadFilePath));
+    } else {
+        result->code = UTOOLE_SSH_PROTOCOL_DISABLED;
+        goto FAILURE;
+    }
+
+
+    curl = curl_easy_init();
+    if (!curl) {
+        result->code = UTOOLE_CURL_INIT_FAILED;
+        goto FAILURE;
+    }
+
+    /** reset CURL timeout for uploading file */
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_UPLOAD_TIMEOUT);
+
+    /** setup CURL upload options */
+    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(curl, CURLOPT_URL, sftpRemoteFileUrl);
+    curl_easy_setopt(curl, CURLOPT_READFUNCTION, CURLReadLocalFileToStream);
+    curl_easy_setopt(curl, CURLOPT_READDATA, uploadFileFp);
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE, (long) fileInfo.st_size);
+
+    bool finished = false;
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, UtoolCurlPrintUploadProgressCallback);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &finished);
+
+    /* enable verbose for easier tracing */
+    /* curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); */
+
+    /* Perform the request, res will get the return code */
+    result->code = curl_easy_perform(curl);
+    if (result->code != CURLE_OK) { /* Check for errors */
+        const char *error = curl_easy_strerror((CURLcode) result->code);
+        ZF_LOGE("Failed upload file to BMC, CURL code is %d, error is %s.", result->code, error);
+        goto FAILURE;
+    }
+
+    goto DONE;
+
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+
+DONE:
+    if (uploadFileFp) {         /* close FP */
+        fclose(uploadFileFp);
+    }
+    curl_easy_cleanup(curl);    /* cleanup the curl */
+    UtoolFreeCurlResponse(response);
+}
+
 /**
  * make new request to redfish APIs
  *
@@ -427,7 +552,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
 /**
  * resolve redfish failures response,
  *
- * For new implemation, use UtoolResolvePartialFailureResponse. This function is for backword compatible.
+ * For new implementation, use UtoolResolvePartialFailureResponse. This function is for backword compatible.
  *
  * @param response
  * @param result

@@ -54,6 +54,16 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
 void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri, const char *localFileUri,
                               UtoolResult *result);
 
+
+/**
+ * Upload file to BMC temp storage through CURL lib with sftp protocol
+ *
+ * @param server            redfish server meta information
+ * @param uploadFilePath    local file path to upload
+ * @param result            customer function execution result for utool
+ */
+void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result);
+
 /**
  * Make a new redfish request through CURL lib
  *

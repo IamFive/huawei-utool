@@ -719,7 +719,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         ZF_LOGI("Firmware image uri `%s` is a local file.", imageUri);
 
         WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_START, "");
-        UtoolUploadFileToBMC(server, imageUri, result);
+        UtoolSftpUploadFileToBMC(server, imageUri, result);
         if (result->broken) {
             WriteFailedLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_FAILED, result);
             goto FAILURE;

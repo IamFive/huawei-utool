@@ -24,7 +24,11 @@ extern "C" {
 */
 typedef struct _Result
 {
-    int code;           /** result code */
+    int code;           /** result code, 0 means utool success process user's request
+                         *  no matter process result is success or failure.
+                         *  If process is broken(curl internal issue etc), result code will identify
+                         *  the broken reason.
+                         **/
     char *desc;         /** result desc */
     cJSON *data;         /** result data */
     int broken;      /** whether the program is broken, default no(0) otherwise yes */

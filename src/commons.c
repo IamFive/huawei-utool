@@ -475,6 +475,8 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Illegal local file size, file should not be empty.";
         case UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH:
             return "Failed to open local download file.";
+        case UTOOLE_SSH_PROTOCOL_DISABLED:
+            return "Failed to transfer file to bmc, because SSH protocol is disabled.";
         default:
             return "Unknown error";
     }

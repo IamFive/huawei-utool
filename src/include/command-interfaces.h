@@ -144,6 +144,8 @@ int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **outputStr)
 
 int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdScpFileToBMC(UtoolCommandOption *commandOption, char **outputStr);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_COMMAND_INTERFACES_H
