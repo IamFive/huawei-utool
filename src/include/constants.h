@@ -79,6 +79,12 @@ extern "C" {
 #define SEVERITY_NORMAL "Normal"
 /** //Redfish SNMP trap severity level */
 
+/** Redfish SNMP trap version // */
+#define TRAP_VERSION_1 "V1"
+#define TRAP_VERSION_2 "V2C"
+#define TRAP_VERSION_3 "V3"
+/** //Redfish SNMP trap version */
+
 /** Redfish indicator LED state// */
 #define INDICATOR_STATE_ON "Lit"
 #define INDICATOR_STATE_OFF "Off"

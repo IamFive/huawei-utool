@@ -20,21 +20,27 @@
 #include "redfish.h"
 #include "string_utils.h"
 
+#define TRAP_VERSION_1_INPUT "1"
+#define TRAP_VERSION_2_INPUT "2"
+#define TRAP_VERSION_3_INPUT "3"
+
 static const char *SEVERITY_CHOICES[] = {"All", "WarningAndCritical", "Critical", NULL};
+static const char *VERSION_CHOICES[] = {TRAP_VERSION_1_INPUT, TRAP_VERSION_2_INPUT, TRAP_VERSION_3_INPUT, NULL};
 static const char *OPT_ENABLED_ILLEGAL = "Error: option `enabled` is illegal, available choices: Enabled, Disabled";
 static const char *OPT_SEVERITY_ILLEGAL = "Error: option `severity` is illegal, "
                                           "available choices: All, WarningAndCritical, Critical";
+static const char *OPT_VERSION_ILLEGAL = "Error: option `version` is illegal, available choices: 1, 2, 3";
 
 static const char *const usage[] = {
-        "settrapcom [-c community] [-e enabled] [-s severity]",
+        "settrapcom [-c community] [-e enabled] [-s severity] [-v VERSION]",
         NULL,
 };
 
-typedef struct _UpdateSNMPTrapNotification
-{
-    char *bootDevice;
-    char *effective;
-    char *bootMode;
+typedef struct _UpdateSNMPTrapNotification {
+    char *community;
+    char *enabled;
+    char *severity;
+    char *version;
 } UtoolUpdateSNMPTrapNotification;
 
 static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result);
@@ -58,12 +64,15 @@ int UtoolCmdSetSNMPTrapNotification(UtoolCommandOption *commandOption, char **ou
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_STRING ('c', "community", &(option->bootDevice),
+            OPT_STRING ('c', "community", &(option->community),
                         "specifies community name", NULL, 0, 0),
-            OPT_STRING ('e', "enabled", &(option->effective),
+            OPT_STRING ('e', "enabled", &(option->enabled),
                         "specifies whether trap is enabled, available choices: {Enabled, Disabled}", NULL, 0, 0),
-            OPT_STRING ('s', "severity", &(option->bootMode),
+            OPT_STRING ('s', "severity", &(option->severity),
                         "specifies level of alarm to sent, available choices: {All, WarningAndCritical, Critical}",
+                        NULL, 0, 0),
+            OPT_STRING ('v', "version", &(option->version),
+                        "specifies trap notification version, available choices: {1, 2, 3}",
                         NULL, 0, 0),
             OPT_END()
     };
@@ -126,24 +135,32 @@ DONE:
 */
 static void ValidateSubcommandOptions(UtoolUpdateSNMPTrapNotification *option, UtoolResult *result)
 {
-    if (!UtoolStringIsEmpty(option->effective)) {
-        if (!UtoolStringInArray(option->effective, g_UTOOL_ENABLED_CHOICES)) {
+    if (!UtoolStringIsEmpty(option->enabled)) {
+        if (!UtoolStringInArray(option->enabled, g_UTOOL_ENABLED_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ENABLED_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (!UtoolStringIsEmpty(option->bootMode)) {
-        if (!UtoolStringInArray(option->bootMode, SEVERITY_CHOICES)) {
+    if (!UtoolStringIsEmpty(option->severity)) {
+        if (!UtoolStringInArray(option->severity, SEVERITY_CHOICES)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SEVERITY_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
     }
 
-    if (UtoolStringIsEmpty(option->effective) && UtoolStringIsEmpty(option->bootMode) &&
-        UtoolStringIsEmpty(option->bootDevice)) {
+    if (!UtoolStringIsEmpty(option->version)) {
+        if (!UtoolStringInArray(option->version, VERSION_CHOICES)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_VERSION_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+    }
+
+    if (UtoolStringIsEmpty(option->enabled) && UtoolStringIsEmpty(option->severity) &&
+        UtoolStringIsEmpty(option->community) && UtoolStringIsEmpty(option->version)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(NOTHING_TO_PATCH), &(result->desc));
         goto FAILURE;
     }
@@ -169,32 +186,46 @@ static cJSON *BuildPayload(UtoolUpdateSNMPTrapNotification *option, UtoolResult 
         goto FAILURE;
     }
 
-    if (!UtoolStringIsEmpty(option->effective)) {
-        cJSON *node = cJSON_AddBoolToObject(trap, "ServiceEnabled", UtoolStringEquals(option->effective, ENABLED));
+    if (!UtoolStringIsEmpty(option->enabled)) {
+        cJSON *node = cJSON_AddBoolToObject(trap, "ServiceEnabled", UtoolStringEquals(option->enabled, ENABLED));
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
 
-    if (!UtoolStringIsEmpty(option->bootDevice)) {
-        cJSON *node = cJSON_AddStringToObject(trap, "CommunityName", option->bootDevice);
+    if (!UtoolStringIsEmpty(option->community)) {
+        cJSON *node = cJSON_AddStringToObject(trap, "CommunityName", option->community);
         result->code = UtoolAssetCreatedJsonNotNull(node);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
     }
 
-    if (!UtoolStringIsEmpty(option->bootMode)) {
+    if (!UtoolStringIsEmpty(option->severity)) {
         cJSON *node = NULL;
-        if (UtoolStringEquals("Critical", option->bootMode)) {
+        if (UtoolStringEquals("Critical", option->severity)) {
             node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_CRITICAL);
-        }
-        else if (UtoolStringEquals("WarningAndCritical", option->bootMode)) {
+        } else if (UtoolStringEquals("WarningAndCritical", option->severity)) {
             node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_MINOR);
-        }
-        else if (UtoolStringEquals("All", option->bootMode)) {
+        } else if (UtoolStringEquals("All", option->severity)) {
             node = cJSON_AddStringToObject(trap, "AlarmSeverity", SEVERITY_NORMAL);
+        }
+
+        result->code = UtoolAssetCreatedJsonNotNull(node);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+    }
+
+    if (!UtoolStringIsEmpty(option->version)) {
+        cJSON *node = NULL;
+        if (UtoolStringEquals(TRAP_VERSION_1_INPUT, option->version)) {
+            node = cJSON_AddStringToObject(trap, "TrapVersion", TRAP_VERSION_1);
+        } else if (UtoolStringEquals(TRAP_VERSION_2_INPUT, option->version)) {
+            node = cJSON_AddStringToObject(trap, "TrapVersion", TRAP_VERSION_2);
+        } else if (UtoolStringEquals(TRAP_VERSION_3_INPUT, option->version)) {
+            node = cJSON_AddStringToObject(trap, "TrapVersion", TRAP_VERSION_3);
         }
 
         result->code = UtoolAssetCreatedJsonNotNull(node);
