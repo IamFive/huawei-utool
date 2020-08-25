@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string_utils.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -18,81 +21,184 @@
 #include "argparse.h"
 #include "redfish.h"
 
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal, it should be a valid local file path.";
+
 static const char *const usage[] = {
-        "getbios",
+        "getbios [-f file-url]",
         NULL,
 };
 
+typedef struct _GetBiosSettingsOption {
+    char *fileURI;
+} UtoolGetBiosSettingsOption;
+
+
+static cJSON *BuildPayload(UtoolGetBiosSettingsOption *option, UtoolResult *result);
+
+static void ValidateSubcommandOptions(UtoolGetBiosSettingsOption *option, UtoolResult *result);
 
 /**
 * get pending bios settings, command handler for `getbios`
 *
 * @param commandOption
-* @param result
+* @param outputStr
 * @return
 */
-int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **result)
+int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
 {
-    int ret;
     cJSON *getBiosJson = NULL;
+    FILE *outputFileFP = NULL;
+    char *prettyJson;
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolCurlResponse *getSystemResponse = &(UtoolCurlResponse) {0};
+    UtoolCurlResponse *getBiosSettingResp = &(UtoolCurlResponse) {0};
+    UtoolGetBiosSettingsOption *option = &(UtoolGetBiosSettingsOption) {0};
+    cJSON *attributes = NULL;
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
+            OPT_STRING ('f', "file-uri", &(option->fileURI),
+                        "specifies the JSON file path to store the BIOS settings.", NULL, 0, 0),
             OPT_END(),
     };
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-    ret = UtoolValidateConnectOptions(commandOption, result);
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
-
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
+    ValidateSubcommandOptions(option, result);
+    if (result->broken) {
         goto DONE;
     }
 
-    // process get system response
-    ret = UtoolMakeCurlRequest(server, "/Systems/%s/Bios", HTTP_GET, NULL, NULL, getSystemResponse);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto DONE;
+    }
+
+    // process get bios response
+    result->code = UtoolMakeCurlRequest(server, "/Systems/%s/Bios", HTTP_GET, NULL, NULL, getBiosSettingResp);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    if (getSystemResponse->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(getSystemResponse, result);
+    if (getBiosSettingResp->httpStatusCode >= 400) {
+        result->code = UtoolResolveFailureResponse(getBiosSettingResp, &(result->desc));
         goto FAILURE;
     }
 
-    getBiosJson = cJSON_Parse(getSystemResponse->content);
-    ret = UtoolAssetParseJsonNotNull(getBiosJson);
-    if (ret != UTOOLE_OK) {
+
+    getBiosJson = cJSON_Parse(getBiosSettingResp->content);
+    result->code = UtoolAssetParseJsonNotNull(getBiosJson);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    cJSON *attributes = cJSON_DetachItemFromObject(getBiosJson, "Attributes");
-    ret = UtoolAssetJsonNodeNotNull(attributes, "/Attributes");
-    if (ret != UTOOLE_OK) {
+    attributes = cJSON_DetachItemFromObject(getBiosJson, "Attributes");
+    result->code = UtoolAssetJsonNodeNotNull(attributes, "/Attributes");
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
-    // mapping result to output json
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, attributes, result);
-    goto DONE;
+    // if file-uri is specified, output to local file.
+    if (!UtoolStringIsEmpty(option->fileURI)) {
+        prettyJson = cJSON_Print(attributes);
+        result->code = UtoolAssetPrintJsonNotNull(prettyJson);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        outputFileFP = fopen(option->fileURI, "wb");
+        if (!outputFileFP) {
+            result->broken = 1;
+            result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+            goto FAILURE;
+        }
+
+        // fputs(prettyJson, outputFileFP);
+        // int ret = fputs(prettyJson, outputFileFP);
+        if (fputs(prettyJson, outputFileFP) == EOF) {
+            result->broken = 1;
+            result->code = UTOOLE_FAILED_TO_WRITE_FILE;
+            goto FAILURE;
+        }
+
+        // mapping result to output json
+        UtoolBuildDefaultSuccessResult(&(result->desc));
+        goto DONE;
+
+    } else {
+        // mapping result to output json
+        result->code = UtoolBuildOutputResult(STATE_SUCCESS, attributes, &(result->desc));
+        goto DONE;
+    }
+
 
 FAILURE:
     goto DONE;
 
 DONE:
+    if (outputFileFP) {
+        fclose(outputFileFP);
+    }
+
+    if (prettyJson != NULL) {
+        free(prettyJson);
+    }
+
+    FREE_CJSON(attributes)
     FREE_CJSON(getBiosJson)
     UtoolFreeRedfishServer(server);
-    UtoolFreeCurlResponse(getSystemResponse);
-    return ret;
+    UtoolFreeCurlResponse(getBiosSettingResp);
+
+    *outputStr = result->desc;
+    return result->code;
+}
+
+
+/**
+* validate user input options for the command
+*
+* @param opt
+* @param resultR
+* @return
+*/
+static void ValidateSubcommandOptions(UtoolGetBiosSettingsOption *opt, UtoolResult *result)
+{
+    if (!UtoolStringIsEmpty(opt->fileURI)) {
+        char realFilePath[PATH_MAX] = {0};
+        UtoolFileRealpath(opt->fileURI, realFilePath);
+        if (realFilePath == NULL) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+        int fd = open(realFilePath, O_RDWR | O_CREAT, 0664);
+        if (fd == -1) {
+            ZF_LOGI("%s is not a valid local file path.", opt->fileURI);
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        } else {
+            ZF_LOGI("%s is a valid local file.", opt->fileURI);
+            if (close(fd) < 0) {
+                ZF_LOGE("Failed to close fd of %s.", opt->fileURI);
+                result->code = UTOOLE_INTERNAL;
+                goto FAILURE;
+            }
+        }
+    }
+
+    return;
+
+FAILURE:
+    result->broken = 1;
+    return;
 }

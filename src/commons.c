@@ -477,6 +477,8 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Failed to open local download file.";
         case UTOOLE_SSH_PROTOCOL_DISABLED:
             return "Failed to transfer file to bmc, because SSH protocol is disabled.";
+        case UTOOLE_FAILED_TO_WRITE_FILE:
+            return "Failed to write content to local file.";
         default:
             return "Unknown error";
     }

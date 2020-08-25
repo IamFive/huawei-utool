@@ -201,6 +201,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
+    FILE *outputFileFP = NULL;
     char realFilepath[PATH_MAX] = {0};
     UtoolFileRealpath(localFileUri, realFilepath);
     if (realFilepath == NULL) {
@@ -209,7 +210,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
         return;
     }
 
-    FILE *outputFileFP = fopen(realFilepath, "wb");
+    outputFileFP = fopen(realFilepath, "wb");
     if (!outputFileFP) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;

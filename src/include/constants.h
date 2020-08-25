@@ -171,6 +171,7 @@ typedef enum _Code
     UTOOLE_ILLEGAL_LOCAL_FILE_SIZE = 142,          /** illegal local upload file size */
     UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH = 143,          /** illegal local upload file path */
     UTOOLE_SSH_PROTOCOL_DISABLED = 144,          /** failed to transfer file to bmc because ssh service is disabled */
+    UTOOLE_FAILED_TO_WRITE_FILE = 145,          /** Failed to write local file */
 } UtoolCode;
 
 #ifdef __cplusplus
