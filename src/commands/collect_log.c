@@ -35,8 +35,7 @@ static const char *const usage[] = {
 };
 
 
-typedef struct _CollectBoardInfoOption
-{
+typedef struct _CollectBoardInfoOption {
     char *exportToFileUrl;
     char *bmcTempFileUrl;
     char *localExportToFileUrl;
@@ -46,7 +45,8 @@ typedef struct _CollectBoardInfoOption
 
 static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
 
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRedfishServer *server,
+                                      UtoolResult*result);
 
 /**
 * collect diagnostic information with one click, command handler for `collect`
@@ -57,7 +57,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
 * */
 int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **outputStr)
 {
-    cJSON *output = NULL, *payload = NULL;
+    cJSON *payload = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -79,7 +79,13 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
         goto DONE;
     }
 
-    ValidateSubcommandOptions(opt, result);
+    // get redfish system id
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto DONE;
+    }
+
+    ValidateSubcommandOptions(opt, server, result);
     if (result->broken) {
         goto DONE;
     }
@@ -90,11 +96,6 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
         goto FAILURE;
     }
 
-    // get redfish system id
-    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
-    if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
-    }
 
     char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.Dump";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
@@ -124,7 +125,6 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(output)
     goto DONE;
 
 DONE:
@@ -145,9 +145,10 @@ DONE:
 * @param result
 * @return
 */
-static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolResult *result)
+static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRedfishServer *server, UtoolResult *result)
 {
     ZF_LOGD("Export to file URI is %s.", opt->exportToFileUrl);
+    cJSON *getSystemRespJson = NULL;
     UtoolParsedUrl *parsedUrl = NULL;
 
     if (UtoolStringIsEmpty(opt->exportToFileUrl)) {
@@ -167,8 +168,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
                                                   &(result->desc));
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
 
         opt->localExportToFileUrl = (char *) malloc(PATH_MAX);
@@ -176,7 +176,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
             result->code = UTOOLE_INTERNAL;
             goto FAILURE;
         }
-        char end = opt->exportToFileUrl[strnlen(opt->exportToFileUrl, PATH_MAX) -1];
+        char end = opt->exportToFileUrl[strnlen(opt->exportToFileUrl, PATH_MAX) - 1];
         if (end == FILEPATH_SEP) { /* Folder path */
             char nowStr[100] = {0};
             time_t now = time(NULL);
@@ -185,8 +185,25 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
                 result->code = UTOOLE_INTERNAL;
                 goto FAILURE;
             }
-            strftime(nowStr, sizeof(nowStr), "%Y%m%dT%H%M%S%z", tm_now);
-            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s%s.tar.gz", opt->exportToFileUrl, nowStr);
+            strftime(nowStr, sizeof(nowStr), "%Y%m%d-%H%M", tm_now);
+
+            char *psn = "";
+            UtoolRedfishGet(server, "/Systems/%s", NULL, NULL, result);
+            if (result->broken) {
+                ZF_LOGE("Failed to load system resource.");
+                goto FAILURE;
+            }
+            getSystemRespJson = result->data;
+            cJSON *sn = cJSONUtils_GetPointer(getSystemRespJson, "/SerialNumber");
+            if (sn != NULL && sn->valuestring != NULL) {
+                ZF_LOGI("product serial number is: %s.", sn->valuestring);
+                psn = sn->valuestring;
+            } else {
+                ZF_LOGI("product serial number is null.");
+            }
+
+            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%sdump_%s_%s.tar.gz", opt->exportToFileUrl,
+                       psn, nowStr);
         } else {
             snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s", opt->exportToFileUrl);
         }
@@ -205,8 +222,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRes
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
-        }
-        else {
+        } else {
             opt->isLocalFile = 1;
             ZF_LOGI("%s is a valid local file.", opt->localExportToFileUrl);
             if (close(fd) < 0) {
@@ -224,6 +240,7 @@ FAILURE:
     goto DONE;
 
 DONE:
+    FREE_CJSON(getSystemRespJson)
     UtoolFreeParsedURL(parsedUrl);
 }
 
@@ -247,8 +264,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
-    }
-    else {
+    } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
         UtoolFileRealpath(opt->localExportToFileUrl, realFilepath);
@@ -264,8 +280,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
-        }
-        else {
+        } else {
             ZF_LOGI("%s is a valid local file.", opt->localExportToFileUrl);
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);

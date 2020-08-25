@@ -81,7 +81,7 @@ You can install libcurl through package manager like `apt-get`, `yum` or through
 ```bash
 cd ${your-workspace}/utool/third-party/curl
 ./buildconf
-./configure --with-ssl
+./configure --with-ssl --with-libssh2
 make 
 sudo make install
 ```
