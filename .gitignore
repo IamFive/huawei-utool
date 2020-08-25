@@ -2,15 +2,12 @@
 .developer
 
 build
-lib
 bin
 
 *.so
 *.a
 *.o
 *.pyc
-
-src/main-debug.c
 
 cmake-build-debug/
 
