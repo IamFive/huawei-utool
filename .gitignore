@@ -10,7 +10,7 @@ bin
 *.o
 *.pyc
 
-main-debug.c
+src/main-debug.c
 
 cmake-build-debug/
 
