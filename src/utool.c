@@ -128,6 +128,9 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
             OPT_BOOLEAN('V', "version", &(commandOption->flag),
                         "show tool's version number.",
                         UtoolGetVersionOptionCallback, 0, 0),
+            OPT_BOOLEAN('M', "manufacturer", &(commandOption->flag),
+                        "show uTool vendor.",
+                        UtoolShowVendorOptionCallback, 0, 0),
             OPT_GROUP  ("Server Authentication Options:"),
             OPT_STRING ('H', "host", &(commandOption->host),
                         "domain name, IPv4 address, or [IPv6 address].",
@@ -173,6 +176,13 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         snprintf_s(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN,
                    "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
+    } else if (commandOption->flag == FEAT_SHOW_VENDOR) {
+        *result = (char *) malloc(MAX_OUTPUT_LEN);
+        if (*result == NULL) {
+            return UTOOLE_INTERNAL;
+        }
+        snprintf_s(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s", UTOOL_VENDOR);
+        return UTOOLE_OK;
     } else if (commandOption->flag == FEAT_HELP) {
         //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
         return UTOOLE_OK;

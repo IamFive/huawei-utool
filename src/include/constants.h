@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 #define ENABLE_DEBUG 0
+#define UTOOL_VENDOR "Huawei"
 
 #define MAX_XPATH_LEN 256
 #define MAX_URL_LEN 256

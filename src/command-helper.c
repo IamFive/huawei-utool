@@ -46,6 +46,23 @@ int UtoolGetVersionOptionCallback(struct argparse *self, const struct argparse_o
     return 0;
 }
 
+/**
+ * argparse show vendor action callback
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+int UtoolShowVendorOptionCallback(struct argparse *self, const struct argparse_option *option)
+{
+    (void) option;
+    if (((int *) option->value)) {
+        *((int *) option->value) = FEAT_SHOW_VENDOR;
+    }
+
+    return 0;
+}
+
 
 /**
  * validate redfish server connect option

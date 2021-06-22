@@ -46,6 +46,7 @@ typedef enum _CommandOptionFlag
     ILLEGAL = 1,          /** invalid options */
     FEAT_HELP = 2,        /** for help feature */
     FEAT_VERSION = 3,     /** for version feature */
+    FEAT_SHOW_VENDOR = 4,     /** for show vendor feature */
 } UtoolCommandOptionFlag;
 
 

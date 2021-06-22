@@ -35,6 +35,15 @@ int UtoolGetHelpOptionCallback(struct argparse *self, const struct argparse_opti
 int UtoolGetVersionOptionCallback(struct argparse *self, const struct argparse_option *option);
 
 /**
+ * argparse show vendor action callback
+ *
+ * @param self
+ * @param option
+ * @return
+ */
+int UtoolShowVendorOptionCallback(struct argparse *self, const struct argparse_option *option);
+
+/**
  * validate IPMI connect option
  *
  * @param commandOption
