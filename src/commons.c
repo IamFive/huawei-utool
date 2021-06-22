@@ -285,16 +285,20 @@ int UtoolMappingCJSONItems(UtoolRedfishServer *server, cJSON *source, cJSON *tar
             break;
         }
         cJSON *ref = NULL;
-        const char *xpath = mapping->sourceXpath;
-        if (server) {
-            char *path = UtoolStringReplace(xpath, VAR_OEM, server->oemName);
-            if (path == NULL) {
-                return UTOOLE_INTERNAL;
+        if (!mapping->useRootNode) {
+            const char *xpath = mapping->sourceXpath;
+            if (server) {
+                char *path = UtoolStringReplace(xpath, VAR_OEM, server->oemName);
+                if (path == NULL) {
+                    return UTOOLE_INTERNAL;
+                }
+                ref = cJSONUtils_GetPointer(source, path);
+                FREE_OBJ(path)
+            } else {
+                ref = cJSONUtils_GetPointer(source, xpath);
             }
-            ref = cJSONUtils_GetPointer(source, path);
-            FREE_OBJ(path)
         } else {
-            ref = cJSONUtils_GetPointer(source, xpath);
+            ref = source;
         }
 
         /** plain mapping */

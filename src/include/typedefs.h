@@ -13,8 +13,9 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "cJSON.h"
 
@@ -144,6 +145,7 @@ typedef struct _OutputMapping
     const char *const targetKeyValue;
     const struct _OutputMapping *nestMapping;
 
+    bool useRootNode;                                  // whether this property requires root node
     int (*filter)(cJSON *);                            // whether this property should output, return 1 if accept, 0 not.
     int (*handle)(UtoolRedfishServer *, cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;

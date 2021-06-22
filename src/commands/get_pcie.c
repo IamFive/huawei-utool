@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string_utils.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -18,16 +20,90 @@
 #include "argparse.h"
 #include "redfish.h"
 
+#define CARD_TYPE_GPU "GPU"
+#define CARD_TYPE_RAID "RAID"
+#define CARD_TYPE_ACCELERATION "Acceleration"
+#define CARD_TYPE_FPGA "FPGA"
+#define CARD_TYPE_NET "NET"
+#define CARD_TYPE_NIC "NIC"
+#define CARD_TYPE_HBA "HBA"
+
 static const char *const usage[] = {
         "getpcie",
         NULL,
 };
 
+/**
+ *
+ * @param server
+ * @param target
+ * @param key
+ * @param root      root Node
+ * @return
+ */
+static int TypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *root)
+{
+    char funcTypePath[MAX_XPATH_LEN] = {0};
+    snprintf_s(funcTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/FunctionType", server->oemName);
+
+    char cardTypePath[MAX_XPATH_LEN] = {0};
+    snprintf_s(cardTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PCIeCardType", server->oemName);
+
+    cJSON *funcTypeNode = cJSONUtils_GetPointer(root, funcTypePath);
+    cJSON *cardTypeNode = cJSONUtils_GetPointer(root, cardTypePath);
+
+    char *name = funcTypeNode->valuestring;
+    if (cJSON_IsNull(funcTypeNode) || name == NULL) {
+        cJSON_AddItemToObjectCS(target, key, cJSON_CreateNull());
+        FREE_CJSON(root)
+        return UTOOLE_OK;
+    }
+
+    /**
+        GPU Card -> GPU
+        RAID Card -> RAID
+        Accelerate Card -> Acceleration
+        FPGA Card -> FPGA
+
+        Net Card -> NIC/HBA
+        Net Card 需要进一步根据 PcieCardType（该属性会在630 iBMC版本实现，届时可以联调） 区分：
+        NIC -> NIC
+        IB -> NIC
+        FC -> HBA
+        如果获取不到 PcieCardType 属性，则：
+        Net Card -> NET
+     */
+    char *mapping = funcTypeNode->valuestring;
+    if (UtoolStringEquals(funcTypeNode->valuestring, "GPU Card")) {
+        mapping = CARD_TYPE_GPU;
+    } else if (UtoolStringEquals(funcTypeNode->valuestring, "RAID Card")) {
+        mapping = CARD_TYPE_RAID;
+    } else if (UtoolStringEquals(funcTypeNode->valuestring, "Accelerate Card")) {
+        mapping = CARD_TYPE_ACCELERATION;
+    } else if (UtoolStringEquals(funcTypeNode->valuestring, "FPGA Card")) {
+        mapping = CARD_TYPE_FPGA;
+    } else if (UtoolStringEquals(funcTypeNode->valuestring, "Net Card")) {
+        if (cJSON_IsNull(cardTypeNode) || cardTypeNode->valuestring == NULL) {
+            mapping = CARD_TYPE_NET;
+        } else if (UtoolStringEquals(cardTypeNode->valuestring, "NIC") ||
+                   UtoolStringEquals(cardTypeNode->valuestring, "IB")) {
+            mapping = CARD_TYPE_NIC;
+        } else if (UtoolStringEquals(cardTypeNode->valuestring, "FC")) {
+            mapping = CARD_TYPE_HBA;
+        }
+    }
+
+    cJSON *newNode = cJSON_AddStringToObject(target, key, mapping);
+    FREE_CJSON(root)
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
 static const UtoolOutputMapping getPCIeDeviceMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
         {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
-        {.sourceXpath = "/Oem/${Oem}/FunctionType", .targetKeyValue="Type"},
+        {.sourceXpath = "/Oem/${Oem}/FunctionType", .targetKeyValue="Type", .handle=TypeHandler, .useRootNode=true},
+        {.sourceXpath = "/Oem/${Oem}/PCIeCardType", .targetKeyValue="CardType"},
         {.sourceXpath = "/Links/PCIeFunctions/0/@odata.id", .targetKeyValue="PCIeFunction"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
@@ -130,7 +206,8 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    cJSON *overallHealth = cJSON_AddStringToObject(output, "OverallHealth", UtoolGetOverallHealth(pcieDeviceArray, "/Health"));
+    cJSON *overallHealth = cJSON_AddStringToObject(output, "OverallHealth",
+                                                   UtoolGetOverallHealth(pcieDeviceArray, "/Health"));
     result->code = UtoolAssetCreatedJsonNotNull(overallHealth);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
