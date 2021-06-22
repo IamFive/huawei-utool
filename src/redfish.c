@@ -297,7 +297,15 @@ static size_t CURLReadLocalFileToStream(void *ptr, size_t size, size_t nmemb, vo
     return n;
 }
 
-
+/**
+ * Upload file to BMC temp storage through CURL lib with sftp protocol.
+ *
+ * Be caution that to enable this feature, the CURL lib must be configured with `--with-libssh2`
+ *
+ * @param server            redfish server meta information
+ * @param uploadFilePath    local file path to upload
+ * @param result            customer function execution result for utool
+ */
 void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result)
 {
     ZF_LOGI("Try to sftp put local file `%s` to BMC /tmp/web folder now", uploadFilePath);

@@ -56,7 +56,9 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
 
 /**
- * Upload file to BMC temp storage through CURL lib with sftp protocol
+ * Upload file to BMC temp storage through CURL lib with sftp protocol.
+ *
+ * Be caution that to enable this feature, the CURL lib must be configured with `--with-libssh2`
  *
  * @param server            redfish server meta information
  * @param uploadFilePath    local file path to upload

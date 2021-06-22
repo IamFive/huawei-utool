@@ -963,8 +963,8 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         DisplayProgress(DISPLAY_UPLOAD_FILE_START);
         WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_START, "");
 
-        // upload file to bmc through SFTP protocol
-        UtoolSftpUploadFileToBMC(server, imageUri, result);
+        // upload file to bmc through HTTP protocol
+        UtoolUploadFileToBMC(server, imageUri, result);
 
         if (result->broken) {
             WriteFailedLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_FAILED, result);
