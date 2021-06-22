@@ -33,6 +33,7 @@ typedef struct _Result
     cJSON *data;         /** result data */
     int broken;      /** whether the program is broken, default no(0) otherwise yes */
     int retryable;
+    int notfound;
 } UtoolResult;
 
 
@@ -180,6 +181,14 @@ typedef struct _IPMIRawCmdOption {
     char *bridge;
     char *target;
 } UtoolIPMIRawCmdOption;
+
+/* IPMI option */
+typedef struct _IPMICommand {
+    int length;
+    char *command;
+    char *data;
+    char *netfun;
+} UtoolIPMICommand;
 
 #ifdef __cplusplus
 }

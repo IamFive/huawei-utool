@@ -34,13 +34,22 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 
 
 /**
-* Upload file to BMC temp storage through CURL lib
+* Upload file to BMC temp storage. Will try upload through http, then sftp if failed.
 *
 * @param server
 * @param uploadFilePath
 * @param result
 */
 void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result);
+
+/**
+* Upload file to BMC temp storage through HTTP API.
+*
+* @param server
+* @param uploadFilePath
+* @param result
+*/
+void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result);
 
 
 /**

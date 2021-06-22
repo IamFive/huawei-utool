@@ -72,6 +72,23 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
                                    const char *httpMethod,
                                    UtoolCurlResponse *response);
 
+/**
+* Upload file to BMC temp storage. Will try upload through http, then sftp if failed.
+*
+* @param server
+* @param uploadFilePath
+* @param result
+*/
+void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result) {
+    UtoolHttpUploadFileToBMC(server, uploadFilePath, result);
+    if (result->notfound && result->broken) {
+        ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
+        result->broken = 0;
+        result->code = UTOOLE_OK;
+        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
+    }
+}
+
 
 /**
 * Upload a file to BMC Temp storage
@@ -81,7 +98,7 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 * @param response
 * @return
 */
-void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
+void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
@@ -152,11 +169,15 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
     result->code = curl_easy_perform(curl);
     if (result->code == CURLE_OK) { /* Check for errors */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
+        if (response->httpStatusCode == 404) {
+            result->notfound = 1;
+        }
+
         if (response->httpStatusCode >= 400) {
             ZF_LOGE("Failed to upload local file `%s` to BMC, http status code is %ld.",
                     uploadFilePath, response->httpStatusCode);
             result->code = UtoolResolveFailureResponse(response, &(result->desc));
-            result->retryable = 1; // TODO?? should we only retry when BMC return failure?
+            result->retryable = 1;
             goto FAILURE;
         }
     } else {
