@@ -27,7 +27,7 @@ typedef struct _SetUserOption {
 } UtoolSetUserOption;
 
 
-static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
+static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "OEM", NULL};
 
 static const char *const usage[] = {
         "setpriv -n username -r role-id",
@@ -65,7 +65,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
             OPT_STRING ('n', "username", &(setPasswordOption->username), "specifies the user to be modified", NULL, 0,
                         0),
             OPT_STRING ('r', "role-id", &(setPasswordOption->roleId),
-                        "new role, choices: {Administrator, Operator, Commonuser, Noaccess}.", NULL, 0, 0),
+                        "new role, choices: {Administrator, Operator, Commonuser, OEM}.", NULL, 0, 0),
             OPT_END(),
     };
 
@@ -211,7 +211,7 @@ static void ValidateSetUserOptions(UtoolSetUserOption *option, UtoolResult *resu
 
     if (!UtoolStringInArray(option->roleId, ROLES)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(
-                OPT_NOT_IN_CHOICE("role-id", "Administrator, Operator, Commonuser, Noaccess")), &(result->desc));
+                OPT_NOT_IN_CHOICE("role-id", "Administrator, Operator, Commonuser, OEM")), &(result->desc));
         goto FAILURE;
     }
 

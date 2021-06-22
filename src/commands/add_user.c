@@ -33,14 +33,14 @@ static const char *const OPTION_USERNAME_REQUIRED = "Error: option `username` is
 static const char *const OPTION_PASSWORD_REQUIRED = "Error: option `password` is required.";
 static const char *const OPTION_ROlEID_REQUIRED = "Error: option `role-id` is required.";
 static const char *const OPTION_ROlEID_ILLEGAL = "Error: option `role-id` is illegal, available choices: "
-                                                 "Administrator, Operator, Commonuser, Noaccess.";
+                                                 "Administrator, Operator, Commonuser, OEM.";
 static const char *const OPTION_PRIVILEGE_ILLEGAL = "Error: option `privilege` is illegal, "
                                                     "only `None` is support for now.";
 
-static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "Noaccess", NULL};
+static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "OEM", NULL};
 
 static const char *const usage[] = {
-        "adduser -n USERNAME -p PASSWORD -r {Administrator,Operator,Commonuser,NoAccess} "
+        "adduser -n USERNAME -p PASSWORD -r {Administrator,Operator,Commonuser,OEM} "
         "-l PRIVILEGE1,PRIVILEGE2",
         NULL,
 };
@@ -72,7 +72,7 @@ int UtoolCmdAddUser(UtoolCommandOption *commandOption, char **result)
             OPT_STRING ('n', "username", &(addUserOption->username), "new user name.", NULL, 0, 0),
             OPT_STRING ('p', "password", &(addUserOption->password), "new user password.", NULL, 0, 0),
             OPT_STRING ('r', "role-id", &(addUserOption->roleId),
-                        "new user role, choices: {Administrator, Operator, Commonuser, Noaccess}.",
+                        "new user role, choices: {Administrator, Operator, Commonuser, OEM}.",
                         NULL, 0, 0),
             OPT_STRING ('l', "privilege", &(addUserOption->privilege),
                         "new user privilege, choices: {None, KVM, VMM, SOL}. "
