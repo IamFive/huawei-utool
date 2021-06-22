@@ -243,12 +243,22 @@ char **UtoolStringSplit(char *source, const char delim)
     delimStr[1] = '\0';
 
     /* Count how many elements will be extracted. */
+    bool shouldSkip = true;
     while (*tmp) {
         if (delim == *tmp) {
-            count++;
-            lastComma = tmp;
+            if (!shouldSkip) {
+                shouldSkip = true;
+                count++;
+                lastComma = tmp;
+            }
+        } else {
+            shouldSkip = false;
         }
         tmp++;
+    }
+
+    if (lastComma == NULL) {
+        count++;
     }
 
     if (lastComma != NULL) { /* Add space for trailing token. */
@@ -273,6 +283,15 @@ char **UtoolStringSplit(char *source, const char delim)
     }
 
     return result;
+}
+
+void UtoolStringFreeArrays(char **arrays) {
+    if (arrays != NULL) {
+        for (int idx = 0; *(arrays + idx); idx++) {
+            free(*(arrays + idx));
+        }
+        free(arrays);
+    }
 }
 
 /**

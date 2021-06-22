@@ -48,9 +48,14 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
     /* RAW Commands: raw <netfn> <cmd> [data] */
     strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " raw ");
-    strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
-    strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
-    strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 32));
+    if (ipmiRawCmdOption->netfun != NULL) {
+        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
+    }
+
+    if (ipmiRawCmdOption->command != NULL) {
+        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 128));
+    }
 
 
     if (ipmiRawCmdOption->data != NULL) {
@@ -68,7 +73,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
     snprintf_s(secureIpmiCmd, sizeof(secureIpmiCmd), sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host,
                option->username, "******", option->ipmiPort, ipmiRawCmd);
-    ZF_LOGD("execute IPMI command: %s", secureIpmiCmd);
+    ZF_LOGI("execute IPMI command: %s", secureIpmiCmd);
 
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
         ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
@@ -95,6 +100,12 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, cmdOutput, &(result->desc));
         free(cmdOutput);
         return NULL;
+    }
+
+    // remove ending \n if exists
+    int len = strnlen(cmdOutput, MAX_IPMI_CMD_OUTPUT_LEN);
+    if (len > 0) {
+        cmdOutput[len-1] = '\0';
     }
 
     return cmdOutput;

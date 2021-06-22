@@ -136,6 +136,10 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr);
 
 int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputStr);
 
+int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr);
+
+int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr);
+
 
 /** Test purpose **/
 int UtoolCmdUploadFileToBMC(UtoolCommandOption *commandOption, char **outputStr);

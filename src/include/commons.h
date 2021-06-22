@@ -124,6 +124,22 @@ static inline int UtoolFreeCurlResponse(UtoolCurlResponse *response)
  * @param option
  * @return
  */
+static inline int UtoolAssetMallocNotNull(void *obj)
+{
+    if (obj == NULL) {
+        ZF_LOGE("Failed to malloc object");
+        return UTOOLE_INTERNAL;
+    }
+    return UTOOLE_OK;
+}
+
+/**
+ * asset json object is not null
+ *
+ * @param self
+ * @param option
+ * @return
+ */
 static inline int UtoolAssetCreatedJsonNotNull(cJSON *json)
 {
     if (json == NULL) {

@@ -126,6 +126,14 @@ bool UtoolStringIsNumeric(const char *str);
 */
 char **UtoolStringSplit(char *source, const char delim);
 
+
+/**
+ * free string arrays
+ *
+ * @param arrays
+ */
+void UtoolStringFreeArrays(char **arrays);
+
 /**
  * strndup implementation.
  *

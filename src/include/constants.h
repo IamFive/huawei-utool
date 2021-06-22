@@ -18,8 +18,11 @@ extern "C" {
     #define FILEPATH_SEP '/'
 #endif
 
-#define ENABLE_DEBUG 0
+#define ENABLE_DEBUG 1
 #define UTOOL_VENDOR "Huawei"
+
+#define ACTION_ADD_WHITELIST "0x00"
+#define ACTION_DEL_WHITELIST "0x01"
 
 #define MAX_XPATH_LEN 256
 #define MAX_URL_LEN 256
