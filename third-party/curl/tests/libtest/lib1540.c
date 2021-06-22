@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -78,8 +78,6 @@ static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userp)
   st->halted = 1;
   return CURL_WRITEFUNC_PAUSE;
 }
-
-#define TEST_HANG_TIMEOUT 60 * 1000
 
 int test(char *URL)
 {

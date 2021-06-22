@@ -6,7 +6,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -31,7 +31,7 @@
 # at a regular interval. The output is suitable to be mailed to
 # curl-autocompile@haxx.se to be dealt with automatically (make sure the
 # subject includes the word "autobuild" as the mail gets silently discarded
-# otherwise).  The most current build status (with a resonable backlog) will
+# otherwise).  The most current build status (with a reasonable backlog) will
 # be published on the curl site, at https://curl.haxx.se/auto/
 
 # USAGE:
@@ -173,7 +173,7 @@ if ($^O eq 'MSWin32' || $targetos) {
   }
 }
 
-if (($^O eq 'MSWin32' || $^O eq 'msys') &&
+if (($^O eq 'MSWin32' || $^O eq 'cygwin' || $^O eq 'msys') &&
     ($targetos =~ /vc/ || $targetos =~ /mingw32/ ||
      $targetos =~ /borland/ || $targetos =~ /watcom/)) {
 

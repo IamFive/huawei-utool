@@ -6,7 +6,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 2016 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -69,7 +69,7 @@ sub file {
             if($str =~ /((libcurl|curl)([^ ]*))\(3\)/i) {
                 my $man = "$1.3";
                 if(!manpresent($man)) {
-                    print STDERR "error: $f:$line: refering to non-existing man page $man\n";
+                    print STDERR "error: $f:$line: referring to non-existing man page $man\n";
                     $errors++;
                 }
                 if($pre ne "I") {
@@ -87,7 +87,7 @@ sub file {
             while($i =~ s/((lib|)curl([^ ]*)) *\"\(3\)(,|) *\" *//i ) {
                 my $man = "$1.3";
                 if(!manpresent($man)) {
-                    print STDERR "error: $f:$line: refering to non-existing man page $man\n";
+                    print STDERR "error: $f:$line: referring to non-existing man page $man\n";
                     $errors++;
                 }
             }

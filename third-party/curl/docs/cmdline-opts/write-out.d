@@ -15,6 +15,9 @@ text that curl thinks fit, as described below. All variables are specified as
 output a newline by using \\n, a carriage return with \\r and a tab space with
 \\t.
 
+The output will be written to standard output, but this can be switched to
+standard error by using %{stderr}.
+
 .B NOTE:
 The %-symbol is a special symbol in the win32-environment, where all
 occurrences of % must be doubled when using this option.
@@ -47,6 +50,9 @@ curl CONNECT request. (Added in 7.12.4)
 .B http_version
 The http version that was effectively used. (Added in 7.50.0)
 .TP
+.B json
+A JSON object with all available keys.
+.TP
 .B local_ip
 The IP address of the local end of the most recently done connection - can be
 either IPv4 or IPv6 (Added in 7.29.0)
@@ -76,6 +82,10 @@ IPv4 or IPv6 (Added in 7.29.0)
 .B remote_port
 The remote port number of the most recently done connection (Added in 7.29.0)
 .TP
+.B response_code
+The numerical response code that was found in the last transfer (formerly
+known as "http_code"). (Added in 7.18.2)
+.TP
 .B scheme
 The URL scheme (sometimes called protocol) that was effectively used (Added in 7.52.0)
 .TP
@@ -102,6 +112,15 @@ second.
 .B ssl_verify_result
 The result of the SSL peer certificate verification that was requested. 0
 means the verification was successful. (Added in 7.19.0)
+.TP
+.B stderr
+From this point on, the --write-out output will be written to standard
+error. (Added in 7.63.0)
+.TP
+.B stdout
+From this point on, the --write-out output will be written to standard output.
+This is the default, but can be used to switch back after switching to stderr.
+(Added in 7.63.0)
 .TP
 .B time_appconnect
 The time, in seconds, it took from the start until the SSL/SSH/etc

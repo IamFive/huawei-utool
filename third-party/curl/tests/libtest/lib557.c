@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -27,9 +27,7 @@
 
 #include "test.h"
 
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
 
 #ifdef HAVE_LOCALE_H
 #  include <locale.h> /* for setlocale() */
@@ -124,7 +122,7 @@ static struct curloff_st  co_test[COFFT_TESTS_ARRSZ];
 static int test_unsigned_short_formatting(void)
 {
   int i, j;
-  int num_ushort_tests;
+  int num_ushort_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_SHORT == 1)
@@ -231,7 +229,7 @@ static int test_unsigned_short_formatting(void)
 static int test_signed_short_formatting(void)
 {
   int i, j;
-  int num_sshort_tests;
+  int num_sshort_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_SHORT == 1)
@@ -401,7 +399,7 @@ static int test_signed_short_formatting(void)
 static int test_unsigned_int_formatting(void)
 {
   int i, j;
-  int num_uint_tests;
+  int num_uint_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_INT == 2)
@@ -551,7 +549,7 @@ static int test_unsigned_int_formatting(void)
 static int test_signed_int_formatting(void)
 {
   int i, j;
-  int num_sint_tests;
+  int num_sint_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_INT == 2)
@@ -779,7 +777,7 @@ static int test_signed_int_formatting(void)
 static int test_unsigned_long_formatting(void)
 {
   int i, j;
-  int num_ulong_tests;
+  int num_ulong_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_LONG == 2)
@@ -928,7 +926,7 @@ static int test_unsigned_long_formatting(void)
 static int test_signed_long_formatting(void)
 {
   int i, j;
-  int num_slong_tests;
+  int num_slong_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_LONG == 2)
@@ -1156,7 +1154,7 @@ static int test_signed_long_formatting(void)
 static int test_curl_off_t_formatting(void)
 {
   int i, j;
-  int num_cofft_tests;
+  int num_cofft_tests = 0;
   int failed = 0;
 
 #if (SIZEOF_CURL_OFF_T == 2)
@@ -1398,7 +1396,7 @@ static int _strlen_check(int linenumber, char *buf, size_t len)
   size_t buflen = strlen(buf);
   if(len != buflen) {
     /* they shouldn't differ */
-    printf("sprintf strlen:%d failed:\nwe '%d'\nsystem: '%d'\n",
+    printf("sprintf strlen:%d failed:\nwe '%zu'\nsystem: '%zu'\n",
            linenumber, buflen, len);
     return 1;
   }
