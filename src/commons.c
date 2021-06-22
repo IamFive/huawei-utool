@@ -5,14 +5,13 @@
 * Create: 2019-06-16
 * Notes:
 */
-#include <limits.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 #include <commons.h>
 #include <cJSON_Utils.h>
 #include <constants.h>
 #include <typedefs.h>
-#include <command-interfaces.h>
 #include <securec.h>
 #include "string_utils.h"
 
@@ -521,7 +520,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved) {
  * @param relativeXpath     relative xpath of oem node
  * @return
  */
-const cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath)
+cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath)
 {
     char xpath[MAX_XPATH_LEN] = {0};
     if (relativeXpath == NULL) {
@@ -530,4 +529,29 @@ const cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, co
         snprintf_s(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/%s", server->oemName, relativeXpath);
     }
     return cJSONUtils_GetPointer(source, xpath);
+}
+
+
+/**
+ * Write formatted output to stream if not quiet.
+ *
+ * @param quiet
+ * @param stream
+ * @param format
+ * @param ...
+ * @return
+ */
+int UtoolPrintf(int quiet, FILE * stream, const char * format, ...) {
+    int ret = 0;
+    if (!quiet) {
+        va_list args;
+
+        va_start(args, format);
+        ret = vfprintf(stream, format, args);
+        fflush(stream);
+        va_end(args);
+        (void) args;
+    }
+
+    return ret;
 }

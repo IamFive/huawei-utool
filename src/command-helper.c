@@ -42,7 +42,7 @@ int UtoolGetVersionOptionCallback(struct argparse *self, const struct argparse_o
     if (((int *) option->value)) {
         *((int *) option->value) = FEAT_VERSION;
     }
-//    fprintf(stdout, "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
+
     return 0;
 }
 

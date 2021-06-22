@@ -59,6 +59,7 @@ typedef struct _CommandOption
     char *password;
     int commandArgc;
     UtoolCommandOptionFlag flag;  /** whether the command should be executed, default yes(0) otherwise no */
+    int quiet;
     const char **commandArgv;
 
 } UtoolCommandOption;
@@ -93,6 +94,7 @@ typedef struct _RedfishServer
     char *systemId;
     char *oemName;
     char *psn;
+    int quiet;
 } UtoolRedfishServer;
 
 

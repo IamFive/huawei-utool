@@ -281,7 +281,19 @@ const char *UtoolFileRealpath(const char *path, char *resolved);
  * @param relativeXpath     relative xpath of oem node
  * @return
  */
-const cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath);
+cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath);
+
+
+/**
+ * Write formatted output to stream if not quiet.
+ *
+ * @param quiet
+ * @param stream
+ * @param format
+ * @param ...
+ * @return
+ */
+int UtoolPrintf(int quiet, FILE * stream, const char * format, ...);
 
 #ifdef __cplusplus
 }
