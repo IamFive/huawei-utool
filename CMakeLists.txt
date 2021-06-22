@@ -26,7 +26,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 IF(NOT CMAKE_BUILD_TYPE MATCHES Debug)
-    set(CMAKE_C_FLAGS "-fPIC -fstack-protector-strong -Wl,-z,relro -Wl,-z,now ")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fstack-protector-strong -Wl,-z,relro -Wl,-z,now ")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,noexecstack -s -D_FORTIFY_SOURCE=2 -O2")
 endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
