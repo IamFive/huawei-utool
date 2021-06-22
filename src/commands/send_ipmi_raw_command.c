@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ipmi.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -28,6 +29,8 @@ static const char *const usage[] = {
 
 
 static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult *result);
+
+int BuildOutputResult(const char *ipmiCmdOutput, char **result);
 
 /**
 * send IPMI raw command, command handler for `sendipmirawcmd`
@@ -78,7 +81,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
         goto FAILURE;
     }
 
-    UtoolBuildStringOutputResult(STATE_SUCCESS, commandOutput, &(result->desc));
+    result->code = BuildOutputResult(commandOutput, &(result->desc));
     goto DONE;
 
 FAILURE:
@@ -150,4 +153,30 @@ static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult
 FAILURE:
     result->broken = 1;
     return;
+}
+
+int BuildOutputResult(const char *ipmiCmdOutput, char **result)
+{
+    int ret = UTOOLE_CREATE_JSON_NULL;
+
+    cJSON *response = cJSON_CreateObject();
+    if (response == NULL) {
+        goto DONE;
+    }
+
+    if (cJSON_AddStringToObject(response, RESULT_KEY_IPMI_RSP, ipmiCmdOutput) == NULL) {
+        goto DONE;
+    }
+
+    char *pretty = cJSON_Print(response);
+    if (pretty != NULL) {
+        *result = pretty;
+        ret = UTOOLE_OK;
+    }
+
+    goto DONE;
+
+DONE:
+    FREE_CJSON(response)
+    return ret;
 }

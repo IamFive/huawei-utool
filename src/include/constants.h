@@ -18,6 +18,8 @@ extern "C" {
     #define FILEPATH_SEP '/'
 #endif
 
+#define ENABLE_DEBUG 0
+
 #define MAX_XPATH_LEN 256
 #define MAX_URL_LEN 256
 #define MAX_HEADER_LEN 128
@@ -48,6 +50,7 @@ extern "C" {
 /** UTOOL response json constants// */
 #define RESULT_KEY_STATE "State"
 #define RESULT_KEY_MESSAGES "Message"
+#define RESULT_KEY_IPMI_RSP "ipmirsp"
 
 #define STATE_SUCCESS "Success"
 #define STATE_FAILURE "Failure"

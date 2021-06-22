@@ -200,7 +200,11 @@ static int initialize(char **result) {
         CURLcode flag = CURLE_OK;
         if (!initialized) {
             // init log file
-            zf_log_set_output_level(ZF_LOG_INFO);
+            if (ENABLE_DEBUG == 1) {
+                zf_log_set_output_level(ZF_LOG_DEBUG);
+            } else {
+                zf_log_set_output_level(ZF_LOG_INFO);
+            }
             int ret = UtoolSetLogFilePath("utool.log.txt");
             if (!ret) {
                 ZF_LOGI("Initialize zf-log done.");
