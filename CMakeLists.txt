@@ -24,6 +24,11 @@ message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+IF(NOT CMAKE_BUILD_TYPE MATCHES Debug)
+    set(CMAKE_C_FLAGS "-fPIC -fstack-protector-strong -Wl,-z,relro -Wl,-z,now ")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,noexecstack -s -D_FORTIFY_SOURCE=2 -O2")
+endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
 
 set(PROJECT_VERSION_MAJOR 1)
@@ -157,7 +162,8 @@ endmacro(install_symlink)
 add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
-install(TARGETS utool-bin DESTINATION ${UTOOL_BIN_DIR})
+target_compile_options(${LIB_NAME}-bin PRIVATE -fPIE -pie)
+install(TARGETS ${LIB_NAME}-bin DESTINATION ${UTOOL_BIN_DIR})
 
 # debug purpose, should not present in release
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
