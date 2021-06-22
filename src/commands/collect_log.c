@@ -97,7 +97,7 @@ int UtoolCmdCollectAllBoardInfo(UtoolCommandOption *commandOption, char **output
     }
 
 
-    char *url = "/Managers/%s/Actions/${Oem}/Huawei/Manager.Dump";
+    char *url = "/Managers/%s/Actions/Oem/${Oem}/Manager.Dump";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;
