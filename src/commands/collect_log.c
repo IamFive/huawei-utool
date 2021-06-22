@@ -1,6 +1,6 @@
 /*
 * Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
-* Description: command hander for `collect`
+* Description: command handler for `collect`
 * Author:
 * Create: 2019-06-16
 * Notes:

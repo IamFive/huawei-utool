@@ -1,6 +1,6 @@
 /*
 * Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
-* Description: command hander for `getip`
+* Description: command handler for `getip`
 * Author:
 * Create: 2019-06-14
 * Notes:

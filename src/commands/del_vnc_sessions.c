@@ -1,6 +1,6 @@
 /*
 * Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
-* Description: command hander for `delvncsession`
+* Description: command handler for `delvncsession`
 * Author:
 * Create: 2019-06-14
 * Notes:
