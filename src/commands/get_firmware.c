@@ -20,12 +20,15 @@
 #include "argparse.h"
 #include "redfish.h"
 
+#define LOCATION_REAR "chassisRear"
+
 static const char *const usage[] = {
         "getfw",
         NULL,
 };
 
-static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
+static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
+{
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
@@ -54,11 +57,9 @@ static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const 
     char *activateType = NULL;
     if (UtoolStringEquals(newNode->valuestring, "BMC")) {
         activateType = "[\"automatic\"]";
-    }
-    else if (UtoolStringEquals(newNode->valuestring, "CPLD")) {
+    } else if (UtoolStringEquals(newNode->valuestring, "CPLD")) {
         activateType = "[\"dcpowercycle\"]";
-    }
-    else if (UtoolStringEquals(newNode->valuestring, "BIOS")) {
+    } else if (UtoolStringEquals(newNode->valuestring, "BIOS")) {
         activateType = "[\"dcpowercycle\"]";
     }
     cJSON *supportActivateTypes = cJSON_AddRawToObject(target, "SupportActivateType", activateType);
@@ -70,7 +71,8 @@ static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const 
     return ret;
 }
 
-static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
+static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
+{
     char *version = node->valuestring;
     if (cJSON_IsNull(node) || version == NULL) {
         cJSON_AddItemToObjectCS(target, key, node);
@@ -95,12 +97,58 @@ static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char 
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
+static int NameHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
+{
+    char *name = node->valuestring;
+    if (cJSON_IsNull(node) || name == NULL) {
+        cJSON_AddItemToObjectCS(target, key, node);
+        return UTOOLE_OK;
+    }
+    /**
+     *  ActiveBMC -> ActiveBMC
+        BackupBMC -> BackupBMC
+        Bios -> BIOS
+        MainBoardCPLD -> MainBoard_CPLD
+        chassisPSU1 -> PSU1
+        chassisPSU2 -> PSU2
+
+        硬盘背板，
+            需要在升级资源查询/redfish/v1/Chassis/1/Boards/chassisDiskBP5链接，查看Location属性，
+            来明确是前置（chassisFront）还是后置（chassisRear），然后做重命名
+        chassisDiskBP5CPLD -> DiskBP5_CPLD
+        chassisDiskBP1CPLD -> RearDiskBP1_CPLD
+     */
+
+    char *mapping = node->valuestring;
+    if (UtoolStringEquals(node->valuestring, "Bios")) {
+        mapping = "BIOS";
+    } else if (UtoolStringEquals(node->valuestring, "MainBoardCPLD")) {
+        mapping = "MainBoard_CPLD";
+    } else if (UtoolStringEquals(node->valuestring, "chassisPSU1")) {
+        mapping = "PSU1";
+    } else if (UtoolStringEquals(node->valuestring, "chassisPSU2")) {
+        mapping = "PSU2";
+    }
+
+    cJSON *newNode = cJSON_AddStringToObject(target, key, mapping);
+    FREE_CJSON(node)
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
+
 static const UtoolOutputMapping getFwMappings[] = {
-        {.sourceXpath = "/Name", .targetKeyValue="Name"},
+        {.sourceXpath = "/Name", .targetKeyValue="Name", .handle=NameHandler},
         {.sourceXpath = "/SoftwareId", .targetKeyValue="Type", .handle=FirmwareTypeHandler},
         {.sourceXpath = "/Version", .targetKeyValue="Version", .handle=VersionHandler},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
+        {.sourceXpath = "/RelatedItem/0/@odata.id", .targetKeyValue="RelatedItem"},
         //{.sourceXpath = "/SoftwareId", .targetKeyValue="SupportActivateType"},
+        {0}
+};
+
+static const UtoolOutputMapping getLocationMapping[] = {
+        {.sourceXpath = "/Location", .targetKeyValue="Location"},
+        {.sourceXpath = "/DeviceLocator", .targetKeyValue="DeviceLocator"},
         {0}
 };
 
@@ -109,17 +157,17 @@ static const UtoolOutputMapping getFwMappings[] = {
  * Get outband firmware information, command handler of `getfw`
  *
  * @param commandOption
- * @param result
+ * @param outputStr
  * @return
  */
-int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result) {
-    int ret;
-
+int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr)
+{
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
             OPT_END(),
     };
 
+    UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolCurlResponse *memberResp = &(UtoolCurlResponse) {0};
     UtoolCurlResponse *firmwareResp = &(UtoolCurlResponse) {0};
@@ -128,46 +176,46 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result) {
     cJSON *firmwareJson = NULL, *firmwareMembersJson = NULL;
     cJSON *output = NULL, *firmwares = NULL, *firmware = NULL;
 
-    ret = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, result);
-    if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
-    }
-
-    ret = UtoolValidateConnectOptions(commandOption, result);
-    if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
-    }
-
-    ret = UtoolGetRedfishServer(commandOption, server, result);
-    if (ret != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
-    }
-
-    ret = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
-    if (ret != UTOOLE_OK) {
-        goto DONE;
-    }
-    if (memberResp->httpStatusCode >= 400) {
-        ret = UtoolResolveFailureResponse(memberResp, result);
-        goto DONE;
-    }
-
     output = cJSON_CreateObject();
-    ret = UtoolAssetCreatedJsonNotNull(output);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
     firmwares = cJSON_AddArrayToObject(output, "Firmware");
-    ret = UtoolAssetCreatedJsonNotNull(firmwares);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetCreatedJsonNotNull(firmwares);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
+    }
+
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
+    if (commandOption->flag != EXECUTABLE) {
+        goto DONE;
+    }
+
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
+    if (commandOption->flag != EXECUTABLE) {
+        goto DONE;
+    }
+
+    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
+    if (result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto DONE;
+    }
+
+    result->code = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
+    if (result->code != UTOOLE_OK) {
+        goto DONE;
+    }
+    if (memberResp->httpStatusCode >= 400) {
+        result->code = UtoolResolveFailureResponse(memberResp, &(result->desc));
+        goto DONE;
     }
 
     // process response
     firmwareMembersJson = cJSON_Parse(memberResp->content);
-    ret = UtoolAssetParseJsonNotNull(firmwareMembersJson);
-    if (ret != UTOOLE_OK) {
+    result->code = UtoolAssetParseJsonNotNull(firmwareMembersJson);
+    if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
@@ -178,48 +226,66 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result) {
         cJSON *odataIdNode = cJSON_GetObjectItem(member, "@odata.id");
         char *url = odataIdNode->valuestring;
         if (UtoolStringEndsWith(url, "BMC") || UtoolStringEndsWith(url, "Bios") || UtoolStringEndsWith(url, "CPLD")) {
-            ret = UtoolMakeCurlRequest(server, url, HTTP_GET, NULL, NULL, firmwareResp);
-            if (ret != UTOOLE_OK) {
-                goto FAILURE;
-            }
-
-            if (firmwareResp->httpStatusCode >= 400) {
-                ret = UtoolResolveFailureResponse(firmwareResp, result);
-                goto FAILURE;
-            }
-
-            firmwareJson = cJSON_Parse(firmwareResp->content);
-            ret = UtoolAssetParseJsonNotNull(firmwareJson);
-            if (ret != UTOOLE_OK) {
-                goto FAILURE;
-            }
-
             firmware = cJSON_CreateObject();
-            ret = UtoolAssetCreatedJsonNotNull(firmware);
-            if (ret != UTOOLE_OK) {
-                goto FAILURE;
-            }
-
-            // create firmware item and add it to array
-            ret = UtoolMappingCJSONItems(server, firmwareJson, firmware, getFwMappings);
-            if (ret != UTOOLE_OK) {
+            result->code = UtoolAssetCreatedJsonNotNull(firmware);
+            if (result->code != UTOOLE_OK) {
                 goto FAILURE;
             }
             cJSON_AddItemToArray(firmwares, firmware);
 
-            // free memory
-            FREE_CJSON(firmwareJson)
-            UtoolFreeCurlResponse(firmwareResp);
+            UtoolRedfishGet(server, url, firmware, getFwMappings, result);
+            if (result->broken) {
+                goto FAILURE;
+            }
+            FREE_CJSON(result->data)
+
+            /**
+                硬盘背板，
+                    需要在升级资源查询/redfish/v1/Chassis/1/Boards/chassisDiskBP5链接，查看Location属性，
+                    来明确是前置（chassisFront）还是后置（chassisRear），然后做重命名
+                chassisDiskBP5CPLD -> DiskBP5_CPLD
+                chassisDiskBP1CPLD -> RearDiskBP1_CPLD
+             */
+            cJSON *name = cJSONUtils_GetPointer(firmware, "/Name");
+            cJSON *relatedItem = cJSONUtils_GetPointer(firmware, "/RelatedItem");
+            if (cJSON_IsString(name) && cJSON_IsString(relatedItem)
+                && name->valuestring != NULL && relatedItem->valuestring != NULL) {
+                if (UtoolStringStartsWith(name->valuestring, "chassisDiskBP")
+                    && UtoolStringEndsWith(name->valuestring, "CPLD")) {
+                    UtoolRedfishGet(server, relatedItem->valuestring, firmware, getLocationMapping, result);
+                    if (result->broken) {
+                        goto FAILURE;
+                    }
+                    FREE_CJSON(result->data)
+
+                    // update Name
+                    cJSON *location = cJSONUtils_GetPointer(firmware, "/Location");
+                    cJSON *deviceLocator = cJSONUtils_GetPointer(firmware, "/DeviceLocator");
+                    if (cJSON_IsString(location) && cJSON_IsString(deviceLocator) && location->valuestring != NULL &&
+                        deviceLocator->valuestring != NULL) {
+                        char mapping[256] = {0};
+                        snprintf_s(mapping, sizeof(mapping), sizeof(mapping), "%s%s_CPLD",
+                                   location->valuestring == LOCATION_REAR ? "Rear" : "", deviceLocator->valuestring);
+                        cJSON_SetValuestring(name, mapping);
+                    }
+                }
+            }
         }
     }
 
+    cJSON *item;
+    cJSON_ArrayForEach(item, firmwares) {
+        cJSON_DeleteItemFromObject(item, "RelatedItem");
+        cJSON_DeleteItemFromObject(item, "Location");
+        cJSON_DeleteItemFromObject(item, "DeviceLocator");
+    }
 
-    // output to result
-    ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
+
+    // output to outputStr
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(firmware)
     FREE_CJSON(output)
     goto DONE;
 
@@ -229,5 +295,7 @@ DONE:
     UtoolFreeCurlResponse(memberResp);
     UtoolFreeCurlResponse(firmwareResp);
     UtoolFreeRedfishServer(server);
-    return ret;
+
+    *outputStr = result->desc;
+    return result->code;
 }
