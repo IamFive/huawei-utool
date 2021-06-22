@@ -119,7 +119,7 @@ int UtoolCmdGetVoltage(UtoolCommandOption *commandOption, char **result)
         }
 
         // create voltage item and add it to array
-        ret = UtoolMappingCJSONItems(member, voltage, getVoltageMappings);
+        ret = UtoolMappingCJSONItems(server, member, voltage, getVoltageMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

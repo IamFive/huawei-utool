@@ -24,7 +24,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int SNMPSeverityMappingHandler(cJSON *target, const char *key, cJSON *node)
+static int SNMPSeverityMappingHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObject(target, key, node);

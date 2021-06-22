@@ -24,7 +24,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int ApplyResultPropertyHandler(cJSON *target, const char *key, cJSON *node) {
+static int ApplyResultPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
 
     cJSON *newNode;
     if (cJSON_IsNull(node) || (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0)) {
@@ -37,7 +37,7 @@ static int ApplyResultPropertyHandler(cJSON *target, const char *key, cJSON *nod
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
-static int ApplyDetailPropertyHandler(cJSON *target, const char *key, cJSON *node) {
+static int ApplyDetailPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     if (cJSON_IsNull(node) || (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0)) {
         cJSON_AddItemToObject(target, key, node);
         return UTOOLE_OK;

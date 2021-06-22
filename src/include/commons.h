@@ -44,7 +44,7 @@ extern const char *g_UtoolRedfishTaskFailedStatus[];
 */
 extern const UtoolOutputMapping g_UtoolGetTaskMappings[];
 
-extern int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node);
+extern int UtoolBoolToEnabledPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node);
 
 
 static inline int UtoolFreeRedfishTask(UtoolRedfishTask *task)
@@ -96,6 +96,8 @@ static inline int UtoolFreeRedfishServer(UtoolRedfishServer *server)
         FREE_OBJ(server->username)
         FREE_OBJ(server->password)
         FREE_OBJ(server->systemId)
+        FREE_OBJ(server->oemName)
+        FREE_OBJ(server->psn)
     }
 }
 
@@ -219,7 +221,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result);
  * @param mapping
  * @return
  */
-int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings);
+int UtoolMappingCJSONItems(UtoolRedfishServer *server, cJSON *source, cJSON *target,
+                           const UtoolOutputMapping *mappings);
 
 /**
 * build default success output result
@@ -232,11 +235,12 @@ void UtoolBuildDefaultSuccessResult(char **result);
 /**
 * wrap a cJSON object with Huawei Oem structure
 *
+* @param oemName
 * @param source
 * @param result
 * @return
 */
-cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result);
+cJSON *UtoolWrapOem(char *oemName, cJSON *source, UtoolResult *result);
 
 
 /**
@@ -269,6 +273,15 @@ const char *UtoolGetStringError(UtoolCode code);
  */
 const char *UtoolFileRealpath(const char *path, char *resolved);
 
+/**
+ * get cJSON node in oem node with relative xpath
+ *
+ * @param server            redfish server
+ * @param source            source cJSON node
+ * @param relativeXpath     relative xpath of oem node
+ * @return
+ */
+const cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath);
 
 #ifdef __cplusplus
 }

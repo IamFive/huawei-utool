@@ -193,11 +193,12 @@ void UtoolRedfishGetMemberResources(UtoolRedfishServer *server, cJSON *owner, cJ
 /**
 * mapping a json format task to struct task
 *
-* @param cJSONTask
+* @param server     redfish server meta
+* @param cJSONTask  redfish task node in cJSON node format
 * @param result
 * @return
 */
-UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result);
+UtoolRedfishTask *UtoolRedfishMapTaskFromJson(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result);
 
 /**
 * Wait a redfish task finished (completed or exception/failed)

@@ -25,7 +25,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int SupportedRAIDLevelsHandler(cJSON *target, const char *key, cJSON *node)
+static int SupportedRAIDLevelsHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) { // should not happen
         cJSON_AddItemToObjectCS(target, key, node);
@@ -57,16 +57,16 @@ static const UtoolOutputMapping getRAIDControllerMappings[] = {
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/SupportedDeviceProtocols", .targetKeyValue="SupportedDeviceProtocols"}, //
-        {.sourceXpath = "/Oem/Huawei/SASAddress", .targetKeyValue="SASAddress"},
-        {.sourceXpath = "/Oem/Huawei/ConfigurationVersion", .targetKeyValue="ConfigurationVersion"},
-        {.sourceXpath = "/Oem/Huawei/MaintainPDFailHistory", .targetKeyValue="MaintainPDFailHistory"},
-        {.sourceXpath = "/Oem/Huawei/CopyBackState", .targetKeyValue="CopyBackState"}, //
-        {.sourceXpath = "/Oem/Huawei/JBODState", .targetKeyValue="JBODState"},
-        {.sourceXpath = "/Oem/Huawei/MinStripeSizeBytes", .targetKeyValue="MinStripeSizeBytes"},
-        {.sourceXpath = "/Oem/Huawei/MaxStripeSizeBytes", .targetKeyValue="MaxStripeSizeBytes"},
-        {.sourceXpath = "/Oem/Huawei/MemorySizeMiB", .targetKeyValue="MemorySizeMiB"},
-        {.sourceXpath = "/Oem/Huawei/SupportedRAIDLevels", .targetKeyValue="SupportedRAIDLevels"},
-        {.sourceXpath = "/Oem/Huawei/DDRECCCount", .targetKeyValue="DDRECCCount"},
+        {.sourceXpath = "/Oem/${Oem}/SASAddress", .targetKeyValue="SASAddress"},
+        {.sourceXpath = "/Oem/${Oem}/ConfigurationVersion", .targetKeyValue="ConfigurationVersion"},
+        {.sourceXpath = "/Oem/${Oem}/MaintainPDFailHistory", .targetKeyValue="MaintainPDFailHistory"},
+        {.sourceXpath = "/Oem/${Oem}/CopyBackState", .targetKeyValue="CopyBackState"}, //
+        {.sourceXpath = "/Oem/${Oem}/JBODState", .targetKeyValue="JBODState"},
+        {.sourceXpath = "/Oem/${Oem}/MinStripeSizeBytes", .targetKeyValue="MinStripeSizeBytes"},
+        {.sourceXpath = "/Oem/${Oem}/MaxStripeSizeBytes", .targetKeyValue="MaxStripeSizeBytes"},
+        {.sourceXpath = "/Oem/${Oem}/MemorySizeMiB", .targetKeyValue="MemorySizeMiB"},
+        {.sourceXpath = "/Oem/${Oem}/SupportedRAIDLevels", .targetKeyValue="SupportedRAIDLevels"},
+        {.sourceXpath = "/Oem/${Oem}/DDRECCCount", .targetKeyValue="DDRECCCount"},
         {.sourceXpath = "/FirmwareVersion", .targetKeyValue="FirmwareVersion"},
         NULL
 };
@@ -85,8 +85,8 @@ static const UtoolOutputMapping getRAIDMappings[] = {
 };
 
 static const UtoolOutputMapping getRAIDSummaryMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/StorageSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/Oem/Huawei/StorageSummary/Count", .targetKeyValue="Maximum"},
+        {.sourceXpath = "/Oem/${Oem}/StorageSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/${Oem}/StorageSummary/Count", .targetKeyValue="Maximum"},
         NULL
 };
 

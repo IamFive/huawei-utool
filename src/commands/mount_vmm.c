@@ -100,7 +100,7 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    char *url = "/Managers/%s/VirtualMedia/CD/Oem/Huawei/Actions/VirtualMedia.VmmControl";
+    char *url = "/Managers/%s/VirtualMedia/CD/Oem/${Oem}/Actions/VirtualMedia.VmmControl";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;

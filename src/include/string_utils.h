@@ -137,6 +137,18 @@ char **UtoolStringSplit(char *source, const char delim);
  */
 char *UtoolStringNDup(char *str, size_t size);
 
+
+/**
+ * replace original string with new characters.
+ * You must free the result if result is non-NULL.
+ *
+ * @param orig
+ * @param rep
+ * @param with
+ * @return
+ */
+char *UtoolStringReplace(const char *orig, char *rep, char *with);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

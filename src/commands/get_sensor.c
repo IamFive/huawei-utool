@@ -46,7 +46,7 @@ static const UtoolOutputMapping getThresholdSensorMappings[] = {
 };
 
 
-static int StatusToReadingHandler(cJSON *target, const char *key, cJSON *node)
+static int StatusToReadingHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);

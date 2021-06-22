@@ -50,7 +50,7 @@ int run_utool_main() {
             // "getsensor",
             // "getbios", "-f", "bios.json",
             //"getbiossetting",
-            //"gethealthevent",
+            // "gethealthevent",
             // "getservice",
             //"geteventsub",
             //"getpwrcap",
@@ -84,8 +84,10 @@ int run_utool_main() {
             //"settimezone", "-z", "+08:00",
             //"powercontrol", "-t", "ForcePowerCycle",
             //"setservice", "-s", "KVM", "-e", "Enabled", "-p", "80", "-t", "Enabled",
-            // "setservice", "-s", "SSH", "-e", "Enabled", "-p", "12222",
+            // "setservice", "-s", "SSH", "-e", "Enabled", "-p", "22222",
+            "setservice", "-s", "VNC", "-e", "Disabled", "-p", "20086",
             //"setvlan", "-e", "Enabled", "-v", "100",
+
             //"resetbmc",
             //"restorebios",
             // "settrapcom", "-c", "huawei123$%^", "-e", "Enabled", "-s", "WarningAndCritical", "-v", "1",
@@ -99,7 +101,7 @@ int run_utool_main() {
             //"setip", "-v", "6", "-m", "Static", "-a", "2000::2000", "-g", "2000::2100", "-s", "256",
             //"setadaptiveport", "-p", "Dedicated,1;",
 
-            // "exportbmccfg", "-u", "235.xml",
+            // "exportbmccfg", "-u", "9.xml",
             //"importbmccfg", "-u", "/data/nfs/utool_bmc_235.xml",
             //"setbios", "-a", "BootRetry", "-v", "Disabled",
             //"setbios", "-a", "BootRetry", "-v", "Enabled", "-f", "/data/nfs/bios.json",
@@ -129,10 +131,6 @@ int debug(UtoolResult *result) {
     // char* seg2 = strtok_s(NULL, ",", context);
     // char* seg3 = strtok_s(NULL, ",", context);
     // char* seg4 = strtok_s(NULL, ",", context);
-
-    char dest[14] = {0};
-    char *source = "hello, world!";
-    strncpy_s(dest, 14, source, strlen(source));
     return 0;
 }
 

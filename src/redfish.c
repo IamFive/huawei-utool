@@ -218,7 +218,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     }
     response->downloadToFP = outputFileFP;
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.GeneralDownload";
+    char *url = "/Managers/%s/Actions/Oem/${Oem}/Manager.GeneralDownload";
     CURL *curl = UtoolSetupCurlRequest(server, url, HTTP_POST, response);
     if (!curl) {
         result->broken = 1;
@@ -499,6 +499,7 @@ DONE:
 static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char *resourceURL,
                                    const char *httpMethod, UtoolCurlResponse *response)
 {
+    char *url = NULL;
     CURL *curl = curl_easy_init();
     if (curl) {
         // replace %s with redfish-system-id if necessary
@@ -516,14 +517,21 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
             strncat_s(fullURL, MAX_URL_LEN, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
         }
 
-        ZF_LOGI("[%s] %s", httpMethod, fullURL);
-
         /* enable verbose for easier tracing */
         /*curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);*/
 
+        if (strstr(resourceURL, VAR_OEM) != NULL) {
+            char *url = UtoolStringReplace(fullURL, VAR_OEM, server->oemName);
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            ZF_LOGI("[%s] %s", httpMethod, url);
+            free(url);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_URL, fullURL);
+            ZF_LOGI("[%s] %s", httpMethod, fullURL);
+        }
+
         // setup basic http meta
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, httpMethod);
-        curl_easy_setopt(curl, CURLOPT_URL, fullURL);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -711,7 +719,8 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 {
     ZF_LOGI("Try to fetch redfish system id now.");
 
-    cJSON *json = NULL;
+    cJSON *getSystemJson = NULL, *getRedfishJson = NULL;
+    UtoolResult *utoolResult = &(UtoolResult) {0};
 
     char *baseUrl = (char *) malloc(MAX_URL_LEN);
     if (baseUrl == NULL) {
@@ -750,13 +759,13 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
 
     // parse response content and detect redfish-system-id
     if (response->httpStatusCode >= 200 && response->httpStatusCode < 300) {
-        json = cJSON_Parse(response->content);
-        ret = UtoolAssetParseJsonNotNull(json);
+        getSystemJson = cJSON_Parse(response->content);
+        ret = UtoolAssetParseJsonNotNull(getSystemJson);
         if (ret != UTOOLE_OK) {
             goto DONE;
         }
 
-        cJSON *node = cJSONUtils_GetPointer(json, "/Members/0/@odata.id");
+        cJSON *node = cJSONUtils_GetPointer(getSystemJson, "/Members/0/@odata.id");
         ret = UtoolAssetJsonNodeNotNull(node, "/Members/0/@odata.id");
         if (ret != UTOOLE_OK) {
             goto DONE;
@@ -774,12 +783,33 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
     } else {
         ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror((CURLcode) ret));
         ret = UtoolResolveFailureResponse(response, result);
+        goto DONE;
     }
 
+    UtoolRedfishGet(server, "/", NULL, NULL, utoolResult);
+    if (utoolResult->broken) {
+        ret = utoolResult->code;
+        goto DONE;
+    }
+
+    getRedfishJson = utoolResult->data;
+    cJSON *oemNode = cJSONUtils_GetPointer(getRedfishJson, "/Oem");
+    if (!cJSON_IsObject(oemNode->child)) {
+        ret = UTOOLE_INTERNAL;
+        goto DONE;
+    }
+
+    server->oemName = (char *) malloc(MAX_OEM_NAME_LEN);
+    if (server->oemName == NULL) {
+        ret = UTOOLE_INTERNAL;
+        goto DONE;
+    }
+    strncpy_s(server->oemName, MAX_OEM_NAME_LEN, oemNode->child->string, strlen(oemNode->child->string));
     goto DONE;
 
 DONE:
-    FREE_CJSON(json)
+    FREE_CJSON(getSystemJson)
+    FREE_CJSON(getRedfishJson)
     UtoolFreeCurlResponse(response);
     return ret;
 }
@@ -934,7 +964,7 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
     }
 
     if (output && outputMapping) {
-        result->code = UtoolMappingCJSONItems(result->data, output, outputMapping);
+        result->code = UtoolMappingCJSONItems(server, result->data, output, outputMapping);
         if (result->code != UTOOLE_OK) {
             FREE_CJSON(result->data)
             goto FAILURE;
@@ -1053,7 +1083,7 @@ DONE:
 * @param result
 * @return
 */
-UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *result)
+UtoolRedfishTask *UtoolRedfishMapTaskFromJson(UtoolRedfishServer *server, cJSON *cJSONTask, UtoolResult *result)
 {
     size_t sizeRedfishTask = sizeof(UtoolRedfishTask);
     UtoolRedfishTask *task = (UtoolRedfishTask *) malloc(sizeRedfishTask);
@@ -1135,7 +1165,7 @@ UtoolRedfishTask *UtoolRedfishMapTaskFromJson(cJSON *cJSONTask, UtoolResult *res
     }
 
     // TaskPercent
-    node = cJSONUtils_GetPointer(cJSONTask, "/Oem/Huawei/TaskPercentage");
+    node = UtoolGetOemNode(server, cJSONTask, "TaskPercentage");
     if (node != NULL && node->valuestring != NULL) {
         size_t sizeTaskPercent = strnlen(node->valuestring, 32);
         task->taskPercentage = (char *) malloc(sizeTaskPercent + 1);
@@ -1209,7 +1239,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
     cJSON *jsonTask = cJSONTask;
 
     while (true) {
-        task = UtoolRedfishMapTaskFromJson(jsonTask, result);
+        task = UtoolRedfishMapTaskFromJson(server, jsonTask, result);
         if (result->broken) {
             goto FAILURE;
         }
@@ -1294,7 +1324,7 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
     cJSON *jsonTask = cJSONTask;
 
     while (true) {
-        task = UtoolRedfishMapTaskFromJson(jsonTask, result);
+        task = UtoolRedfishMapTaskFromJson(server, jsonTask, result);
         if (result->broken) {
             goto FAILURE;
         }

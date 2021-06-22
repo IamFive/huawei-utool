@@ -78,7 +78,7 @@ int UtoolCmdWaitRedfishTask(UtoolCommandOption *commandOption, char **outputStr)
 
     // output to result
     output = cJSON_CreateObject();
-    result->code = UtoolMappingCJSONItems(result->data, output, g_UtoolGetTaskMappings);
+    result->code = UtoolMappingCJSONItems(server, result->data, output, g_UtoolGetTaskMappings);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }

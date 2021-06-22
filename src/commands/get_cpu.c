@@ -24,7 +24,7 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getPowerWattsMapping[] = {
-        {.sourceXpath = "/PowerControl/0/Oem/Huawei/PowerMetricsExtended/CurrentCPUPowerWatts",
+        {.sourceXpath = "/PowerControl/0/Oem/${Oem}/PowerMetricsExtended/CurrentCPUPowerWatts",
                 .targetKeyValue="TotalPowerWatts"},
         NULL
 };
@@ -37,15 +37,15 @@ static const UtoolOutputMapping getProcessorSummaryMapping[] = {
 };
 
 static const UtoolOutputMapping getProcessorMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/DeviceLocator", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/DeviceLocator", .targetKeyValue="CommonName"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/Oem/Huawei/L1CacheKiB", .targetKeyValue="L1CacheKiB"},
-        {.sourceXpath = "/Oem/Huawei/L2CacheKiB", .targetKeyValue="L2CacheKiB"},
-        {.sourceXpath = "/Oem/Huawei/L3CacheKiB", .targetKeyValue="L3CacheKiB"},
-        {.sourceXpath = "/Oem/Huawei/Temperature", .targetKeyValue="Temperature"},
-        {.sourceXpath = "/Oem/Huawei/EnabledSetting", .targetKeyValue="EnabledSetting"},
+        {.sourceXpath = "/Oem/${Oem}/L1CacheKiB", .targetKeyValue="L1CacheKiB"},
+        {.sourceXpath = "/Oem/${Oem}/L2CacheKiB", .targetKeyValue="L2CacheKiB"},
+        {.sourceXpath = "/Oem/${Oem}/L3CacheKiB", .targetKeyValue="L3CacheKiB"},
+        {.sourceXpath = "/Oem/${Oem}/Temperature", .targetKeyValue="Temperature"},
+        {.sourceXpath = "/Oem/${Oem}/EnabledSetting", .targetKeyValue="EnabledSetting"},
         {.sourceXpath = "/ProcessorType", .targetKeyValue="ProcessorType"},
         {.sourceXpath = "/ProcessorArchitecture", .targetKeyValue="ProcessorArchitecture"},
         {.sourceXpath = "/InstructionSet", .targetKeyValue="InstructionSet"},
@@ -53,7 +53,7 @@ static const UtoolOutputMapping getProcessorMappings[] = {
         {.sourceXpath = "/TotalCores", .targetKeyValue="TotalCores"},
         {.sourceXpath = "/TotalThreads", .targetKeyValue="TotalThreads"},
         {.sourceXpath = "/Socket", .targetKeyValue="Socket"},
-        {.sourceXpath = "/Oem/Huawei/SerialNumber", .targetKeyValue="PPIN"},
+        {.sourceXpath = "/Oem/${Oem}/SerialNumber", .targetKeyValue="PPIN"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL

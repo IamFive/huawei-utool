@@ -53,7 +53,7 @@ typedef struct _UpdateServiceOption {
     char *sslEnabled;
 } UtoolUpdateServiceOption;
 
-static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolUpdateServiceOption *option, UtoolResult *result);
 
@@ -142,7 +142,7 @@ int UtoolCmdSetService(UtoolCommandOption *commandOption, char **outputStr) {
     /** update service */
     if (option->enabled != NULL || option->port != DEFAULT_INT_V) {
         // build payload
-        payload = BuildPayload(option, result);
+        payload = BuildPayload(server, option, result);
         if (result->broken) {
             goto FAILURE;
         }
@@ -221,7 +221,7 @@ UpdateVirtualMediaService(UtoolRedfishServer *server, UtoolUpdateServiceOption *
         goto FAILURE;
     }
 
-    cJSON *wrapped = UtoolWrapOem(payload, result);
+    cJSON *wrapped = UtoolWrapOem(server->oemName, payload, result);
     if (result->broken) {
         goto FAILURE;
     }
@@ -322,7 +322,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result) {
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateServiceOption *option, UtoolResult *result) {
 
     cJSON *payload = NULL;
 
@@ -348,7 +348,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
             goto FAILURE;
         }
 
-        payload = UtoolWrapOem(ipmiOemNode, result);
+        payload = UtoolWrapOem(server->oemName, ipmiOemNode, result);
         if (result->broken) {
             FREE_CJSON(ipmiOemNode)
             goto FAILURE;
@@ -385,7 +385,7 @@ static cJSON *BuildPayload(UtoolUpdateServiceOption *option, UtoolResult *result
     }
 
     if (UtoolStringInArray(serviceName, OEM_SERVICE_CHOICES)) {
-        cJSON *wrapped = UtoolWrapOem(payload, result);
+        cJSON *wrapped = UtoolWrapOem(server->oemName, payload, result);
         if (result->broken) {
             goto FAILURE;
         }

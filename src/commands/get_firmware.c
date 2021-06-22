@@ -25,7 +25,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node) {
+static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);
         return UTOOLE_OK;
@@ -70,7 +70,7 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node) {
     return ret;
 }
 
-static int VersionHandler(cJSON *target, const char *key, cJSON *node) {
+static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     char *version = node->valuestring;
     if (cJSON_IsNull(node) || version == NULL) {
         cJSON_AddItemToObjectCS(target, key, node);
@@ -201,7 +201,7 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **result) {
             }
 
             // create firmware item and add it to array
-            ret = UtoolMappingCJSONItems(firmwareJson, firmware, getFwMappings);
+            ret = UtoolMappingCJSONItems(server, firmwareJson, firmware, getFwMappings);
             if (ret != UTOOLE_OK) {
                 goto FAILURE;
             }

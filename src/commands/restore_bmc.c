@@ -69,7 +69,7 @@ int UtoolCmdRestoreBMC(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    char *url = "/Managers/%s/Actions/Oem/Huawei/Manager.RestoreFactory";
+    char *url = "/Managers/%s/Actions/Oem/${Oem}/Manager.RestoreFactory";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;

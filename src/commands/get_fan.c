@@ -24,20 +24,20 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getFanSummaryMapping[] = {
-        {.sourceXpath = "/Oem/Huawei/FanSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/Oem/Huawei/FanSummary/Count", .targetKeyValue="Maximum"},
+        {.sourceXpath = "/Oem/${Oem}/FanSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/${Oem}/FanSummary/Count", .targetKeyValue="Maximum"},
         {.sourceXpath = "/Null", .targetKeyValue="Model"},
-        {.sourceXpath = "/Oem/Huawei/FanSpeedLevelPercents", .targetKeyValue="FanSpeedLevelPercents"},
-        {.sourceXpath = "/Oem/Huawei/FanSpeedAdjustmentMode", .targetKeyValue="FanSpeedAdjustmentMode"},
-        {.sourceXpath = "/Oem/Huawei/FanTotalPowerWatts", .targetKeyValue="FanTotalPowerWatts"},
-        {.sourceXpath = "/Oem/Huawei/FanManualModeTimeoutSeconds", .targetKeyValue="FanManualModeTimeoutSeconds"},
+        {.sourceXpath = "/Oem/${Oem}/FanSpeedLevelPercents", .targetKeyValue="FanSpeedLevelPercents"},
+        {.sourceXpath = "/Oem/${Oem}/FanSpeedAdjustmentMode", .targetKeyValue="FanSpeedAdjustmentMode"},
+        {.sourceXpath = "/Oem/${Oem}/FanTotalPowerWatts", .targetKeyValue="FanTotalPowerWatts"},
+        {.sourceXpath = "/Oem/${Oem}/FanManualModeTimeoutSeconds", .targetKeyValue="FanManualModeTimeoutSeconds"},
         NULL
 };
 
 static const UtoolOutputMapping getFanMappings[] = {
         {.sourceXpath = "/MemberId", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Null", .targetKeyValue="Model"},
         {.sourceXpath = "/MaxReadingRange", .targetKeyValue="RatedSpeedRPM"},
         {.sourceXpath = "/Reading", .targetKeyValue="SpeedRPM"},
@@ -111,7 +111,7 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
         goto FAILURE;
     }
 
-    ret = UtoolMappingCJSONItems(thermalJson, output, getFanSummaryMapping);
+    ret = UtoolMappingCJSONItems(server, thermalJson, output, getFanSummaryMapping);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -135,7 +135,7 @@ int UtoolCmdGetFan(UtoolCommandOption *commandOption, char **result)
         }
 
         // create fan item and add it to array
-        ret = UtoolMappingCJSONItems(member, fan, getFanMappings);
+        ret = UtoolMappingCJSONItems(server, member, fan, getFanMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

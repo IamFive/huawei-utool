@@ -29,18 +29,18 @@ static const UtoolOutputMapping getSystemSummaryMappings[] = {
         {.sourceXpath = "/Status/Health", .targetKeyValue="System"},
         {.sourceXpath = "/ProcessorSummary/Status/HealthRollup", .targetKeyValue="CPU"},
         {.sourceXpath = "/MemorySummary/Status/HealthRollup", .targetKeyValue="Memory"},
-        {.sourceXpath = "/Oem/Huawei/StorageSummary/Status/HealthRollup", .targetKeyValue="Storage"},
+        {.sourceXpath = "/Oem/${Oem}/StorageSummary/Status/HealthRollup", .targetKeyValue="Storage"},
         NULL
 };
 
 static const UtoolOutputMapping getChassisSummaryMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/NetworkAdaptersSummary/Status/HealthRollup", .targetKeyValue="Network"},
-        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="PSU"},
+        {.sourceXpath = "/Oem/${Oem}/NetworkAdaptersSummary/Status/HealthRollup", .targetKeyValue="Network"},
+        {.sourceXpath = "/Oem/${Oem}/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="PSU"},
         NULL
 };
 
 static const UtoolOutputMapping getThermalSummaryMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/FanSummary/Status/HealthRollup", .targetKeyValue="Fan"},
+        {.sourceXpath = "/Oem/${Oem}/FanSummary/Status/HealthRollup", .targetKeyValue="Fan"},
         NULL
 };
 

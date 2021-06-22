@@ -51,9 +51,9 @@ static const UtoolOutputMapping getAdaptivePortMappings[] = {
 };
 
 static const UtoolOutputMapping getMgmtPortMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/AdaptivePort", .targetKeyValue="AdaptivePort",
+        {.sourceXpath = "/Oem/${Oem}/AdaptivePort", .targetKeyValue="AdaptivePort",
                 .filter=AdaptivePortFilter, .nestMapping = getAdaptivePortMappings},
-        {.sourceXpath = "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues",
+        {.sourceXpath = "/Oem/${Oem}/ManagementNetworkPort@Redfish.AllowableValues",
                 .targetKeyValue = "AllowablePorts", .nestMapping = getAllowableValuesNestMappings},
         NULL
 };

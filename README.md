@@ -35,7 +35,7 @@ your ENV).
 1. To install libssl-dev
 
 - ubuntu: `sudo apt install libssl-dev`
-- RedHat: `sudo yum install openssl-dev`
+- RedHat: `sudo yum install openssl-devel`
 
 1. To install libssh2-dev
 

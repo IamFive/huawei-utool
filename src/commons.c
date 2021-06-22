@@ -22,7 +22,7 @@
 
 const char *g_UTOOL_ENABLED_CHOICES[] = {ENABLED, DISABLED, NULL};
 
-static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node);
+static int TaskTriggerPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node);
 
 /** Redfish Rsync Task Mapping define */
 const UtoolOutputMapping g_UtoolGetTaskMappings[] = {
@@ -34,11 +34,11 @@ const UtoolOutputMapping g_UtoolGetTaskMappings[] = {
         {.sourceXpath = "/Null", .targetKeyValue="EstimatedTimeSenconds"},
         {.sourceXpath = "/Null", .targetKeyValue="Trigger", .handle=TaskTriggerPropertyHandler},
         {.sourceXpath = "/Messages", .targetKeyValue="Messages"},
-        {.sourceXpath = "/Oem/Huawei/TaskPercentage", .targetKeyValue="TaskPercentage"},
+        {.sourceXpath = "/Oem/${Oem}/TaskPercentage", .targetKeyValue="TaskPercentage"},
         {0},
 };
 
-static int TaskTriggerPropertyHandler(cJSON *target, const char *key, cJSON *node)
+static int TaskTriggerPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     cJSON_AddRawToObject(target, "Trigger", "[\"automatic\"]");
     FREE_CJSON(node)
@@ -68,7 +68,7 @@ const char *g_UtoolRedfishTaskFailedStatus[] = {
 };
 
 
-int UtoolBoolToEnabledPropertyHandler(cJSON *target, const char *key, cJSON *node)
+int UtoolBoolToEnabledPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsTrue(node)) {
         cJSON_AddStringToObject(target, key, ENABLED);
@@ -277,7 +277,7 @@ void UtoolBuildDefaultSuccessResult(char **result)
  * @param count
  * @return
  */
-int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMapping *mappings)
+int UtoolMappingCJSONItems(UtoolRedfishServer *server, cJSON *source, cJSON *target, const UtoolOutputMapping *mappings)
 {
     int ret;
     for (int idx = 0;; idx++) {
@@ -285,9 +285,18 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
         if (mapping->sourceXpath == NULL || mapping->targetKeyValue == NULL) {
             break;
         }
-
+        cJSON *ref = NULL;
         const char *xpath = mapping->sourceXpath;
-        cJSON *ref = cJSONUtils_GetPointer(source, xpath);
+        if (server) {
+            char *path = UtoolStringReplace(xpath, VAR_OEM, server->oemName);
+            if (path == NULL) {
+                return UTOOLE_INTERNAL;
+            }
+            ref = cJSONUtils_GetPointer(source, path);
+            FREE_OBJ(path)
+        } else {
+            ref = cJSONUtils_GetPointer(source, xpath);
+        }
 
         /** plain mapping */
         if (mapping->nestMapping == NULL) {
@@ -307,7 +316,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
                 continue;
             }
 
-            ret = mapping->handle(target, mapping->targetKeyValue, cloned);
+            ret = mapping->handle(server, target, mapping->targetKeyValue, cloned);
             if (ret != UTOOLE_OK) {
                 return ret;
             }
@@ -333,7 +342,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 
                 cJSON *mapped = cJSON_CreateObject();
                 cJSON_AddItemToArray(array, mapped);
-                ret = UtoolMappingCJSONItems(element, mapped, nestMapping);
+                ret = UtoolMappingCJSONItems(server, element, mapped, nestMapping);
                 if (ret != UTOOLE_OK) {
                     return ret;
                 }
@@ -379,7 +388,7 @@ int UtoolMappingCJSONItems(cJSON *source, cJSON *target, const UtoolOutputMappin
 }
 
 
-cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result)
+cJSON *UtoolWrapOem(char *oemName, cJSON *source, UtoolResult *result)
 {
     cJSON *wrapped = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(wrapped);
@@ -393,7 +402,7 @@ cJSON *UtoolWrapOem(cJSON *source, UtoolResult *result)
         goto FAILURE;
     }
 
-    cJSON_AddItemToObject(oem, "Huawei", source);
+    cJSON_AddItemToObject(oem, oemName, source);
     return wrapped;
 
 FAILURE:
@@ -502,4 +511,23 @@ const char *UtoolFileRealpath(const char *path, char *resolved) {
 #else
     return realpath(path, resolved);
 #endif
+}
+
+/**
+ * get cJSON node in oem node with relative xpath
+ *
+ * @param server            redfish server
+ * @param source            source cJSON node
+ * @param relativeXpath     relative xpath of oem node
+ * @return
+ */
+const cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const char *relativeXpath)
+{
+    char xpath[MAX_XPATH_LEN] = {0};
+    if (relativeXpath == NULL) {
+        snprintf_s(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s", server->oemName);
+    } else {
+        snprintf_s(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/%s", server->oemName, relativeXpath);
+    }
+    return cJSONUtils_GetPointer(source, xpath);
 }

@@ -39,7 +39,7 @@ static const UtoolOutputMapping getEventMappings[] = {
 };
 
 static const UtoolOutputMapping getEventArrayMappings[] = {
-        {.sourceXpath = "/error/@Message.ExtendedInfo/0/Oem/Huawei/SelLogEntries", .targetKeyValue="EventLog",
+        {.sourceXpath = "/error/@Message.ExtendedInfo/0/Oem/${Oem}/SelLogEntries", .targetKeyValue="EventLog",
                 .nestMapping=getEventMappings},
         NULL
 };
@@ -101,7 +101,7 @@ int UtoolCmdGetEventLogBak(UtoolCommandOption *commandOption, char **outputStr)
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.QuerySelLogEntries",
+    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/${Oem}/LogService.QuerySelLogEntries",
                log0Url);
 
     /** query sel */

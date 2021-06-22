@@ -90,6 +90,7 @@ typedef struct _RedfishServer
     char *username;
     char *password;
     char *systemId;
+    char *oemName;
     char *psn;
 } UtoolRedfishServer;
 
@@ -140,7 +141,7 @@ typedef struct _OutputMapping
     const struct _OutputMapping *nestMapping;
 
     int (*filter)(cJSON *);                            // whether this property should output, return 1 if accept, 0 not.
-    int (*handle)(cJSON *, const char *key, cJSON *);   // customer handler
+    int (*handle)(UtoolRedfishServer *, cJSON *, const char *key, cJSON *);   // customer handler
 } UtoolOutputMapping;
 
 

@@ -39,7 +39,8 @@ typedef struct _SetAdaptivePortOption
     char *adaptivePortListStr;
 } UtoolSetAdaptivePortOption;
 
-static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSetAdaptivePortOption *option,
+                           UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolResult *result);
 
@@ -112,7 +113,7 @@ int UtoolCmdSetAdaptivePort(UtoolCommandOption *commandOption, char **outputStr)
     getEthernetRespJson = result->data;
 
     // build payload
-    payload = BuildPayload(getEthernetRespJson, option, result);
+    payload = BuildPayload(server, getEthernetRespJson, option, result);
     if (result->broken) {
         goto FAILURE;
     }
@@ -193,7 +194,8 @@ DONE:
     /* regfree(&regex); */
 }
 
-static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, UtoolResult *result)
+static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSetAdaptivePortOption *option,
+                           UtoolResult *result)
 {
     cJSON *payload = NULL;
     char *inputPorts = NULL;
@@ -225,8 +227,10 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
 
 
     /* load & validate allowable ports */
-    cJSON *allowableValues = cJSONUtils_GetPointer(ethernet,
-                                                   "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues");
+    // cJSON *allowableValues = cJSONUtils_GetPointer(ethernet,
+    //                                                "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues");
+
+    cJSON *allowableValues = UtoolGetOemNode(server, ethernet, "ManagementNetworkPort@Redfish.AllowableValues");
     if (!(cJSON_IsArray(allowableValues) && cJSON_GetArraySize(allowableValues) > 0)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_EMPTY_ALLOWABLE_PORT),
                                               &(result->desc));
@@ -292,7 +296,7 @@ static cJSON *BuildPayload(cJSON *ethernet, UtoolSetAdaptivePortOption *option, 
         }
     }
 
-    cJSON *wrapped = UtoolWrapOem(payload, result);
+    cJSON *wrapped = UtoolWrapOem(server->oemName, payload, result);
     if (result->broken) {
         goto FAILURE;
     }

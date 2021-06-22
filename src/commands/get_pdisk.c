@@ -25,12 +25,12 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getDriveSummaryMapping[] = {
-        {.sourceXpath = "/Oem/Huawei/DriveSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/Oem/Huawei/DriveSummary/Count", .targetKeyValue="Maximum"},
+        {.sourceXpath = "/Oem/${Oem}/DriveSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/${Oem}/DriveSummary/Count", .targetKeyValue="Maximum"},
         NULL
 };
 
-static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
+static int CapacityGiBHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) { // should not happen
         cJSON_AddItemToObjectCS(target, key, node);
@@ -44,7 +44,7 @@ static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
 }
 
 
-static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
+static int VolumesHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) { // should not happen
         cJSON_AddItemToObjectCS(target, key, node);
@@ -90,7 +90,7 @@ static int VolumesHandler(cJSON *target, const char *key, cJSON *node)
 static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Protocol", .targetKeyValue="Protocol"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
@@ -106,15 +106,15 @@ static const UtoolOutputMapping getDriveMappings[] = {
         {.sourceXpath = "/Revision", .targetKeyValue="Revision"},
 
         {.sourceXpath = "/StatusIndicator", .targetKeyValue="StatusIndicator"},
-        {.sourceXpath = "/Oem/Huawei/TemperatureCelsius", .targetKeyValue="TemperatureCelsius"},
-        {.sourceXpath = "/Oem/Huawei/HoursOfPoweredUp", .targetKeyValue="HoursOfPoweredUp"},
-        {.sourceXpath = "/Oem/Huawei/FirmwareStatus", .targetKeyValue="FirmwareStatus"},
-        {.sourceXpath = "/Oem/Huawei/SASAddress", .targetKeyValue="SASAddress"},
-        {.sourceXpath = "/Oem/Huawei/PatrolState", .targetKeyValue="PatrolState"},
-        {.sourceXpath = "/Oem/Huawei/RebuildState", .targetKeyValue="RebuildState"},
-        {.sourceXpath = "/Oem/Huawei/RebuildProgress", .targetKeyValue="RebuildProgress"},
+        {.sourceXpath = "/Oem/${Oem}/TemperatureCelsius", .targetKeyValue="TemperatureCelsius"},
+        {.sourceXpath = "/Oem/${Oem}/HoursOfPoweredUp", .targetKeyValue="HoursOfPoweredUp"},
+        {.sourceXpath = "/Oem/${Oem}/FirmwareStatus", .targetKeyValue="FirmwareStatus"},
+        {.sourceXpath = "/Oem/${Oem}/SASAddress", .targetKeyValue="SASAddress"},
+        {.sourceXpath = "/Oem/${Oem}/PatrolState", .targetKeyValue="PatrolState"},
+        {.sourceXpath = "/Oem/${Oem}/RebuildState", .targetKeyValue="RebuildState"},
+        {.sourceXpath = "/Oem/${Oem}/RebuildProgress", .targetKeyValue="RebuildProgress"},
 
-        {.sourceXpath = "/Oem/Huawei/SpareforLogicalDrives", .targetKeyValue="SpareforLogicalDrives"},
+        {.sourceXpath = "/Oem/${Oem}/SpareforLogicalDrives", .targetKeyValue="SpareforLogicalDrives"},
         {.sourceXpath = "/Links/Volumes/0/@odata.id", .targetKeyValue="Volumes", .handle=VolumesHandler},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
@@ -185,7 +185,7 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
-    ret = UtoolMappingCJSONItems(chassisJson, output, getDriveSummaryMapping);
+    ret = UtoolMappingCJSONItems(server, chassisJson, output, getDriveSummaryMapping);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -232,7 +232,7 @@ int UtoolCmdGetPhysicalDisks(UtoolCommandOption *commandOption, char **result)
         }
 
         // create drive item and add it to array
-        ret = UtoolMappingCJSONItems(driveJson, drive, getDriveMappings);
+        ret = UtoolMappingCJSONItems(server, driveJson, drive, getDriveMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

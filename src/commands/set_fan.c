@@ -41,7 +41,7 @@ typedef struct _SetIndicatorOption
     int speedLevel;
 } UtoolSetIndicatorOption;
 
-static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result);
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolSetIndicatorOption *option, UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolSetIndicatorOption *option, UtoolResult *result);
 
@@ -91,7 +91,7 @@ int UtoolCmdSetFan(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     // build payload
-    payload = BuildPayload(option, result);
+    payload = BuildPayload(server, option, result);
     if (result->broken) {
         goto FAILURE;
     }
@@ -175,7 +175,7 @@ FAILURE:
     return;
 }
 
-static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
+static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolSetIndicatorOption *option, UtoolResult *result)
 {
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
@@ -199,7 +199,7 @@ static cJSON *BuildPayload(UtoolSetIndicatorOption *option, UtoolResult *result)
         }
     }
 
-    cJSON *wrapped = UtoolWrapOem(payload, result);
+    cJSON *wrapped = UtoolWrapOem(server->oemName, payload, result);
     if (result->broken) {
         goto FAILURE;
     }

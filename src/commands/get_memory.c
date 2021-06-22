@@ -25,7 +25,7 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getPowerWattsMapping[] = {
-        {.sourceXpath = "/PowerControl/0/Oem/Huawei/PowerMetricsExtended/CurrentMemoryPowerWatts",
+        {.sourceXpath = "/PowerControl/0/Oem/${Oem}/PowerMetricsExtended/CurrentMemoryPowerWatts",
                 .targetKeyValue="TotalPowerWatts"},
         NULL
 };
@@ -38,7 +38,7 @@ static const UtoolOutputMapping getMemorySummaryMapping[] = {
 
 static const UtoolOutputMapping getMemoryMappings[] = {
         {.sourceXpath = "/DeviceLocator", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/CapacityMiB", .targetKeyValue="CapacityMiB"},
         {.sourceXpath = "/OperatingSpeedMhz", .targetKeyValue="OperatingSpeedMhz"},
@@ -47,8 +47,8 @@ static const UtoolOutputMapping getMemoryMappings[] = {
         {.sourceXpath = "/DataWidthBits", .targetKeyValue="DataWidthBits"},
         {.sourceXpath = "/RankCount", .targetKeyValue="RankCount"},
         {.sourceXpath = "/PartNumber", .targetKeyValue="PartNumber"},
-        {.sourceXpath = "/Oem/Huawei/Technology", .targetKeyValue="Technology"},
-        {.sourceXpath = "/Oem/Huawei/MinVoltageMillivolt", .targetKeyValue="MinVoltageMillivolt"},
+        {.sourceXpath = "/Oem/${Oem}/Technology", .targetKeyValue="Technology"},
+        {.sourceXpath = "/Oem/${Oem}/MinVoltageMillivolt", .targetKeyValue="MinVoltageMillivolt"},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL

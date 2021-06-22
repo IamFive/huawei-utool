@@ -93,7 +93,7 @@ int UtoolCmdExportBMCCfg(UtoolCommandOption *commandOption, char **outputStr) {
         goto DONE;
     }
 
-    char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ExportConfiguration";
+    char *url = "/redfish/v1/Managers/%s/Actions/Oem/${Oem}/Manager.ExportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;

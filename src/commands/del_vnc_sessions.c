@@ -23,7 +23,7 @@
 static const char *VNCSessionUserTag = "VNC";
 static const UtoolOutputMapping getSessionsMapping[] = {
         {.sourceXpath = "/@odata.id", .targetKeyValue="Url"},
-        {.sourceXpath = "/Oem/Huawei/UserTag", .targetKeyValue="UserTag"},
+        {.sourceXpath = "/Oem/${Oem}/UserTag", .targetKeyValue="UserTag"},
         NULL
 };
 
@@ -92,7 +92,7 @@ int UtoolCmdDeleteVNCSession(UtoolCommandOption *commandOption, char **outputStr
     cJSON *session = NULL;
     cJSON_ArrayForEach(session, sessions) {
         cJSON *tag = cJSON_GetObjectItem(session, "UserTag");
-        result->code = UtoolAssetJsonNodeNotNull(tag, "/Oem/Huawei/UserTag");
+        result->code = UtoolAssetJsonNodeNotNull(tag, "/Oem/${Oem}/UserTag");
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }

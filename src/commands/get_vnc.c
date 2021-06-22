@@ -25,7 +25,7 @@ static const char *const usage[] = {
 };
 
 
-static int SessionModePropertyHandler(cJSON *target, const char *key, cJSON *node)
+static int SessionModePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);

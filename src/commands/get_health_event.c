@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -128,7 +129,10 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
 
 
     cJSON *member = NULL;
-    cJSON *members = cJSONUtils_GetPointer(logService0Json, "/Oem/Huawei/HealthEvent");
+
+    char healthEventXpath[MAX_XPATH_LEN] = {0};
+    snprintf_s(healthEventXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/HealthEvent", server->oemName);
+    cJSON *members = cJSONUtils_GetPointer(logService0Json, healthEventXpath);
     cJSON_ArrayForEach(member, members) {
         healthEvent = cJSON_CreateObject();
         ret = UtoolAssetCreatedJsonNotNull(healthEvent);
@@ -137,7 +141,7 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
         }
 
         // create healthEvent item and add it to array
-        ret = UtoolMappingCJSONItems(member, healthEvent, getHealthEventMappings);
+        ret = UtoolMappingCJSONItems(server, member, healthEvent, getHealthEventMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

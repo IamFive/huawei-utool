@@ -23,7 +23,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int EmptyPrivilegeHandler(cJSON *target, const char *key, cJSON *node)
+static int EmptyPrivilegeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     FREE_CJSON(node)
     cJSON *newNode = cJSON_AddArrayToObject(target, key);

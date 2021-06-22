@@ -18,7 +18,7 @@ extern "C" {
     #define FILEPATH_SEP '/'
 #endif
 
-
+#define MAX_XPATH_LEN 256
 #define MAX_URL_LEN 256
 #define MAX_HEADER_LEN 128
 #define MAX_COMMAND_NAME_LEN 50
@@ -27,6 +27,7 @@ extern "C" {
 #define MAX_PAYLOAD_LEN 2048
 #define MAX_FAILURE_COUNT 32
 #define MAX_FILE_PATH_LEN 512
+#define MAX_OEM_NAME_LEN 128
 
 #define IPMI_PORT 623
 #define HTTPS_PORT 443
@@ -42,6 +43,7 @@ extern "C" {
 #define HEADER_CONTENT_TYPE "CONTENT-TYPE: "
 #define HEADER_IF_MATCH "If-Match"
 
+#define VAR_OEM "${Oem}"
 
 /** UTOOL response json constants// */
 #define RESULT_KEY_STATE "State"

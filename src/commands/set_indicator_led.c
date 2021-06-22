@@ -103,7 +103,7 @@ int UtoolCmdSetIndicatorLED(UtoolCommandOption *commandOption, char **outputStr)
         UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
     }
     else {
-        char *url = "/Chassis/%s/Oem/Huawei/Actions/Chassis.ControlIndicatorLED";
+        char *url = "/Chassis/%s/Oem/${Oem}/Actions/Chassis.ControlIndicatorLED";
         UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     }
 

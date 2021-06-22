@@ -119,7 +119,7 @@ int UtoolCmdGetTemperature(UtoolCommandOption *commandOption, char **result)
         }
 
         // create temperature item and add it to array
-        ret = UtoolMappingCJSONItems(member, temperature, getTemperatureMappings);
+        ret = UtoolMappingCJSONItems(server, member, temperature, getTemperatureMappings);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

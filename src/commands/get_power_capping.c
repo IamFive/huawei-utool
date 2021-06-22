@@ -23,7 +23,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int CalculateEnabledHandler(cJSON *target, const char *key, cJSON *node)
+static int CalculateEnabledHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     cJSON *newNode = cJSON_AddStringToObject(target, key, cJSON_IsNull(node) ? DISABLED : ENABLED);
     FREE_CJSON(node)

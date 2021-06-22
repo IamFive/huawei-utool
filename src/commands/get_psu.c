@@ -24,24 +24,24 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getPowerSummaryMapping[] = {
-        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/Oem/Huawei/PowerSupplySummary/Count", .targetKeyValue="Maximum"},
+        {.sourceXpath = "/Oem/${Oem}/PowerSupplySummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/${Oem}/PowerSupplySummary/Count", .targetKeyValue="Maximum"},
         NULL
 };
 
 static const UtoolOutputMapping getPowerSupplyMapping[] = {
         {.sourceXpath = "/MemberId", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/Oem/Huawei/Protocol", .targetKeyValue="Protocol"},
-        {.sourceXpath = "/Oem/Huawei/PowerOutputWatts", .targetKeyValue="PowerOutputWatts"},
-        {.sourceXpath = "/Oem/Huawei/InputAmperage", .targetKeyValue="InputAmperage"},
-        {.sourceXpath = "/Oem/Huawei/ActiveStandby", .targetKeyValue="ActiveStandby"},
-        {.sourceXpath = "/Oem/Huawei/OutputVoltage", .targetKeyValue="OutputVoltage"},
-        {.sourceXpath = "/Oem/Huawei/PowerInputWatts", .targetKeyValue="PowerInputWatts"},
-        {.sourceXpath = "/Oem/Huawei/OutputAmperage", .targetKeyValue="OutputAmperage"},
+        {.sourceXpath = "/Oem/${Oem}/Protocol", .targetKeyValue="Protocol"},
+        {.sourceXpath = "/Oem/${Oem}/PowerOutputWatts", .targetKeyValue="PowerOutputWatts"},
+        {.sourceXpath = "/Oem/${Oem}/InputAmperage", .targetKeyValue="InputAmperage"},
+        {.sourceXpath = "/Oem/${Oem}/ActiveStandby", .targetKeyValue="ActiveStandby"},
+        {.sourceXpath = "/Oem/${Oem}/OutputVoltage", .targetKeyValue="OutputVoltage"},
+        {.sourceXpath = "/Oem/${Oem}/PowerInputWatts", .targetKeyValue="PowerInputWatts"},
+        {.sourceXpath = "/Oem/${Oem}/OutputAmperage", .targetKeyValue="OutputAmperage"},
 
         {.sourceXpath = "/PartNumber", .targetKeyValue="PartNumber"},
         {.sourceXpath = "/PowerSupplyType", .targetKeyValue="PowerSupplyType"},
@@ -130,7 +130,7 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
-    ret = UtoolMappingCJSONItems(chassisJson, output, getPowerSummaryMapping);
+    ret = UtoolMappingCJSONItems(server, chassisJson, output, getPowerSummaryMapping);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -161,7 +161,7 @@ int UtoolCmdGetPowerSupply(UtoolCommandOption *commandOption, char **result)
         }
 
         // create voltage item and add it to array
-        ret = UtoolMappingCJSONItems(member, powerSupply, getPowerSupplyMapping);
+        ret = UtoolMappingCJSONItems(server, member, powerSupply, getPowerSupplyMapping);
         if (ret != UTOOLE_OK) {
             goto FAILURE;
         }

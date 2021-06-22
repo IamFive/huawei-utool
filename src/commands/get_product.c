@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <securec.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -23,7 +24,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int CalculateTotalPowerWattsHandler(cJSON *target, const char *key, cJSON *node)
+static int CalculateTotalPowerWattsHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) { // should not happen
         cJSON_AddItemToObjectCS(target, key, node);
@@ -33,8 +34,11 @@ static int CalculateTotalPowerWattsHandler(cJSON *target, const char *key, cJSON
     if (cJSON_IsArray(node)) {
         int total = 0;
         cJSON *ps = NULL;
+
+        char powerInputWattsXpath[MAX_XPATH_LEN] = {0};
+        snprintf_s(powerInputWattsXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PowerInputWatts", server->oemName);
         cJSON_ArrayForEach(ps, node) {
-            cJSON *input = cJSONUtils_GetPointer(ps, "/Oem/Huawei/PowerInputWatts");
+            cJSON *input = cJSONUtils_GetPointer(ps, powerInputWattsXpath);
             if (input != NULL && cJSON_IsNumber(input)) {
                 total += input->valueint;
             }
@@ -69,8 +73,8 @@ static const UtoolOutputMapping getProductMappings[] = {
         {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
         {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
         //{.sourceXpath = "/HostingRole", .targetKeyValue="HostingRole"},
-        {.sourceXpath = "/Oem/Huawei/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
-        {.sourceXpath = "/Oem/Huawei/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
+        {.sourceXpath = "/Oem/${Oem}/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
+        {.sourceXpath = "/Oem/${Oem}/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
         {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},
         {.sourceXpath = "/Status/Health", .targetKeyValue = "Health"},
         NULL

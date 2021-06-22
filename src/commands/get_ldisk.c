@@ -25,7 +25,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
+static int CapacityGiBHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) { // should not happen
         cJSON_AddItemToObjectCS(target, key, node);
@@ -39,7 +39,7 @@ static int CapacityGiBHandler(cJSON *target, const char *key, cJSON *node)
 }
 
 
-static int DrivesPropertyHandler(cJSON *target, const char *key, cJSON *node)
+static int DrivesPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     int ret = UTOOLE_OK;
 
@@ -90,24 +90,24 @@ DONE:
 static const UtoolOutputMapping getVolumeMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},       // 需要做转化吗
         {.sourceXpath = "/Name", .targetKeyValue="LogicDiskName"},
-        {.sourceXpath = "/Oem/Huawei/RaidControllerID", .targetKeyValue="RaidControllerID"},
-        {.sourceXpath = "/Oem/Huawei/VolumeRaidLevel", .targetKeyValue="RaidLevel"},
+        {.sourceXpath = "/Oem/${Oem}/RaidControllerID", .targetKeyValue="RaidControllerID"},
+        {.sourceXpath = "/Oem/${Oem}/VolumeRaidLevel", .targetKeyValue="RaidLevel"},
         {.sourceXpath = "/CapacityBytes", .targetKeyValue="CapacityGiB", .handle = CapacityGiBHandler},
         {.sourceXpath = "/OptimumIOSizeBytes", .targetKeyValue="OptimumIOSizeBytes"},
         {.sourceXpath = "/RedundantType", .targetKeyValue="RedundantType"}, // TODO
-        {.sourceXpath = "/Oem/Huawei/DefaultReadPolicy", .targetKeyValue="DefaultReadPolicy"},
-        {.sourceXpath = "/Oem/Huawei/DefaultWritePolicy", .targetKeyValue="DefaultWritePolicy"},
-        {.sourceXpath = "/Oem/Huawei/DefaultCachePolicy", .targetKeyValue="DefaultCachePolicy"},
-        {.sourceXpath = "/Oem/Huawei/CurrentReadPolicy", .targetKeyValue="CurrentReadPolicy"},
-        {.sourceXpath = "/Oem/Huawei/CurrentWritePolicy", .targetKeyValue="CurrentWritePolicy"},
-        {.sourceXpath = "/Oem/Huawei/CurrentCachePolicy", .targetKeyValue="CurrentCachePolicy"},
-        {.sourceXpath = "/Oem/Huawei/AccessPolicy", .targetKeyValue="AccessPolicy"},
-        {.sourceXpath = "/Oem/Huawei/BGIEnable", .targetKeyValue="BGIEnable"},
-        {.sourceXpath = "/Oem/Huawei/BootEnable", .targetKeyValue="BootEnable"},
-        {.sourceXpath = "/Oem/Huawei/DriveCachePolicy", .targetKeyValue="DriveCachePolicy"},
-        {.sourceXpath = "/Oem/Huawei/SSDCachecadeVolume", .targetKeyValue="SSDCachecadeVolume"},
-        {.sourceXpath = "/Oem/Huawei/ConsistencyCheck", .targetKeyValue="ConsistencyCheck"},
-        {.sourceXpath = "/Oem/Huawei/SSDCachingEnable", .targetKeyValue="SSDCachingEnable"},
+        {.sourceXpath = "/Oem/${Oem}/DefaultReadPolicy", .targetKeyValue="DefaultReadPolicy"},
+        {.sourceXpath = "/Oem/${Oem}/DefaultWritePolicy", .targetKeyValue="DefaultWritePolicy"},
+        {.sourceXpath = "/Oem/${Oem}/DefaultCachePolicy", .targetKeyValue="DefaultCachePolicy"},
+        {.sourceXpath = "/Oem/${Oem}/CurrentReadPolicy", .targetKeyValue="CurrentReadPolicy"},
+        {.sourceXpath = "/Oem/${Oem}/CurrentWritePolicy", .targetKeyValue="CurrentWritePolicy"},
+        {.sourceXpath = "/Oem/${Oem}/CurrentCachePolicy", .targetKeyValue="CurrentCachePolicy"},
+        {.sourceXpath = "/Oem/${Oem}/AccessPolicy", .targetKeyValue="AccessPolicy"},
+        {.sourceXpath = "/Oem/${Oem}/BGIEnable", .targetKeyValue="BGIEnable"},
+        {.sourceXpath = "/Oem/${Oem}/BootEnable", .targetKeyValue="BootEnable"},
+        {.sourceXpath = "/Oem/${Oem}/DriveCachePolicy", .targetKeyValue="DriveCachePolicy"},
+        {.sourceXpath = "/Oem/${Oem}/SSDCachecadeVolume", .targetKeyValue="SSDCachecadeVolume"},
+        {.sourceXpath = "/Oem/${Oem}/ConsistencyCheck", .targetKeyValue="ConsistencyCheck"},
+        {.sourceXpath = "/Oem/${Oem}/SSDCachingEnable", .targetKeyValue="SSDCachingEnable"},
         {.sourceXpath = "/Links/Drives", .targetKeyValue="Drives", .handle=DrivesPropertyHandler}, // TODO
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
@@ -254,7 +254,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
             }
 
             // create volume item and add it to array
-            ret = UtoolMappingCJSONItems(volumeJson, volume, getVolumeMappings);
+            ret = UtoolMappingCJSONItems(server, volumeJson, volume, getVolumeMappings);
             if (ret != UTOOLE_OK) {
                 goto FAILURE;
             }

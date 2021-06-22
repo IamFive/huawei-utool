@@ -110,7 +110,7 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr) {
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/Huawei/LogService.CollectSel", log0Url);
+    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/${Oem}/LogService.CollectSel", log0Url);
 
     UtoolRedfishPost(server, querySelLogUrl, payload, NULL, NULL, result);
     if (result->broken) {

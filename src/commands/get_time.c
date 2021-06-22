@@ -24,7 +24,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int TimePropertyHandler(cJSON *target, const char *key, cJSON *node) {
+static int TimePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     char orig[20] = {0};
     if (cJSON_IsString(node)) {
         snprintf_s(orig, sizeof(orig), sizeof(orig), "%s", node->valuestring);
@@ -41,7 +41,7 @@ static int TimePropertyHandler(cJSON *target, const char *key, cJSON *node) {
     return UTOOLE_OK;
 }
 
-static int TimezonePropertyHandler(cJSON *target, const char *key, cJSON *node) {
+static int TimezonePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     if (cJSON_IsString(node)) {
         cJSON *newNode = cJSON_AddStringToObject(target, key, (char *) (node->valuestring + 19));
         FREE_CJSON(node)

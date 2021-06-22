@@ -36,11 +36,11 @@ static const UtoolOutputMapping getKVMIPSslEnabledMappings[] = {
 };
 
 static const UtoolOutputMapping getVMSslEnabledMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/EncryptionEnabled", .targetKeyValue="SSLEnabled", .handle=UtoolBoolToEnabledPropertyHandler},
+        {.sourceXpath = "/Oem/${Oem}/EncryptionEnabled", .targetKeyValue="SSLEnabled", .handle=UtoolBoolToEnabledPropertyHandler},
         NULL
 };
 
-int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode);
+int walkThoughNodeToFindService(UtoolRedfishServer *server, cJSON *serviceArray, cJSON *rootNode);
 
 /**
  * get BMC network protocol services, command handler of `getservice`
@@ -95,20 +95,20 @@ int UtoolCmdGetServices(UtoolCommandOption *commandOption, char **outputStr) {
     serviceRespJson = result->data;
 
     /** walk though ROOT node */
-    result->code = walkThoughNodeToFindService(serviceArray, serviceRespJson->child);
+    result->code = walkThoughNodeToFindService(server, serviceArray, serviceRespJson->child);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
     /** get oem node */
-    cJSON *oem = cJSONUtils_GetPointer(serviceRespJson, "/Oem/Huawei");
-    result->code = UtoolAssetJsonNodeNotNull(oem, "/Oem/Huawei");
+    cJSON *oem = UtoolGetOemNode(server, serviceRespJson, NULL);
+    result->code = UtoolAssetJsonNodeNotNull(oem, "/Oem/${Oem}");
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
 
     /** walk though oem node */
-    result->code = walkThoughNodeToFindService(serviceArray, oem->child);
+    result->code = walkThoughNodeToFindService(server, serviceArray, oem->child);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
@@ -187,7 +187,7 @@ DONE:
     return result->code;
 }
 
-int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode) {
+int walkThoughNodeToFindService(UtoolRedfishServer *server, cJSON *serviceArray, cJSON *rootNode) {
     while (rootNode != NULL) {
         if (cJSON_IsObject(rootNode)) {
             if (cJSON_HasObjectItem(rootNode, "ProtocolEnabled") && cJSON_HasObjectItem(rootNode, "Port")) {
@@ -203,7 +203,7 @@ int walkThoughNodeToFindService(cJSON *serviceArray, cJSON *rootNode) {
                     return ret;
                 }
 
-                ret = UtoolMappingCJSONItems(rootNode, service, getProtocolMappings);
+                ret = UtoolMappingCJSONItems(server, rootNode, service, getProtocolMappings);
                 if (ret != UTOOLE_OK) {
                     return ret;
                 }

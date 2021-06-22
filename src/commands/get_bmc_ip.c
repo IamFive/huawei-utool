@@ -23,7 +23,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int VlanPropertyHandler(cJSON *target, const char *key, cJSON *node)
+static int VlanPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);
@@ -50,7 +50,7 @@ static int VlanPropertyHandler(cJSON *target, const char *key, cJSON *node)
 }
 
 static const UtoolOutputMapping getEthernetMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/IPVersion", .targetKeyValue="IPVersion"},
+        {.sourceXpath = "/Oem/${Oem}/IPVersion", .targetKeyValue="IPVersion"},
         {.sourceXpath = "/PermanentMACAddress", .targetKeyValue="PermanentMACAddress"},
         {.sourceXpath = "/IPv4Addresses", .targetKeyValue="IPv4"},
         {.sourceXpath = "/IPv6DefaultGateway", .targetKeyValue="IPv6DefaultGateway"},
@@ -144,7 +144,7 @@ int UtoolCmdGetBmcIP(UtoolCommandOption *commandOption, char **result)
     }
 
     // create task item and add it to array
-    ret = UtoolMappingCJSONItems(memberJson, output, getEthernetMappings);
+    ret = UtoolMappingCJSONItems(server, memberJson, output, getEthernetMappings);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }

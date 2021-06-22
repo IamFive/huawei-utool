@@ -90,7 +90,7 @@ int UtoolCmdGetSystemBoot(UtoolCommandOption *commandOption, char **result)
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }
-    ret = UtoolMappingCJSONItems(getSystemJson, output, getProductMappings);
+    ret = UtoolMappingCJSONItems(server, getSystemJson, output, getProductMappings);
     if (ret != UTOOLE_OK) {
         goto FAILURE;
     }

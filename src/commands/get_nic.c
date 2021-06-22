@@ -23,7 +23,7 @@ static const char *const usage[] = {
         NULL,
 };
 
-static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
+static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
 {
     if (cJSON_IsNull(node)) {
         cJSON_AddItemToObjectCS(target, key, node);
@@ -40,14 +40,14 @@ static int FirmwareTypeHandler(cJSON *target, const char *key, cJSON *node)
 }
 
 static const UtoolOutputMapping getNetworkAdapterSummaryMapping[] = {
-        {.sourceXpath = "/Oem/Huawei/NetworkAdaptersSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
-        {.sourceXpath = "/Oem/Huawei/NetworkAdaptersSummary/Count", .targetKeyValue="Maximum"},
+        {.sourceXpath = "/Oem/${Oem}/NetworkAdaptersSummary/Status/HealthRollup", .targetKeyValue="OverallHealth"},
+        {.sourceXpath = "/Oem/${Oem}/NetworkAdaptersSummary/Count", .targetKeyValue="Maximum"},
         NULL
 };
 
 static const UtoolOutputMapping getNetworkAdapterMappings[] = {
-        {.sourceXpath = "/Oem/Huawei/Name", .targetKeyValue="CommonName"},
-        {.sourceXpath = "/Oem/Huawei/Position", .targetKeyValue="Location"},
+        {.sourceXpath = "/Oem/${Oem}/Name", .targetKeyValue="CommonName"},
+        {.sourceXpath = "/Oem/${Oem}/Position", .targetKeyValue="Location"},
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/Model", .targetKeyValue="Model"},
         {.sourceXpath = "/Null", .targetKeyValue="Serialnumber"},
@@ -59,8 +59,8 @@ static const UtoolOutputMapping getNetworkAdapterMappings[] = {
 
 static const UtoolOutputMapping getControllerMapping[] = {
         {.sourceXpath = "/Null", .targetKeyValue="Id"},
-        {.sourceXpath = "/Oem/Huawei/CardManufacturer", .targetKeyValue="Manufacturer"},
-        {.sourceXpath = "/Oem/Huawei/CardModel", .targetKeyValue="Model"},
+        {.sourceXpath = "/Oem/${Oem}/CardManufacturer", .targetKeyValue="Manufacturer"},
+        {.sourceXpath = "/Oem/${Oem}/CardModel", .targetKeyValue="Model"},
         {.sourceXpath = "/Null", .targetKeyValue="Serialnumber"},
         {.sourceXpath = "/Controllers/0/FirmwarePackageVersion", .targetKeyValue="FirmwareVersion"},
         {.sourceXpath = "/Controllers/0/ControllerCapabilities/NetworkPortCount", .targetKeyValue="PortCount"},
@@ -70,7 +70,7 @@ static const UtoolOutputMapping getControllerMapping[] = {
 static const UtoolOutputMapping getNetworkPortMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/AssociatedNetworkAddresses/0", .targetKeyValue="MACAddress"},
-        {.sourceXpath = "/Oem/Huawei/PortType", .targetKeyValue="MediaType"},
+        {.sourceXpath = "/Oem/${Oem}/PortType", .targetKeyValue="MediaType"},
         {.sourceXpath = "/LinkStatus", .targetKeyValue="LinkStatus"},
         NULL
 };
@@ -164,7 +164,7 @@ int UtoolCmdGetNIC(UtoolCommandOption *commandOption, char **outputStr)
         }
         cJSON_AddItemToArray(controllerArray, outputController);
 
-        result->code = UtoolMappingCJSONItems(networkAdapterJson, outputController, getControllerMapping);
+        result->code = UtoolMappingCJSONItems(server, networkAdapterJson, outputController, getControllerMapping);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }

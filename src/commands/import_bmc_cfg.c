@@ -95,7 +95,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
         goto FAILURE;
     }
 
-    char *url = "/redfish/v1/Managers/%s/Actions/Oem/Huawei/Manager.ImportConfiguration";
+    char *url = "/redfish/v1/Managers/%s/Actions/Oem/${Oem}/Manager.ImportConfiguration";
     UtoolRedfishPost(server, url, payload, NULL, NULL, result);
     if (result->broken) {
         goto FAILURE;
@@ -130,7 +130,7 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
             goto FAILURE;
         }
 
-        result->code = UtoolMappingCJSONItems(lastSuccessTaskJson, output, g_UtoolGetTaskMappings);
+        result->code = UtoolMappingCJSONItems(server, lastSuccessTaskJson, output, g_UtoolGetTaskMappings);
         FREE_CJSON(result->data)
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
