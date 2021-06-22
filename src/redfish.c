@@ -846,8 +846,15 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
     if (ultotal > 0 && ulnow > 0) {
         bool *finished = (bool *) output;
         if (!*finished) {
+            char nowStr[100] = {0};
+            time_t now = time(NULL);
+            struct tm *tm_now = localtime(&now);
+            if (tm_now != NULL) {
+                strftime(nowStr, sizeof(nowStr), "%Y-%m-%d %H:%M:%S", tm_now);
+            }
+
             //fprintf(stdout, "\33[2K\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
-            fprintf(stdout, "\rUploading file... Progress: %.0f%%.", (ulnow * 100) / ultotal);
+            fprintf(stdout, "\r%s Upload file inprogress, process: %.0f%%.", nowStr, (ulnow * 100) / ultotal);
             if (ultotal == ulnow) {
                 *((bool *) output) = true;
                 fprintf(stdout, "\n");
@@ -1207,12 +1214,19 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
             goto FAILURE;
         }
 
+        char nowStr[100] = {0};
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        if (tm_now != NULL) {
+            strftime(nowStr, sizeof(nowStr), "%Y-%m-%d %H:%M:%S", tm_now);
+        }
+
         // print task progress to stdout
         if (task->taskPercentage == NULL) { /** try to print message if task has not started */
             if (task->message->message != NULL) {
                 // main task has not start, we need to load percent from message args
                 // fprintf(stdout, "\33[2K\r%s", task->message->message);
-                fprintf(stdout, "%-96s\r", task->message->message);
+                fprintf(stdout, "%s %-96s\r", nowStr, task->message->message);
                 fflush(stdout);
             }
         } else {
@@ -1220,7 +1234,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
             char taskProgress[256] = {0};
             snprintf_s(taskProgress, sizeof(taskProgress), sizeof(taskProgress),
                        "%s Progress: %s complete.", taskName, task->taskPercentage);
-            fprintf(stdout, "%-96s\r", taskProgress);
+            fprintf(stdout, "%s %-96s\r", nowStr, taskProgress);
             fflush(stdout);
         }
 
@@ -1285,12 +1299,19 @@ void UtoolRedfishWaitUtilTaskStart(UtoolRedfishServer *server, cJSON *cJSONTask,
             goto FAILURE;
         }
 
+        char logTimestamp[100] = {0};
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        if (tm_now != NULL) {
+            strftime(logTimestamp, sizeof(logTimestamp), "%Y-%m-%d %H:%M:%S", tm_now);
+        }
+
         // print task progress to stdout
         if (task->taskPercentage == NULL) { /** try to print message if task has not started */
             if (task->message->message != NULL) {
                 // main task has not start, we need to load percent from message args
                 //fprintf(stdout, "\33[2K\r%s", task->message->message);
-                fprintf(stdout, "%-96s\r", task->message->message);
+                fprintf(stdout, "%s %-96s\r", logTimestamp, task->message->message);
                 fflush(stdout);
             }
         }
