@@ -48,7 +48,7 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *getBiosJson = NULL;
     FILE *outputFileFP = NULL;
-    char *prettyJson;
+    char *prettyJson = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -114,6 +114,7 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
+        FREE_CJSON(attributes)
 
         outputFileFP = fopen(option->fileURI, "wb");
         if (!outputFileFP) {
@@ -153,7 +154,6 @@ DONE:
         free(prettyJson);
     }
 
-    FREE_CJSON(attributes)
     FREE_CJSON(getBiosJson)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(getBiosSettingResp);
