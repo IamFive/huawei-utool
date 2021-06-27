@@ -106,7 +106,7 @@ typedef struct _RedfishServer
 typedef struct _CurlResponse
 {
     char *content;
-    size_t size;
+    size_t size;         /** max content size malloced */
     long int httpStatusCode;
     char *etag;
     long contentLength;

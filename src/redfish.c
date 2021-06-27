@@ -947,7 +947,7 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
         }
     }
 
-    strncat_s(response->content, length + 1, (char *) buffer, fullSize);
+    strncat_s(response->content, response->size + 1, (char *) buffer, fullSize);
 
     // get response content
     //char *content = (char *) malloc(fullSize + 1);
