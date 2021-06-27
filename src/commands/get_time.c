@@ -25,15 +25,14 @@ static const char *const usage[] = {
 };
 
 static int TimePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
-    char orig[20] = {0};
+    char orig[64] = {0};
     if (cJSON_IsString(node)) {
         snprintf_s(orig, sizeof(orig), sizeof(orig), "%s", node->valuestring);
         orig[10] = ' ';
         orig[19] = '\0';
-        char *time = orig;
 
         FREE_CJSON(node)
-        cJSON *newNode = cJSON_AddStringToObject(target, key, time);
+        cJSON *newNode = cJSON_AddStringToObject(target, key, orig);
         return UtoolAssetCreatedJsonNotNull(newNode);
     }
 
