@@ -90,16 +90,16 @@ int UtoolCmdSetFan(UtoolCommandOption *commandOption, char **outputStr)
         goto DONE;
     }
 
-    // build payload
-    payload = BuildPayload(server, option, result);
-    if (result->broken) {
-        goto FAILURE;
-    }
-
     // get redfish system id
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
         goto DONE;
+    }
+
+    // build payload
+    payload = BuildPayload(server, option, result);
+    if (result->broken) {
+        goto FAILURE;
     }
 
     UtoolRedfishPatch(server, "/Chassis/%s/Thermal", payload, NULL, NULL, NULL, result);
