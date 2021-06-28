@@ -1301,8 +1301,6 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
 
         /** if task is processed */
         if (UtoolStringInArray(task->taskState, g_UtoolRedfishTaskFinishedStatus)) {
-            UtoolPrintf(server->quiet, stdout, "\n");
-
             /* if task failed, we build output directly */
             if (!UtoolIsRedfishTaskSuccess(result->data)) {
                 result->code = UtoolBuildRsyncTaskOutputResult(result->data, &(result->desc));
@@ -1330,6 +1328,7 @@ FAILURE:
     goto DONE;
 
 DONE:
+    UtoolPrintf(server->quiet, stdout, "\n");
     UtoolFreeRedfishTask(task);
 }
 
