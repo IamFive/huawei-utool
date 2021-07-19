@@ -4,7 +4,7 @@ project(${LIB_NAME} C)
 
 set(CMAKE_SH "CMAKE_SH-NOTFOUND")
 set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
     set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
             STRING "Choose the type of build." FORCE)
@@ -12,7 +12,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
             "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
     set(CMAKE_BUILD_TYPE "Release")
-endif()
+endif ()
 
 message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
@@ -24,16 +24,21 @@ message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS
+        OWNER_READ
+        OWNER_EXECUTE
+        GROUP_READ
+        GROUP_EXECUTE)
 
-IF(NOT CMAKE_BUILD_TYPE MATCHES Debug)
-    if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 4.9)
+IF (NOT CMAKE_BUILD_TYPE MATCHES Debug)
+    if (CMAKE_C_COMPILER_VERSION VERSION_GREATER 4.9)
         set(PROTECTOR strong)
-    else()
+    else ()
         set(PROTECTOR all)
-    endif()
+    endif ()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fstack-protector-${PROTECTOR} -Wl,-z,relro -Wl,-z,now ")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-z,noexecstack -s -D_FORTIFY_SOURCE=2 -O2")
-endif()
+endif ()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DZF_LOG_BUF_SZ=1024 -DZF_LOG_MEM_WIDTH=64")
 
 set(PROJECT_VERSION_MAJOR 1)
@@ -53,7 +58,7 @@ set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 IF (WIN32)
     message("Compile env is window, will use mingw64 to compile utool.")
     message("MinGW 64 path is ${MINGW_64_PATH}.")
-endif()
+endif ()
 
 set(CJSON_PATH third-party/cJSON)
 set(LIBARGPARSE_PATH third-party/argparse)
@@ -62,12 +67,12 @@ set(LIBBCF_PATH third-party/bounds_checking_function)
 set(LIBCURL_PATH third-party/curl)
 IF (WIN32)
     set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool.exe)
-else()
+else ()
     set(IPMITOOL_BIN_PATH third-party/ipmi/ipmitool)
-endif()
+endif ()
 
 ## use, i.e. don't skip the full RPATH for the build tree
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
 # when building, don't use the install RPATH already
 # (but later on when installing)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
@@ -144,8 +149,12 @@ set_target_properties("${LIB_NAME}"
         VERSION "${PROJECT_VERSION}")
 set_target_properties(${LIB_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 #install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
-install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_LIB_DIR}")
-install(TARGETS ${LIB_NAME} DESTINATION "${UTOOL_BIN_DIR}")
+install(TARGETS ${LIB_NAME}
+        PERMISSIONS OWNER_READ GROUP_READ
+        DESTINATION "${UTOOL_LIB_DIR}")
+install(TARGETS ${LIB_NAME}
+        PERMISSIONS OWNER_READ GROUP_READ
+        DESTINATION "${UTOOL_BIN_DIR}")
 
 # static library
 add_library(${LIB_NAME}-static STATIC ${SOURCE_FILES})
@@ -155,8 +164,12 @@ set_target_properties("${LIB_NAME}-static"
         PROPERTIES
         SOVERSION "${UTOOL_SO_VERSION}"
         VERSION "${PROJECT_VERSION}")
-install(TARGETS ${LIB_NAME}-static DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
-install(TARGETS ${LIB_NAME}-static DESTINATION "${UTOOL_LIB_DIR}")
+install(TARGETS ${LIB_NAME}-static
+        PERMISSIONS OWNER_READ GROUP_READ
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS ${LIB_NAME}-static
+        PERMISSIONS OWNER_READ GROUP_READ
+        DESTINATION "${UTOOL_LIB_DIR}")
 
 macro(install_symlink filepath sympath)
     install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${filepath} ${sympath})")
@@ -168,14 +181,16 @@ add_executable(${LIB_NAME}-bin src/main.c ${SOURCE_FILES})
 set_target_properties(${LIB_NAME}-bin PROPERTIES OUTPUT_NAME ${LIB_NAME})
 set_target_properties(${LIB_NAME}-bin PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 target_compile_options(${LIB_NAME}-bin PRIVATE -fPIE -pie)
-install(TARGETS ${LIB_NAME}-bin DESTINATION ${UTOOL_BIN_DIR})
+install(TARGETS ${LIB_NAME}-bin
+        PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ
+        DESTINATION ${UTOOL_BIN_DIR})
 
 # debug purpose, should not present in release
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
+IF (CMAKE_BUILD_TYPE MATCHES Debug)
     add_executable(${LIB_NAME}-debug src/main-debug.c ${SOURCE_FILES})
     set_target_properties(${LIB_NAME}-debug PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
     #install(TARGETS utool-debug DESTINATION ${UTOOL_BIN_DIR})
-ENDIF()
+ENDIF ()
 
 #install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES "${IPMITOOL_BIN_PATH}" DESTINATION "${UTOOL_BIN_DIR}")
@@ -194,8 +209,8 @@ IF (WIN32)
 
     # zlib1
     install(FILES "${MINGW_64_PATH}/bin/zlib1.dll" DESTINATION "${UTOOL_BIN_DIR}")
-else()
+else ()
     install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.6.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
     install_symlink("./libcurl.so.4.6.0" "../bin/libs/libcurl.so.4")
     install_symlink("./libcurl.so.4.6.0" "../bin/libs/libcurl.so")
-ENDIF()
+ENDIF ()
