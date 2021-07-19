@@ -917,12 +917,12 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     char *imageUri = updateFirmwareOption->imageURI;
 
     // only output if not command help action is requested.
-    ZF_LOGI("Update firmware options:");
-    ZF_LOGI(" ");
-    ZF_LOGI("\t\tImageURI\t\t : %s", imageUri);
-    ZF_LOGI("\t\tActivateMode\t : %s", updateFirmwareOption->activateMode);
-    ZF_LOGI("\t\tFirmwareType\t : %s", updateFirmwareOption->firmwareType);
-    ZF_LOGI(" ");
+    ZF_LOGD("Update firmware options:");
+    ZF_LOGD(" ");
+    ZF_LOGD("\t\tImageURI\t\t : %s", imageUri);
+    ZF_LOGD("\t\tActivateMode\t : %s", updateFirmwareOption->activateMode);
+    ZF_LOGD("\t\tFirmwareType\t : %s", updateFirmwareOption->firmwareType);
+    ZF_LOGD(" ");
 
     struct stat fileInfo;
     UtoolParsedUrl *parsedUrl = NULL;
@@ -947,7 +947,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     }
 
     if (isLocalFile) {  /** if file exists in local machine, try to upload it to BMC */
-        ZF_LOGI("Firmware image uri `%s` is a local file.", imageUri);
+        ZF_LOGI("Firmware image uri is a local file.");
 
         DisplayProgress(server->quiet, DISPLAY_UPLOAD_FILE_START);
         WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_START, "");
