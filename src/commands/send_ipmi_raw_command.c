@@ -52,7 +52,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
             OPT_STRING ('t', "target", &(sendIpmiCommandOption->target),
                         "specifies the bridge request to remote target address", NULL, 0, 0),
             OPT_STRING ('n', "netfun", &(sendIpmiCommandOption->netfun),
-                        "specifies the destination channel for bridged request", NULL, 0, 0),
+                        "specifies the NetFun of ipmi command", NULL, 0, 0),
             OPT_STRING ('c', "command", &(sendIpmiCommandOption->command),
                         "specifies the ipmi command to sent", NULL, 0, 0),
             OPT_STRING ('d', "data-list", &(sendIpmiCommandOption->data),
