@@ -15,7 +15,10 @@
 #include <limits.h>
 #include <errno.h>
 #include <commons.h>
+#include <fcntl.h>
+#include <ftw.h>
 #include "zf_log.h"
+#include <sys/stat.h>
 
 
 FILE *g_UtoolLogFileFP = NULL;
@@ -40,11 +43,14 @@ int UtoolSetLogFilePath(const char *const log_file_path)
         char realFilepath[PATH_MAX] = {0};
         UtoolFileRealpath(log_file_path, realFilepath);
         if (realFilepath != NULL) {
+            int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
             g_UtoolLogFileFP = fopen(realFilepath, "a");
+            umask(old_umask);
             if (!g_UtoolLogFileFP) {
                 ZF_LOGW("Failed to open log file %s", log_file_path);
                 return 1;
             }
+
             atexit(CloseLogFileOutput);
             zf_log_set_output_v(ZF_LOG_PUT_STD, 0, LogToFileOutputCallback);
             ZF_LOGI("Log to file %s initialize succeed.", log_file_path);

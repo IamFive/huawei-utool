@@ -640,7 +640,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
 #if defined(__MINGW32__)
     int ret = mkdir(folderName);
 #else
-    int ret = mkdir(folderName, 0777);
+    int ret = mkdir(folderName, 0750);
 #endif
     if (ret != 0) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FOLDER),
@@ -659,7 +659,9 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         goto FAILURE;
     }
 
+    int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
     updateFirmwareOption->logFileFP = fopen(realFilepath, "a");
+    umask(old_umask);
     if (!updateFirmwareOption->logFileFP) {
         ZF_LOGW("Failed to create log file %s.", filepath);
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FILE),
