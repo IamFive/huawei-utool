@@ -96,8 +96,8 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "locatedisk", .pFuncExecute = UtoolCmdLocateDisk, .type = SET},
         {.name = "sendipmirawcmd", .pFuncExecute = UtoolCmdSendIPMIRawCommand, .type = SET},
 
-        {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = GET},
-        {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = SET},
+        // {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = GET},
+        // {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = SET},
 
         // Test purpose start
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
