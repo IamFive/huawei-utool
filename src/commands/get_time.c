@@ -19,20 +19,21 @@
 #include "argparse.h"
 #include "redfish.h"
 
+#define LEN_TIME 19
+
 static const char *const usage[] = {
         "gettime",
         NULL,
 };
 
 static int TimePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
-    char orig[64] = {0};
+    char time[32] = {0};
     if (cJSON_IsString(node)) {
-        snprintf_s(orig, sizeof(orig), sizeof(orig), "%s", node->valuestring);
-        orig[10] = ' ';
-        orig[19] = '\0';
+        snprintf_s(time, 32, LEN_TIME, "%s", node->valuestring);
+        time[10] = ' ';
 
         FREE_CJSON(node)
-        cJSON *newNode = cJSON_AddStringToObject(target, key, orig);
+        cJSON *newNode = cJSON_AddStringToObject(target, key, time);
         return UtoolAssetCreatedJsonNotNull(newNode);
     }
 
