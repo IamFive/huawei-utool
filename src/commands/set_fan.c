@@ -177,6 +177,7 @@ FAILURE:
 
 static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolSetIndicatorOption *option, UtoolResult *result)
 {
+    char *pretty = NULL;
     cJSON *payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {
@@ -204,6 +205,11 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolSetIndicatorOption *
         goto FAILURE;
     }
     payload = wrapped;
+
+    pretty = cJSON_Print(payload);
+    ZF_LOGI("Set fan payload: %s", pretty);
+    FREE_OBJ(pretty)
+
     return payload;
 
 FAILURE:
