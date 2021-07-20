@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#define UTOOL_VERSION "1.0.0"
+#define UTOOL_VERSION "1.39.0"
 
 
 int utool_main(int argc, char *argv[], char **result);
