@@ -201,7 +201,11 @@ static cJSON *BuildPayload(UtoolAddUserOption *addUserOption)
         goto FAILURE;
     }
 
-    cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", addUserOption->roleId);
+    char *roleIdName = addUserOption->roleId;
+    if (UtoolStringEquals(addUserOption->roleId, ROLE_OEM)) {
+        roleIdName = ROLE_OEM_MAP;
+    }
+    cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", roleIdName);
     ret = UtoolAssetCreatedJsonNotNull(roleId);
     if (ret != UTOOLE_OK) {
         goto FAILURE;

@@ -27,7 +27,7 @@ typedef struct _SetUserOption {
 } UtoolSetUserOption;
 
 
-static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", "OEM", NULL};
+static const char *ROLES[] = {"Administrator", "Operator", "Commonuser", ROLE_OEM, NULL};
 
 static const char *const usage[] = {
         "setpriv -n username -r role-id",
@@ -230,7 +230,11 @@ static cJSON *BuildPayload(UtoolSetUserOption *option, UtoolResult *result)
         goto FAILURE;
     }
 
-    cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", option->roleId);
+    char *roleIdName = option->roleId;
+    if (UtoolStringEquals(option->roleId, ROLE_OEM)) {
+        roleIdName = ROLE_OEM_MAP;
+    }
+    cJSON *roleId = cJSON_AddStringToObject(payload, "RoleId", roleIdName);
     result->code = UtoolAssetCreatedJsonNotNull(roleId);
     if (result->code != UTOOLE_OK) {
         goto FAILURE;

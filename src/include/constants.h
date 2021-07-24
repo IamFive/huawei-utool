@@ -137,6 +137,9 @@ extern "C" {
 #define UPGRADE_ACTIVATE_MODE_AUTO "Auto"
 #define UPGRADE_ACTIVATE_MODE_MANUAL "Manual"
 
+#define ROLE_OEM "OEM"
+#define ROLE_OEM_MAP "Noaccess"
+
 /**
  * Argument parse help messages
  */
