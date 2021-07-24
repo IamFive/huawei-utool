@@ -68,7 +68,7 @@ int UtoolCmdMountVMM(UtoolCommandOption *commandOption, char **outputStr)
             OPT_STRING ('o', "operator-type", &(mountVMMOptions->operatorType),
                         "specifies the operation type, choices: {Mount, Unmount}", NULL, 0, 0),
             OPT_STRING ('i', "image", &(mountVMMOptions->image),
-                        "specifies the VRI of the virtual media image", NULL, 0, 0),
+                        "specifies the URI of the virtual media image", NULL, 0, 0),
             OPT_END()
     };
 
