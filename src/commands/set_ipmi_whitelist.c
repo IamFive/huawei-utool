@@ -404,8 +404,8 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
 
         struct stat fileInfo;
         char realFilePath[PATH_MAX] = {0};
-        UtoolFileRealpath(option->importFilePath, realFilePath);
-        if (realFilePath == NULL) {
+        char *ok = UtoolFileRealpath(option->importFilePath, realFilePath);
+        if (ok == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
         }

@@ -482,7 +482,7 @@ const char *UtoolGetStringError(UtoolCode code)
         case UTOOLE_CURL_INIT_FAILED:
             return "Internal error, failed to init curl.";
         case UTOOLE_ILLEGAL_LOCAL_FILE_PATH:
-            return "Illegal local file path, please make sure the file exists";
+            return "Illegal local file path, please make sure the path exists";
         case UTOOLE_ILLEGAL_LOCAL_FILE_SIZE:
             return "Illegal local file size, file should not be empty.";
         case UTOOLE_ILLEGAL_DOWNLOAD_FILE_PATH:
@@ -499,8 +499,7 @@ const char *UtoolGetStringError(UtoolCode code)
 /**
  *  a wrap of realpath.
  *
- *  realpath has no meaning in utool project.
- *  But Huawei codex will report ERROR if fopen filepath directly.
+ *  Huawei codex will report ERROR if fopen filepath directly.
  *
  * @param path
  * @param resolved

@@ -111,8 +111,8 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
     struct curl_slist *curlHeaderList = NULL;
 
     char path[PATH_MAX] = {0};
-    UtoolFileRealpath(uploadFilePath, path);
-    if (path == NULL) {
+    char *ok = UtoolFileRealpath(uploadFilePath, path);
+    if (ok == NULL) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
     }
@@ -226,8 +226,8 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     FILE *outputFileFP = NULL;
     char realFilepath[PATH_MAX] = {0};
-    UtoolFileRealpath(localFileUri, realFilepath);
-    if (realFilepath == NULL) {
+    char *ok = UtoolFileRealpath(localFileUri, realFilepath);
+    if (ok == NULL) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         return;
@@ -342,8 +342,8 @@ void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, 
     struct stat fileInfo;
 
     char path[PATH_MAX] = {0};
-    UtoolFileRealpath(uploadFilePath, path);
-    if (path == NULL) {
+    char *ok = UtoolFileRealpath(uploadFilePath, path);
+    if (ok == NULL) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
     }
@@ -568,6 +568,9 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
         curl_easy_setopt(curl, CURLOPT_USERAGENT, USER_AGENT);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+        // setup SSL chiper
+        // curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "TLSv1");
 
         // setup timeout
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONN_TIMEOUT);

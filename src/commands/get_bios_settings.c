@@ -21,7 +21,7 @@
 #include "argparse.h"
 #include "redfish.h"
 
-static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal, it should be a valid local file path.";
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal, Please make sure the path exists.";
 
 static const char *const usage[] = {
         "getbios [-f file-url]",
@@ -174,8 +174,8 @@ static void ValidateSubcommandOptions(UtoolGetBiosSettingsOption *opt, UtoolResu
 {
     if (!UtoolStringIsEmpty(opt->fileURI)) {
         char realFilePath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->fileURI, realFilePath);
-        if (realFilePath == NULL) {
+        char *ok = UtoolFileRealpath(opt->fileURI, realFilePath);
+        if (ok == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;

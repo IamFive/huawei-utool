@@ -157,7 +157,7 @@ static const char *OPTION_TYPE_ILLEGAL = "Error: option `firmware-type` is illeg
 static const char *PRODUCT_SN_IS_NOT_SET = "Error: product SN is not correct.";
 static const char *FAILED_TO_CREATE_FOLDER = "Error: failed to create log folder.";
 static const char *FAILED_TO_CREATE_FILE = "Error: failed to create log file.";
-static const char *LOG_FILE_PATH_ILLEGAL = "Error: log file path is illegal.";
+static const char *LOG_FILE_PATH_ILLEGAL = "Error: log file path is illegal, Please make sure the path exists.";
 
 static const char *const usage[] = {
         "fwupdate -u image-uri -e activate-mode [-t firmware-type]",
@@ -652,8 +652,8 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     char filepath[PATH_MAX] = {0};
     char realFilepath[PATH_MAX] = {0};
     snprintf_s(filepath, PATH_MAX, PATH_MAX, "%s/update-firmware.log", folderName);
-    UtoolFileRealpath(filepath, realFilepath);
-    if (realFilepath == NULL) {
+    char *ok = UtoolFileRealpath(filepath, realFilepath);
+    if (ok == NULL) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(LOG_FILE_PATH_ILLEGAL),
                                               &(result->desc));
         goto FAILURE;
@@ -889,8 +889,8 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
     struct stat fileInfo;
     char *imageUri = updateFirmwareOption->imageURI;
     char realFilepath[PATH_MAX] = {0};
-    UtoolFileRealpath(imageUri, realFilepath);
-    if (realFilepath != NULL) {
+    char *ok = UtoolFileRealpath(imageUri, realFilepath);
+    if (ok != NULL) {
         FILE *imageFileFP = fopen(realFilepath, "rb"); /* open file to upload */
         if (imageFileFP) {
             if (fstat(fileno(imageFileFP), &fileInfo) == 0) {
@@ -938,8 +938,8 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
     bool isLocalFile = false;
     char realFilePath[PATH_MAX] = {0};
-    UtoolFileRealpath(imageUri, realFilePath);
-    if (realFilePath != NULL) { /** try to treat imageURI as a local file */
+    char *ok = UtoolFileRealpath(imageUri, realFilePath);
+    if (ok != NULL) { /** try to treat imageURI as a local file */
         imageFileFP = fopen(realFilePath, "rb"); /* open file to upload */
         if (imageFileFP) {
             if (fstat(fileno(imageFileFP), &fileInfo) == 0) {

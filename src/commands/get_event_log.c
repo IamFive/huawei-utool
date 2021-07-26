@@ -27,7 +27,7 @@
 
 static const char *PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "NFS", NULL};
 static const char *OPT_FILE_URL_REQUIRED = "Error: opt `file-uri` is required.";
-static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal.";
+static const char *OPT_FILE_URL_ILLEGAL = "Error: option `file-uri` is illegal, Please make sure the path exists.";
 
 static const char *const usage[] = {
         "geteventlog -u file-uri",
@@ -184,8 +184,8 @@ static void ValidateSubcommandOptions(UtoolGetEventLog *opt, UtoolResult *result
     } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
-        if (realFilepath == NULL) {
+        char *ok = UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
+        if (ok == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
@@ -240,8 +240,8 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
     } else {
         ZF_LOGI("Could not detect schema from export to file URI. Try to treat it as local file.");
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
-        if (realFilepath == NULL) {
+        char *ok = UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
+        if (ok == NULL) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
