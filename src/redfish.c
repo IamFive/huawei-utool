@@ -226,8 +226,16 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     FILE *outputFileFP = NULL;
     char realFilepath[PATH_MAX] = {0};
-    char *ok = UtoolFileRealpath(localFileUri, realFilepath);
-    if (ok == NULL) {
+
+    int pathOk = UtoolIsParentPathExists(localFileUri);
+    if (!pathOk) {
+        result->broken = 1;
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        return;
+    }
+
+    UtoolFileRealpath(localFileUri, realFilepath);
+    if (realFilepath == NULL) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         return;

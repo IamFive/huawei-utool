@@ -8,6 +8,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <errno.h>
 #include <commons.h>
 #include <cJSON_Utils.h>
 #include <constants.h>
@@ -505,7 +507,8 @@ const char *UtoolGetStringError(UtoolCode code)
  * @param resolved
  * @return
  */
-const char *UtoolFileRealpath(const char *path, char *resolved) {
+const char *UtoolFileRealpath(const char *path, char *resolved)
+{
 #if defined(__CYGWIN__) || defined(__MINGW32__)
     // PathCanonicalize(resolved, path);
     snprintf_s(resolved, PATH_MAX, PATH_MAX, "%s", path);
@@ -513,6 +516,39 @@ const char *UtoolFileRealpath(const char *path, char *resolved) {
 #else
     return realpath(path, resolved);
 #endif
+}
+
+/**
+ * check whether parent folder exists
+ *
+ * @param path      file path to check
+ * @return
+ */
+const bool UtoolIsParentPathExists(const char *path)
+{
+    char dupPath[MAX_FILE_PATH_LEN] = {0};
+    snprintf_s(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "%s", path);
+
+    // remove end file name
+    char *fileName = strrchr(dupPath, FILEPATH_SEP);
+    if (fileName == NULL) {
+        // if no sep found, treat the path as a single file name
+        return true;
+    }
+    *fileName = '\0';
+
+    DIR* dir = opendir(dupPath);
+    if (dir) {
+        closedir(dir);
+        return true;
+    } else if (ENOENT == errno) {
+        /* Directory does not exist. */
+        return false;
+    } else {
+        /* opendir() failed for some other reason. */
+        perror("Failed to open dir");
+        return false;
+    }
 }
 
 /**
@@ -544,7 +580,8 @@ cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const ch
  * @param ...
  * @return
  */
-int UtoolPrintf(int quiet, FILE * stream, const char * format, ...) {
+int UtoolPrintf(int quiet, FILE *stream, const char *format, ...)
+{
     int ret = 0;
     if (!quiet) {
         va_list args;

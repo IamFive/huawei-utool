@@ -19,6 +19,7 @@
 #include <ftw.h>
 #include "zf_log.h"
 #include <sys/stat.h>
+#include <string.h>
 
 
 FILE *g_UtoolLogFileFP = NULL;
@@ -37,12 +38,24 @@ static void CloseLogFileOutput(void)
     fclose(g_UtoolLogFileFP);
 }
 
+inline unsigned long long GetFileSize(int fd)
+{
+    struct stat sb;
+    int res = fstat(fd, &sb);
+    if (res != 0) {
+        fprintf(stderr, "Error fstat res(%d): %d (%s)\n", res, errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    return sb.st_size;
+}
+
 int UtoolSetLogFilePath(const char *const log_file_path)
 {
     if (!g_UtoolLogFileFP) {
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(log_file_path, realFilepath);
-        if (realFilepath != NULL) {
+        int pathOk = UtoolIsParentPathExists(log_file_path);
+        if (pathOk) {
+            UtoolFileRealpath(log_file_path, realFilepath);
             int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
             g_UtoolLogFileFP = fopen(realFilepath, "a");
             umask(old_umask);

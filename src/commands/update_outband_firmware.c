@@ -652,13 +652,8 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     char filepath[PATH_MAX] = {0};
     char realFilepath[PATH_MAX] = {0};
     snprintf_s(filepath, PATH_MAX, PATH_MAX, "%s/update-firmware.log", folderName);
-    char *ok = UtoolFileRealpath(filepath, realFilepath);
-    if (ok == NULL) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(LOG_FILE_PATH_ILLEGAL),
-                                              &(result->desc));
-        goto FAILURE;
-    }
 
+    UtoolFileRealpath(filepath, realFilepath);
     int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
     updateFirmwareOption->logFileFP = fopen(realFilepath, "a");
     umask(old_umask);

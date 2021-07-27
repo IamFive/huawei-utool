@@ -173,13 +173,15 @@ DONE:
 static void ValidateSubcommandOptions(UtoolGetBiosSettingsOption *opt, UtoolResult *result)
 {
     if (!UtoolStringIsEmpty(opt->fileURI)) {
-        char realFilePath[PATH_MAX] = {0};
-        char *ok = UtoolFileRealpath(opt->fileURI, realFilePath);
-        if (ok == NULL) {
+        int pathOk = UtoolIsParentPathExists(opt->fileURI);
+        if (!pathOk) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_FILE_URL_ILLEGAL),
                                                   &(result->desc));
             goto FAILURE;
         }
+
+        char realFilePath[PATH_MAX] = {0};
+        UtoolFileRealpath(opt->fileURI, realFilePath);
         int fd = open(realFilePath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->fileURI);

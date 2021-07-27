@@ -290,6 +290,14 @@ const char *UtoolGetStringError(UtoolCode code);
 const char *UtoolFileRealpath(const char *path, char *resolved);
 
 /**
+ * check whether parent folder exists
+ *
+ * @param path      file path to check
+ * @return
+ */
+const bool UtoolIsParentPathExists(const char *path);
+
+/**
  * get cJSON node in oem node with relative xpath
  *
  * @param server            redfish server
