@@ -21,6 +21,8 @@
 #include <sys/stat.h>
 #include <string.h>
 
+#define TEN_M 10 * 1024 * 1024
+
 
 FILE *g_UtoolLogFileFP = NULL;
 
@@ -38,25 +40,15 @@ static void CloseLogFileOutput(void)
     fclose(g_UtoolLogFileFP);
 }
 
-inline unsigned long long GetFileSize(int fd)
-{
-    struct stat sb;
-    int res = fstat(fd, &sb);
-    if (res != 0) {
-        fprintf(stderr, "Error fstat res(%d): %d (%s)\n", res, errno, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    return sb.st_size;
-}
-
 int UtoolSetLogFilePath(const char *const log_file_path)
 {
     if (!g_UtoolLogFileFP) {
         char realFilepath[PATH_MAX] = {0};
-        int pathOk = UtoolIsParentPathExists(log_file_path);
+        bool pathOk = UtoolIsParentPathExists(log_file_path);
         if (pathOk) {
-            UtoolFileRealpath(log_file_path, realFilepath);
+            // check whether file exists
             int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+            UtoolFileRealpath(log_file_path, realFilepath);
             g_UtoolLogFileFP = fopen(realFilepath, "a");
             umask(old_umask);
             if (!g_UtoolLogFileFP) {
