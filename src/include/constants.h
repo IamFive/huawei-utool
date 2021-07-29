@@ -20,6 +20,7 @@ extern "C" {
 
 #define ENABLE_DEBUG 1
 #define UTOOL_VENDOR "Huawei"
+#define LOG_FILE_NAME "utool.log.txt"
 
 #define ACTION_ADD_WHITELIST "0x00"
 #define ACTION_DEL_WHITELIST "0x01"

@@ -220,7 +220,7 @@ static int initialize(char **result) {
             } else {
                 zf_log_set_output_level(ZF_LOG_INFO);
             }
-            int ret = UtoolSetLogFilePath("utool.log.txt");
+            int ret = UtoolSetLogFilePath(LOG_FILE_NAME);
             if (!ret) {
                 ZF_LOGI("Initialize zf-log done.");
             } else {
