@@ -36,7 +36,7 @@ static int CalculateTotalPowerWattsHandler(UtoolRedfishServer *server, cJSON *ta
         cJSON *ps = NULL;
 
         char powerInputWattsXpath[MAX_XPATH_LEN] = {0};
-        snprintf_s(powerInputWattsXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PowerInputWatts", server->oemName);
+        UtoolWrapSnprintf(powerInputWattsXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PowerInputWatts", server->oemName);
         cJSON_ArrayForEach(ps, node) {
             cJSON *input = cJSONUtils_GetPointer(ps, powerInputWattsXpath);
             if (input != NULL && cJSON_IsNumber(input)) {

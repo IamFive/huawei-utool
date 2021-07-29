@@ -35,43 +35,43 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     /* [-b channel] [-t target] */
     char ipmiRawCmd[MAX_IPMI_CMD_LEN] = {0};
     if (ipmiRawCmdOption->bridge != NULL) {
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -b ");
-        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -b ");
+        UtoolWrapStrncat(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     if (ipmiRawCmdOption->target != NULL) {
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -t ");
-        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -t ");
+        UtoolWrapStrncat(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     /* RAW Commands: raw <netfn> <cmd> [data] */
-    strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " raw ");
+    UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " raw ");
     if (ipmiRawCmdOption->netfun != NULL) {
-        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
+        UtoolWrapStrncat(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
     }
 
     if (ipmiRawCmdOption->command != NULL) {
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
-        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 128));
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        UtoolWrapStrncat(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 128));
     }
 
 
     if (ipmiRawCmdOption->data != NULL) {
-        strcat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
-        strncat_s(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->data,
+        UtoolWrapStrcat(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
+        UtoolWrapStrncat(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->data,
                   strnlen(ipmiRawCmdOption->data, MAX_IPMI_CMD_LEN - 1));
     }
 
 
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf_s(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username,
+    UtoolWrapSnprintf(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username,
                option->password, option->ipmiPort, ipmiRawCmd);
 
 
     char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf_s(secureIpmiCmd, sizeof(secureIpmiCmd), sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host,
+    UtoolWrapSnprintf(secureIpmiCmd, sizeof(secureIpmiCmd), sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host,
                option->username, "******", option->ipmiPort, ipmiRawCmd);
     ZF_LOGI("execute IPMI command: %s", secureIpmiCmd);
 
@@ -91,7 +91,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
     *cmdOutput = '\0';
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        strncat_s(cmdOutput, MAX_IPMI_CMD_OUTPUT_LEN, buffer, sizeof(buffer));
+        UtoolWrapStrncat(cmdOutput, MAX_IPMI_CMD_OUTPUT_LEN, buffer, sizeof(buffer));
     }
 
     int ret = pclose(fp);

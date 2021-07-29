@@ -145,7 +145,7 @@ bool RotationLogFile(const char *log_file_path)
         perror("Can not rotation log file");
         return false;
     }
-    snprintf_s(rotationFileName, PATH_MAX, PATH_MAX, "%s.%d%02d%02d%02d%02d%02d",
+    UtoolWrapSnprintf(rotationFileName, PATH_MAX, PATH_MAX, "%s.%d%02d%02d%02d%02d%02d",
                log_file_path, tm_now->tm_year + 1900, tm_now->tm_mon + 1,
                tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
     rename(log_file_path, rotationFileName);

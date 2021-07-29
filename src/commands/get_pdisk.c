@@ -80,7 +80,7 @@ static int VolumesHandler(UtoolRedfishServer *server, cJSON *target, const char 
     }
 
     char value[64] = {0};
-    snprintf_s(value, sizeof(value), sizeof(value), "%s-%s", raid, volume);
+    UtoolWrapSnprintf(value, sizeof(value), sizeof(value), "%s-%s", raid, volume);
     FREE_CJSON(node)
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, value);

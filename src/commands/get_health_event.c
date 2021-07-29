@@ -131,7 +131,7 @@ int UtoolCmdGetHealthEvent(UtoolCommandOption *commandOption, char **result)
     cJSON *member = NULL;
 
     char healthEventXpath[MAX_XPATH_LEN] = {0};
-    snprintf_s(healthEventXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/HealthEvent", server->oemName);
+    UtoolWrapSnprintf(healthEventXpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/HealthEvent", server->oemName);
     cJSON *members = cJSONUtils_GetPointer(logService0Json, healthEventXpath);
     cJSON_ArrayForEach(member, members) {
         healthEvent = cJSON_CreateObject();

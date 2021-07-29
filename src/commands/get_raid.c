@@ -36,8 +36,8 @@ static int SupportedRAIDLevelsHandler(UtoolRedfishServer *server, cJSON *target,
         char buffer[256] = {'\0'};
         cJSON *next = node->child;
         while (next != NULL) {
-            strncat_s(buffer, 256, next->valuestring, strnlen(next->valuestring, 32));
-            strcat_s(buffer, 256, ",");
+            UtoolWrapStrncat(buffer, 256, next->valuestring, strnlen(next->valuestring, 32));
+            UtoolWrapStrcat(buffer, 256, ",");
             next = next->next;
         }
         buffer[strnlen(buffer, 256) - 1] = '\0';

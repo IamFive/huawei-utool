@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <securec.h>
+#include <constants.h>
 #include "url_parser.h"
 
 /*
@@ -31,6 +32,7 @@ _is_scheme_char(int c)
  */
 UtoolParsedUrl *UtoolParseURL(const char *url)
 {
+    errno_t ok;
     struct ParsedUrl *parsedUrl;
     const char *tmpstr;
     const char *curstr;
@@ -83,7 +85,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy_s(parsedUrl->scheme, len + 1, curstr, len);
+    ok = strncpy_s(parsedUrl->scheme, len + 1, curstr, len);
+    if (ok != EOK) {
+        perror("Failed to `strncpy`.");
+        exit(EXIT_SECURITY_ERROR);
+    }
     parsedUrl->scheme[len] = '\0';
     /* Make the character to lower if it is upper case. */
     for (i = 0; i < len; i++) {
@@ -135,7 +141,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy_s(parsedUrl->username, len + 1, curstr, len);
+        ok = strncpy_s(parsedUrl->username, len + 1, curstr, len);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
         parsedUrl->username[len] = '\0';
         /* Proceed current pointer */
         curstr = tmpstr;
@@ -153,7 +163,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
                 UtoolFreeParsedURL(parsedUrl);
                 return NULL;
             }
-            (void) strncpy_s(parsedUrl->password, len + 1, curstr, len);
+            ok = strncpy_s(parsedUrl->password, len + 1, curstr, len);
+            if (ok != EOK) {
+                perror("Failed to `strncpy`.");
+                exit(EXIT_SECURITY_ERROR);
+            }
             parsedUrl->password[len] = '\0';
             curstr = tmpstr;
         }
@@ -189,7 +203,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy_s(parsedUrl->host, len + 1, curstr, len);
+    ok = strncpy_s(parsedUrl->host, len + 1, curstr, len);
+    if (ok != EOK) {
+        perror("Failed to `strncpy`.");
+        exit(EXIT_SECURITY_ERROR);
+    }
     parsedUrl->host[len] = '\0';
     curstr = tmpstr;
 
@@ -207,7 +225,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy_s(parsedUrl->port, len + 1, curstr, len);
+        ok = strncpy_s(parsedUrl->port, len + 1, curstr, len);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
         parsedUrl->port[len] = '\0';
         curstr = tmpstr;
     }
@@ -235,7 +257,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
         UtoolFreeParsedURL(parsedUrl);
         return NULL;
     }
-    (void) strncpy_s(parsedUrl->path, len + 1, curstr, len);
+    ok = strncpy_s(parsedUrl->path, len + 1, curstr, len);
+    if (ok != EOK) {
+        perror("Failed to `strncpy`.");
+        exit(EXIT_SECURITY_ERROR);
+    }
     parsedUrl->path[len] = '\0';
     curstr = tmpstr;
 
@@ -254,7 +280,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy_s(parsedUrl->query, len + 1, curstr, len);
+        ok = strncpy_s(parsedUrl->query, len + 1, curstr, len);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
         parsedUrl->query[len] = '\0';
         curstr = tmpstr;
     }
@@ -274,7 +304,11 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
             UtoolFreeParsedURL(parsedUrl);
             return NULL;
         }
-        (void) strncpy_s(parsedUrl->fragment, len + 1, curstr, len);
+        ok = strncpy_s(parsedUrl->fragment, len + 1, curstr, len);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
         parsedUrl->fragment[len] = '\0';
         curstr = tmpstr;
     }

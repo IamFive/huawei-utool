@@ -302,7 +302,7 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf_s(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), AD_WHITELIST, operation, option->netfun,
+    UtoolWrapSnprintf(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), AD_WHITELIST, operation, option->netfun,
                command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);

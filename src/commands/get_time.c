@@ -29,7 +29,7 @@ static const char *const usage[] = {
 static int TimePropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
     char time[32] = {0};
     if (cJSON_IsString(node)) {
-        snprintf_s(time, 32, LEN_TIME, "%s", node->valuestring);
+        UtoolWrapSnprintf(time, 32, LEN_TIME, "%s", node->valuestring);
         time[10] = ' ';
 
         FREE_CJSON(node)

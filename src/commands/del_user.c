@@ -145,7 +145,7 @@ int UtoolCmdDeleteUser(UtoolCommandOption *commandOption, char **result)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
+        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
                    username);
         ret = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, result);
     } else {

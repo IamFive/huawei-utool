@@ -44,10 +44,10 @@ static const char *const usage[] = {
 static int TypeHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *root)
 {
     char funcTypePath[MAX_XPATH_LEN] = {0};
-    snprintf_s(funcTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/FunctionType", server->oemName);
+    UtoolWrapSnprintf(funcTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/FunctionType", server->oemName);
 
     char cardTypePath[MAX_XPATH_LEN] = {0};
-    snprintf_s(cardTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PCIeCardType", server->oemName);
+    UtoolWrapSnprintf(cardTypePath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/PCIeCardType", server->oemName);
 
     cJSON *funcTypeNode = cJSONUtils_GetPointer(root, funcTypePath);
     cJSON *cardTypeNode = cJSONUtils_GetPointer(root, cardTypePath);

@@ -110,7 +110,7 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr) {
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    snprintf_s(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/${Oem}/LogService.CollectSel", log0Url);
+    UtoolWrapSnprintf(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/${Oem}/LogService.CollectSel", log0Url);
 
     UtoolRedfishPost(server, querySelLogUrl, payload, NULL, NULL, result);
     if (result->broken) {
@@ -261,7 +261,7 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                snprintf_s(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
+                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

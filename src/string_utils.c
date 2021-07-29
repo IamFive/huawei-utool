@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <securec.h>
+#include <constants.h>
 
 
 /**
@@ -369,10 +370,15 @@ char *UtoolStringReplace(const char *orig, char *rep, char *with) {
     //    tmp points to the end of the result string
     //    ins points to the next occurrence of rep in orig
     //    orig points to the remainder of orig after "end of rep"
+    errno_t ok;
     while (count--) {
         ins = strstr(orig, rep);
         len_front = ins - orig;
-        strncpy_s(tmp, destLen, orig, len_front);
+        ok = strncpy_s(tmp, destLen, orig, len_front);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
         tmp = tmp + len_front;
         tmp = strcpy(tmp, with) + len_with;
         orig += len_front + len_rep; // move to next "end of rep"

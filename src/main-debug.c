@@ -40,7 +40,7 @@ int run_utool_main() {
             //"getmemory",
             // "getpdisk",
             // "getraid",
-            //"getldisk",
+            // "getldisk",
             //"getnic",
             // "gettemp",
             // "getvolt",
@@ -127,10 +127,6 @@ int debug(UtoolResult *result) {
 
     // char source[20] = "hello,world,woo!";
     // char** context = (char **) malloc(sizeof(char *));
-    // char* seg1 = strtok_s(source, ",", context);
-    // char* seg2 = strtok_s(NULL, ",", context);
-    // char* seg3 = strtok_s(NULL, ",", context);
-    // char* seg4 = strtok_s(NULL, ",", context);
     return 0;
 }
 

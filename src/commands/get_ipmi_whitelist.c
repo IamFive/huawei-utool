@@ -197,7 +197,7 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     command->data = NULL;
 
     char getIpmiWhitelistCmd[MAX_IPMI_CMD_LEN] = {0};
-    snprintf_s(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN, GET_IPMI_WHITELIST, index);
+    UtoolWrapSnprintf(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN, GET_IPMI_WHITELIST, index);
     sendIpmiCommandOption->data = getIpmiWhitelistCmd;
 
     /**
@@ -225,7 +225,11 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
-        strncpy_s(command->data, size + 1, ipmiCmdOutput + 25, size);
+        errno_t ok = strncpy_s(command->data, size + 1, ipmiCmdOutput + 25, size);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
     }
 
     segments = UtoolStringSplit(ipmiCmdOutput, ' ');

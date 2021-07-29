@@ -178,7 +178,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
 
     if (commandOption->flag == FEAT_VERSION) {
         char buff[MAX_FAILURE_MSG_LEN] = {0};
-        snprintf_s(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN,
+        UtoolWrapSnprintf(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN,
                    "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     } else if (commandOption->flag == FEAT_SHOW_VENDOR) {
@@ -186,7 +186,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         if (*result == NULL) {
             return UTOOLE_INTERNAL;
         }
-        snprintf_s(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s", UTOOL_VENDOR);
+        UtoolWrapSnprintf(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s", UTOOL_VENDOR);
         return UTOOLE_OK;
     } else if (commandOption->flag == FEAT_HELP) {
         //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
@@ -317,7 +317,7 @@ int utool_main(int argc, char *argv[], char **result) {
     } else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
         char buffer[MAX_FAILURE_MSG_LEN];
-        snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.",
+        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.",
                    commandName);
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
         goto DONE;
@@ -331,7 +331,7 @@ FAILURE:
     // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
     if (buffer != NULL) {
-        snprintf_s(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
+        UtoolWrapSnprintf(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
         *result = buffer;
     } else {
         *result = OUTPUT_INTERNAL_FAILED_JSON;

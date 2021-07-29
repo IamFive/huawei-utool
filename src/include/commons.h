@@ -319,6 +319,37 @@ cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const ch
  */
 int UtoolPrintf(int quiet, FILE * stream, const char * format, ...);
 
+
+/**
+ * a wrap of HUAWEI snprintf_s function.
+ *
+ * @param strDest
+ * @param destMax
+ * @param count
+ * @param format
+ * @param ...
+ */
+void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *format, ...);
+
+/**
+ * a wrap of HUAWEI strcat_s function.
+ *
+ * @param strDest
+ * @param destMax
+ * @param strSrc
+ */
+void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc);
+
+
+/**
+ * a wrap of HUAWEI strncat_s function.
+ * @param strDest
+ * @param destMax
+ * @param strSrc
+ * @param count
+ */
+void UtoolWrapStrncat(char *strDest, size_t destMax, const char *strSrc, size_t count);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_COMMONS_H

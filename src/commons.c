@@ -187,7 +187,7 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
         char buffer[MAX_FAILURE_MSG_LEN];
         cJSON *messageIdNode = cJSONUtils_GetPointer(task, "/Messages/MessageId");
         if (cJSON_IsNull(messageIdNode)) {
-            snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
+            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
         } else {
             cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
             cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
@@ -199,7 +199,7 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
             const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
             const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
-            snprintf_s(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error,
+            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error,
                        resolution);
         }
 
@@ -511,7 +511,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved)
 {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
     // PathCanonicalize(resolved, path);
-    snprintf_s(resolved, PATH_MAX, PATH_MAX, "%s", path);
+    UtoolWrapSnprintf(resolved, PATH_MAX, PATH_MAX, "%s", path);
     return resolved;
 #else
     return realpath(path, resolved);
@@ -527,7 +527,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved)
 const bool UtoolIsParentPathExists(const char *path)
 {
     char dupPath[MAX_FILE_PATH_LEN] = {0};
-    snprintf_s(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "%s", path);
+    UtoolWrapSnprintf(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "%s", path);
 
     // remove end file name
     char *fileName = strrchr(dupPath, FILEPATH_SEP);
@@ -563,9 +563,9 @@ cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const ch
 {
     char xpath[MAX_XPATH_LEN] = {0};
     if (relativeXpath == NULL) {
-        snprintf_s(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s", server->oemName);
+        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s", server->oemName);
     } else {
-        snprintf_s(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/%s", server->oemName, relativeXpath);
+        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/%s", server->oemName, relativeXpath);
     }
     return cJSONUtils_GetPointer(source, xpath);
 }
@@ -595,3 +595,61 @@ int UtoolPrintf(int quiet, FILE *stream, const char *format, ...)
 
     return ret;
 }
+
+/**
+ * a wrap of HUAWEI snprintf_s function.
+ *
+ * @param strDest
+ * @param destMax
+ * @param count
+ * @param format
+ * @param ...
+ */
+void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *format, ...)
+{
+    int ret;                    /* If initialization causes  e838 */
+    va_list argList;
+
+    va_start(argList, format);
+    ret = vsnprintf_s(strDest, destMax, count, format, argList);
+    va_end(argList);
+    (void)argList;              /* To clear e438 last value assigned not used , the compiler will optimize this code */
+
+    if (ret == -1) {
+        perror("Function `snprintf_s` is wrong called.");
+        exit(EXIT_SECURITY_ERROR);
+    }
+}
+
+/**
+ * a wrap of HUAWEI strcat_s function.
+ *
+ * @param strDest
+ * @param destMax
+ * @param strSrc
+ */
+void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc)
+{
+    int ret = strcat_s(strDest, destMax, strSrc);
+    if (ret != EOK) {
+        perror("Function `strcat_s` is wrong called.");
+        exit(EXIT_SECURITY_ERROR);
+    }
+}
+
+/**
+ * a wrap of HUAWEI strncat_s function.
+ * @param strDest
+ * @param destMax
+ * @param strSrc
+ * @param count
+ */
+void UtoolWrapStrncat(char *strDest, size_t destMax, const char *strSrc, size_t count)
+{
+    int ret = strncat_s(strDest, destMax, strSrc, count);
+    if (ret != EOK) {
+        perror("Function `strncat_s` is wrong called.");
+        exit(EXIT_SECURITY_ERROR);
+    }
+}
+

@@ -202,10 +202,10 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRed
                 ZF_LOGI("product serial number is null.");
             }
 
-            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%sdump_%s_%s.tar.gz", opt->exportToFileUrl,
+            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%sdump_%s_%s.tar.gz", opt->exportToFileUrl,
                        psn, nowStr);
         } else {
-            snprintf_s(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s", opt->exportToFileUrl);
+            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s", opt->exportToFileUrl);
         }
 
         int pathOk = UtoolIsParentPathExists(opt->localExportToFileUrl);
@@ -287,7 +287,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                snprintf_s(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
+                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {
