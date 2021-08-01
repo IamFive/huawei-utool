@@ -27,9 +27,6 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     char *cmdOutput = NULL;
     char buffer[512] = {0};
 
-    //char bridge[128] = {0};
-    //char target[128] = {0};
-
     /* build dynamic command part */
 
     /* [-b channel] [-t target] */

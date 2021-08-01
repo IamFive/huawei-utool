@@ -247,7 +247,7 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
                 goto STRUCT_UNKNOWN;
             }
 
-            //TODO(turnbig), other fields validation?
+            // FIXME(turnbig), other fields validation?
             option->netfun = netfun->valuestring;
             option->command = commandList->valuestring;
             option->subFunc = subFuncList->valuestring;

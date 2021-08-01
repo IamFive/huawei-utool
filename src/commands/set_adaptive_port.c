@@ -227,9 +227,6 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
 
 
     /* load & validate allowable ports */
-    // cJSON *allowableValues = cJSONUtils_GetPointer(ethernet,
-    //                                                "/Oem/Huawei/ManagementNetworkPort@Redfish.AllowableValues");
-
     cJSON *allowableValues = UtoolGetOemNode(server, ethernet, "ManagementNetworkPort@Redfish.AllowableValues");
     if (!(cJSON_IsArray(allowableValues) && cJSON_GetArraySize(allowableValues) > 0)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_EMPTY_ALLOWABLE_PORT),

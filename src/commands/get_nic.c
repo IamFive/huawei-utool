@@ -30,9 +30,6 @@ static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const 
         return UTOOLE_OK;
     }
 
-    // it seems firmware name is not solid enough to parse Type
-    // UtoolStringEndsWith(node->valuestring, "BMC");
-    // we will try to parse Type from Software-Id
     char *type = strtok(node->valuestring, "-");
     cJSON *newNode = cJSON_AddStringToObject(target, key, type);
     FREE_CJSON(node)

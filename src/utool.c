@@ -71,7 +71,6 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "deluser", .pFuncExecute = UtoolCmdDeleteUser, .type = SET},
         {.name = "mountvmm", .pFuncExecute = UtoolCmdMountVMM, .type = SET},
         {.name = "clearsel", .pFuncExecute = UtoolCmdClearSEL, .type = SET},
-        //{.name = "settime", .pFuncExecute = UtoolCmdSetTime, .type = SET},
         {.name = "settimezone", .pFuncExecute = UtoolCmdSetTimezone, .type = SET},
         {.name = "powercontrol", .pFuncExecute = UtoolCmdSystemPowerControl, .type = SET},
         {.name = "restorebios", .pFuncExecute = UtoolCmdRestoreBIOS, .type = SET},
@@ -96,10 +95,10 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "locatedisk", .pFuncExecute = UtoolCmdLocateDisk, .type = SET},
         {.name = "sendipmirawcmd", .pFuncExecute = UtoolCmdSendIPMIRawCommand, .type = SET},
 
-        // {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = GET},
-        // {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = SET},
 
         // Test purpose start
+        {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = DEBUG},
+        {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = DEBUG},
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
         {.name = "scp", .pFuncExecute = UtoolCmdScpFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
@@ -189,7 +188,6 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         UtoolWrapSnprintf(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s", UTOOL_VENDOR);
         return UTOOLE_OK;
     } else if (commandOption->flag == FEAT_HELP) {
-        //return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(HELP_ACTION_OUTPUT_MESSAGE), result);
         return UTOOLE_OK;
     } else if (argc == 0) {
         ZF_LOGW("Option input error : sub-command is required.");
@@ -225,7 +223,6 @@ static int initialize(char **result) {
                 ZF_LOGI("Initialize zf-log done.");
             } else {
                 ret = UTOOLE_CREATE_LOG_FILE;
-                //fprintf(stderr, "Failed to create log file `utool.log.txt`");
                 return ret;
             }
 
@@ -328,7 +325,6 @@ FAILURE:
     errorString = (ret > UTOOLE_OK && ret < ((int) CURL_LAST)) ?
                   curl_easy_strerror((CURLcode) ret) : UtoolGetStringError((UtoolCode) ret);
     // we can not use cJSON to build result here, because it may cause problems...
-    // UtoolBuildStringOutputResult(STATE_FAILURE, errorString, result);
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
     if (buffer != NULL) {
         UtoolWrapSnprintf(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);

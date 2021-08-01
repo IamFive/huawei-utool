@@ -88,13 +88,13 @@ DONE:
 }
 
 static const UtoolOutputMapping getVolumeMappings[] = {
-        {.sourceXpath = "/Id", .targetKeyValue="Id"},       // 需要做转化吗
+        {.sourceXpath = "/Id", .targetKeyValue="Id"},
         {.sourceXpath = "/Name", .targetKeyValue="LogicDiskName"},
         {.sourceXpath = "/Oem/${Oem}/RaidControllerID", .targetKeyValue="RaidControllerID"},
         {.sourceXpath = "/Oem/${Oem}/VolumeRaidLevel", .targetKeyValue="RaidLevel"},
         {.sourceXpath = "/CapacityBytes", .targetKeyValue="CapacityGiB", .handle = CapacityGiBHandler},
         {.sourceXpath = "/OptimumIOSizeBytes", .targetKeyValue="OptimumIOSizeBytes"},
-        {.sourceXpath = "/RedundantType", .targetKeyValue="RedundantType"}, // TODO
+        {.sourceXpath = "/RedundantType", .targetKeyValue="RedundantType"},
         {.sourceXpath = "/Oem/${Oem}/DefaultReadPolicy", .targetKeyValue="DefaultReadPolicy"},
         {.sourceXpath = "/Oem/${Oem}/DefaultWritePolicy", .targetKeyValue="DefaultWritePolicy"},
         {.sourceXpath = "/Oem/${Oem}/DefaultCachePolicy", .targetKeyValue="DefaultCachePolicy"},
@@ -108,7 +108,7 @@ static const UtoolOutputMapping getVolumeMappings[] = {
         {.sourceXpath = "/Oem/${Oem}/SSDCachecadeVolume", .targetKeyValue="SSDCachecadeVolume"},
         {.sourceXpath = "/Oem/${Oem}/ConsistencyCheck", .targetKeyValue="ConsistencyCheck"},
         {.sourceXpath = "/Oem/${Oem}/SSDCachingEnable", .targetKeyValue="SSDCachingEnable"},
-        {.sourceXpath = "/Links/Drives", .targetKeyValue="Drives", .handle=DrivesPropertyHandler}, // TODO
+        {.sourceXpath = "/Links/Drives", .targetKeyValue="Drives", .handle=DrivesPropertyHandler},
         {.sourceXpath = "/Status/State", .targetKeyValue="State"},
         {.sourceXpath = "/Status/Health", .targetKeyValue="Health"},
         NULL
@@ -219,7 +219,6 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
             goto FAILURE;
         }
 
-        //int health = 1;
         cJSON *volumeMember = NULL;
         cJSON *volumeMembers = cJSON_GetObjectItem(volumeMembersJson, "Members");
         cJSON_ArrayForEach(volumeMember, volumeMembers) {

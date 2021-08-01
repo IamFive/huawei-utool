@@ -365,7 +365,7 @@ RETRY:
                 FREE_CJSON(payload)
             }
 
-            //if (result->retryable) {
+            // should validate if result->retryable
             if (UtoolStringEquals(UPGRADE_ACTIVATE_MODE_AUTO, updateFirmwareOption->activateMode)) {
                 ZF_LOGI("Failed to complete firmware updating task, will reset bmc and retry now");
                 // we do not care about whether server is alive?
@@ -375,7 +375,6 @@ RETRY:
                     goto FAILURE;
                 }
             }
-            //}
         }
 
         continue;
@@ -621,10 +620,6 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     } else {
         updateFirmwareOption->psn = "";
         DisplayProgress(server->quiet, DISPLAY_GET_PRODUCT_SN_FAILED);
-        //ZF_LOGE("Failed to get product SN, please make sure product SN is correct.");
-        //result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(PRODUCT_SN_IS_NOT_SET),
-        //                                      &(result->desc));
-        //goto FAILURE;
     }
 
     char folderName[PATH_MAX];
@@ -1061,8 +1056,6 @@ static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const
     struct tm *tm_now = localtime(&now);
     if (tm_now != NULL) {
         strftime(nowStr, sizeof(nowStr), "%Y-%m-%dT%H%M%S%z", tm_now);
-        //char entry[MAX_LOG_ENTRY_LEN];
-        //snprintf(entry, MAX_LOG_ENTRY_LEN, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
     }
 
     /* write log file head content*/

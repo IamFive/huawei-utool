@@ -123,8 +123,6 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
             goto FAILURE;
         }
 
-        // fputs(prettyJson, outputFileFP);
-        // int ret = fputs(prettyJson, outputFileFP);
         if (fputs(prettyJson, outputFileFP) == EOF) {
             result->broken = 1;
             result->code = UTOOLE_FAILED_TO_WRITE_FILE;

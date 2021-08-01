@@ -35,7 +35,6 @@ static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const 
     }
 
     // it seems firmware name is not solid enough to parse Type
-    // UtoolStringEndsWith(node->valuestring, "BMC");
     // we will try to parse Type from Software-Id
     char *type = strtok(node->valuestring, "-");
     cJSON *newNode = cJSON_AddStringToObject(target, key, type);
@@ -142,7 +141,6 @@ static const UtoolOutputMapping getFwMappings[] = {
         {.sourceXpath = "/Version", .targetKeyValue="Version", .handle=VersionHandler},
         {.sourceXpath = "/Updateable", .targetKeyValue="Updateable"},
         {.sourceXpath = "/RelatedItem/0/@odata.id", .targetKeyValue="RelatedItem"},
-        //{.sourceXpath = "/SoftwareId", .targetKeyValue="SupportActivateType"},
         {0}
 };
 

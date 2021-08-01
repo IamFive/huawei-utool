@@ -181,7 +181,6 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
     /** if task is success */
     if (UtoolStringInArray(status->valuestring, g_UtoolRedfishTaskSuccessStatus)) {
         /* if success, user do not need task structure anymore */
-        //ret = UtoolBuildOutputResult(STATE_SUCCESS, output, result);
         UtoolBuildDefaultSuccessResult(result);
     } else {
         char buffer[MAX_FAILURE_MSG_LEN];
@@ -192,10 +191,6 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
             cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
             cJSON *messageNode = cJSONUtils_GetPointer(task, "/Messages/Message");
-            //if (severity == NULL || resolution == NULL || message == NULL) {
-            //    ret = UTOOLE_UNKNOWN_JSON_FORMAT;
-            //    goto DONE;
-            //}
             const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
             const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
             const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
@@ -353,40 +348,6 @@ int UtoolMappingCJSONItems(UtoolRedfishServer *server, cJSON *source, cJSON *tar
                 }
             }
         }
-
-
-        /** TODO(Qianbiao.NG) we should add more case coverage later?
-        switch (ref->type) {
-            case cJSON_NULL:
-                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNull());
-                break;
-            case cJSON_False:
-                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateFalse());
-                break;
-            case cJSON_True:
-                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateTrue());
-                break;
-            case cJSON_Number:
-                if (ref->valueint != 0) {
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valueint));
-                }
-                else {
-                    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateNumber(ref->valuedouble));
-                }
-                break;
-            case cJSON_String: {
-                cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cJSON_CreateString(ref->valuestring));
-                break;
-            }
-                //case cJSON_Array: {
-                //    cJSON *cloned = cJSON_Duplicate(ref, 1);
-                //    cJSON_AddItemToObjectCS(target, mapping->targetKeyValue, cloned);
-                //    break;
-                //}
-            default:
-                break;
-        }
-        */
     }
 
     return UTOOLE_OK;
@@ -510,7 +471,7 @@ const char *UtoolGetStringError(UtoolCode code)
 const char *UtoolFileRealpath(const char *path, char *resolved)
 {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
-    // PathCanonicalize(resolved, path);
+    /** PathCanonicalize(resolved, path); */
     UtoolWrapSnprintf(resolved, PATH_MAX, PATH_MAX, "%s", path);
     return resolved;
 #else

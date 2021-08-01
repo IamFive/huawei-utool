@@ -24,7 +24,7 @@ static const char *const usage[] = {
 };
 
 static const UtoolOutputMapping getThresholdSensorNestMappings[] = {
-        {.sourceXpath = "/SensorNumber", .targetKeyValue="SensorNumber"}, // ?
+        {.sourceXpath = "/SensorNumber", .targetKeyValue="SensorNumber"},
         {.sourceXpath = "/Name", .targetKeyValue="SensorName"},
         {.sourceXpath = "/ReadingValue", .targetKeyValue="Reading"},
         {.sourceXpath = "/Unit", .targetKeyValue="Unit"},
@@ -41,7 +41,7 @@ static const UtoolOutputMapping getThresholdSensorNestMappings[] = {
 
 
 static const UtoolOutputMapping getThresholdSensorMappings[] = {
-        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getThresholdSensorNestMappings}, // ?
+        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getThresholdSensorNestMappings},
         NULL
 };
 
@@ -83,7 +83,7 @@ static const UtoolOutputMapping getDiscreteSensorsNestMappings[] = {
 
 
 static const UtoolOutputMapping getDiscreteSensorsMappings[] = {
-        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getDiscreteSensorsNestMappings}, // ?
+        {.sourceXpath = "/Sensors", .targetKeyValue="Sensors", .nestMapping=getDiscreteSensorsNestMappings},
         NULL
 };
 

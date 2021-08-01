@@ -37,11 +37,6 @@ static const char *OPT_NO_EFFECT_WHEN_DHCP = "Error: when IP mode is DHCP, "
 static const char *OPT_REQUIRED_WHEN_STATIC = "Error: when IP mode is Static, options `address`, `gateway`, "
                                               "`subnet-mask/prefix-length` should not all be empty.";
 
-//static const char *OPT_IP_VERSION_REQUIRED = "Error: option `ip-version` is required.";
-//static const char *OPT_IP_VERSION_ILLEGAL = "Error: option `ip-version` is illegal, available choices: 4, 6, 4+6.";
-//static const char *OPT_IP_MODE_REQUIRED = "Error: option `ip-mode` is required.";
-//static const char *OPT_IP_MODE_ILLEGAL = "Error: option `ip-mode` is illegal, available choices: Static, DHCP.";
-
 static const char *const usage[] = {
         "setip -v ip-version -m ip-mode [-a address] [-g gateway] [-s subnet-mask/prefix-length]",
         NULL,
@@ -330,23 +325,6 @@ static cJSON *BuildPayload(UtoolSetIPOption *option, UtoolResult *result)
 
 
     }
-
-
-    //if (!UtoolStringIsEmpty(option->version)) {
-    //    cJSON *node = cJSON_AddBoolToObject(vlan, "VLANEnable", UtoolStringEquals(option->state, ENABLED));
-    //    result->code = UtoolAssetCreatedJsonNotNull(node);
-    //    if (result->code != UTOOLE_OK) {
-    //        goto FAILURE;
-    //    }
-    //}
-    //
-    //if (option->version != DEFAULT_INT_V) {
-    //    cJSON *node = cJSON_AddNumberToObject(vlan, "VLANId", option->version);
-    //    result->code = UtoolAssetCreatedJsonNotNull(node);
-    //    if (result->code != UTOOLE_OK) {
-    //        goto FAILURE;
-    //    }
-    //}
 
     return wrapped;
 

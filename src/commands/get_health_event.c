@@ -30,7 +30,6 @@ static const UtoolOutputMapping getHealthEventMappings[] = {
         {.sourceXpath = "/Created", .targetKeyValue="EventTimestamp"},
         {.sourceXpath = "/EventSubject", .targetKeyValue="Entity"},
         {.sourceXpath = "/Message", .targetKeyValue="Message"},
-        //{.sourceXpath = "/MessageId", .targetKeyValue="MessageId"},
         {.sourceXpath = "/EventId", .targetKeyValue="EventId"},
         NULL
 };

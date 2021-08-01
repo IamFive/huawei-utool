@@ -72,7 +72,6 @@ static const UtoolOutputMapping getProductMappings[] = {
         {.sourceXpath = "/Manufacturer", .targetKeyValue="Manufacturer"},
         {.sourceXpath = "/SerialNumber", .targetKeyValue="SerialNumber"},
         {.sourceXpath = "/UUID", .targetKeyValue="UUID"},
-        //{.sourceXpath = "/HostingRole", .targetKeyValue="HostingRole"},
         {.sourceXpath = "/Oem/${Oem}/DeviceOwnerID", .targetKeyValue="DeviceOwnerID"},
         {.sourceXpath = "/Oem/${Oem}/DeviceSlotID", .targetKeyValue="DeviceSlotID"},
         {.sourceXpath = "/PowerState", .targetKeyValue="PowerState"},

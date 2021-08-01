@@ -100,7 +100,6 @@ int UtoolCmdImportBMCCfg(UtoolCommandOption *commandOption, char **outputStr)
 
     // waiting util task complete or exception
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
-    // lastSuccessTaskJson = result->data;
     if (result->broken) {
         goto FAILURE;
     }

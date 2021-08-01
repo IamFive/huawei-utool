@@ -21,17 +21,6 @@
 #include "zf_log.h"
 #include "string_utils.h"
 
-//static const char *redfishTaskSuccessStatus[] = {TASK_STATE_OK,
-//                                                 TASK_STATE_COMPLETED,
-//                                                 NULL};
-//
-//static const char *redfishTaskFinishedStatus[] = {TASK_STATE_OK,
-//                                                  TASK_STATE_COMPLETED,
-//                                                  TASK_STATE_EXCEPTION,
-//                                                  TASK_STATE_INTERRUPTED,
-//                                                  TASK_STATE_KILLED,
-//                                                  NULL};
-
 /**
  * Common CURL write data function.
  * Used as get CURL response callback.
@@ -141,8 +130,10 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_UPLOAD_TIMEOUT);
 
     // setup content type
-    //curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
-    //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
+    /**
+    curlHeaderList = curl_slist_append(curlHeaderList, "Expect:");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlHeaderList);
+     */
 
     /* Create the form */
     form = curl_mime_init(curl);
@@ -163,8 +154,9 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
         curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &finished);
     }
 
-    /* enable verbose for easier tracing */
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    /* enable verbose for easier tracing
+     * curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+     * */
 
     /* Perform the request, res will get the return code */
     result->code = curl_easy_perform(curl);
@@ -270,8 +262,9 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
 
-    /* ask libcurl to show us the verbose output */
-    // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    /* ask libcurl to show us the verbose output
+     * curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+     * */
 
     /* write data to file  */
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteStreamToFP);
@@ -484,7 +477,6 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
         if (ifMatchHeader == NULL) {
             // if if-match header is not present, try to load it through get request
             ZF_LOGE("Try to load etag through get request");
-//                UtoolCurlResponse *getIfMatchResponse = &(UtoolCurlResponse) {0};
             ret = UtoolMakeCurlRequest(server, resourceURL, HTTP_GET, NULL, headers, response);
             if (ret != UTOOLE_OK) {
                 goto DONE;
@@ -578,8 +570,10 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-        // setup SSL chiper
-        // curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "TLSv1");
+        /**
+         * setup SSL chiper
+         * curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "TLSv1");
+         */
 
         // setup timeout
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONN_TIMEOUT);
@@ -893,10 +887,6 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
             }
             content[fullSize - 2] = '\0';
 
-            //int len = strlen(content) - strlen(HEADER_CONTENT_LENGTH) + 1;
-            //char *contentLength = (char *) malloc(len);
-            //memcpy(contentLength, content + strlen(HEADER_CONTENT_LENGTH), len);
-
             const char *length = buffer + strlen(HEADER_CONTENT_LENGTH);
             response->contentLength = strtol(length, NULL, 10);
         }
@@ -951,8 +941,6 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
 static int
 UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
 {
-    // (double) dltotal;
-    // (double) dlnow;
     if (ultotal > 0 && ulnow > 0) {
         bool *finished = (bool *) output;
         if (!*finished) {
@@ -994,18 +982,6 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
 
     UtoolWrapStrncat(response->content, response->size + 1, (char *) buffer, fullSize);
 
-    // get response content
-    //char *content = (char *) malloc(fullSize + 1);
-    //memcpy(content, buffer, fullSize);
-    //content[fullSize] = '\0';
-
-    // log to file in debug level
-    //ZF_LOGD("Redfish response: %s", content);
-
-    // setup structure
-    //response->content = content;
-    //response->size = fullSize;
-
     // return content size
     return fullSize;
 }
@@ -1025,11 +1001,6 @@ void UtoolRedfishProcessRequest(UtoolRedfishServer *server,
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
-
-    //if (response->httpStatusCode >= 400) {
-    //    result->code = UtoolResolveFailureResponse(response, &(result->desc));
-    //    goto FAILURE;
-    //}
 
     bool resolved = UtoolResolvePartialFailureResponse(response, result);
     if (resolved || result->broken) {
