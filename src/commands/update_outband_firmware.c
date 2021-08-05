@@ -972,7 +972,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         }
         goto DONE;
     } else { /** handle remote file */
-        ZF_LOGI("Firmware image uri `%s` is not local file, will start update firmware directly now.", imageUri);
+        ZF_LOGI("Firmware image uri is not local file, will start update firmware directly now.");
 
         /** parse url */
         parsedUrl = UtoolParseURL(imageUri);
