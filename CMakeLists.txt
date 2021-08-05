@@ -210,7 +210,9 @@ IF (WIN32)
     # zlib1
     install(FILES "${MINGW_64_PATH}/bin/zlib1.dll" DESTINATION "${UTOOL_BIN_DIR}")
 else ()
-    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.6.0" DESTINATION "${UTOOL_BIN_DIR}/libs/")
+    install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.6.0"
+            PERMISSIONS OWNER_READ GROUP_READ
+            DESTINATION "${UTOOL_BIN_DIR}/libs/")
     install_symlink("./libcurl.so.4.6.0" "../bin/libs/libcurl.so.4")
     install_symlink("./libcurl.so.4.6.0" "../bin/libs/libcurl.so")
 ENDIF ()
