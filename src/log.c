@@ -45,8 +45,26 @@ static void LogToFileOutputCallback(const zf_log_message *msg, void *arg)
     fflush(g_UtoolLogFileFP);
 }
 
+static void UpdateAllLogBakFilePerm()
+{
+    DIR *d = opendir("."); // open the path
+    if (d == NULL) {
+        perror("Failed to open current workspace dir.");
+        return;
+    }
+
+    struct dirent *dir;
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_type != DT_DIR && UtoolStringStartsWith(dir->d_name, BAK_LOG_FILE_NAME)) {
+            chmod(dir->d_name, 0440);
+        }
+    }
+    closedir(d);
+}
+
 static void CloseLogFileOutput(void)
 {
+    UpdateAllLogBakFilePerm();
     ZF_LOGI("Application exit, close log file now.");
     fclose(g_UtoolLogFileFP);
 }
