@@ -149,6 +149,9 @@ set_target_properties("${LIB_NAME}"
         VERSION "${PROJECT_VERSION}")
 set_target_properties(${LIB_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,'$ORIGIN/libs' -L./libs")
 #install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(DIRECTORY
+        DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ
+        DESTINATION "${UTOOL_LIB_DIR}")
 install(TARGETS ${LIB_NAME}
         PERMISSIONS OWNER_READ GROUP_READ
         DESTINATION "${UTOOL_LIB_DIR}")
@@ -210,6 +213,9 @@ IF (WIN32)
     # zlib1
     install(FILES "${MINGW_64_PATH}/bin/zlib1.dll" DESTINATION "${UTOOL_BIN_DIR}")
 else ()
+    install(DIRECTORY
+            DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ
+            DESTINATION "${UTOOL_BIN_DIR}/libs/")
     install(FILES "${LIBCURL_PATH}/lib/.libs/libcurl.so.4.6.0"
             PERMISSIONS OWNER_READ GROUP_READ
             DESTINATION "${UTOOL_BIN_DIR}/libs/")
