@@ -69,10 +69,8 @@ int UtoolSetLogFilePath(const char *const log_file_path)
         bool pathOk = UtoolIsParentPathExists(log_file_path);
         if (pathOk) {
             // check whether file exists
-            int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
             UtoolFileRealpath(log_file_path, realFilepath);
             g_UtoolLogFileFP = fopen(realFilepath, "a");
-            umask(old_umask);
             if (!g_UtoolLogFileFP) {
                 ZF_LOGW("Failed to open log file %s", log_file_path);
                 return 1;

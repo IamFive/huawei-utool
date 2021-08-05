@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <ipmi.h>
 #include <securec.h>
+#include <ftw.h>
 
 static bool initialized = false;
 static pthread_mutex_t mutex;
@@ -218,6 +219,11 @@ static int initialize(char **result) {
             } else {
                 zf_log_set_output_level(ZF_LOG_INFO);
             }
+
+            // for all new created file, we set file mod to 440
+            umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+
+            // check whether file exists
             int ret = UtoolSetLogFilePath(LOG_FILE_NAME);
             if (!ret) {
                 ZF_LOGI("Initialize zf-log done.");

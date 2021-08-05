@@ -649,9 +649,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
     UtoolWrapSnprintf(filepath, PATH_MAX, PATH_MAX, "%s/update-firmware.log", folderName);
 
     UtoolFileRealpath(filepath, realFilepath);
-    int old_umask = umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
     updateFirmwareOption->logFileFP = fopen(realFilepath, "a");
-    umask(old_umask);
     if (!updateFirmwareOption->logFileFP) {
         ZF_LOGW("Failed to create log file %s.", filepath);
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FILE),
