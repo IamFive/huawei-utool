@@ -17,6 +17,7 @@
 #include "command-interfaces.h"
 #include "argparse.h"
 #include "redfish.h"
+#include "string_utils.h"
 
 static const char *const usage[] = {
         "getuser",
@@ -30,13 +31,31 @@ static int EmptyPrivilegeHandler(UtoolRedfishServer *server, cJSON *target, cons
     return UtoolAssetCreatedJsonNotNull(newNode);
 }
 
+static int RoleIdHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node)
+{
+    if (cJSON_IsNull(node) || !cJSON_IsString(node)) {
+        cJSON_AddItemToObjectCS(target, key, node);
+        return UTOOLE_OK;
+    }
+
+    char *roleId = node->valuestring;
+    if (UtoolStringEquals(roleId, ROLE_OEM_MAP)) {
+        roleId = ROLE_OEM;
+    }
+
+    cJSON *newNode = cJSON_AddStringToObject(target, key, roleId);
+    FREE_CJSON(node)
+    return UtoolAssetCreatedJsonNotNull(newNode);
+}
+
+
 static const UtoolOutputMapping getUserMappings[] = {
         {.sourceXpath = "/Id", .targetKeyValue="UserId"},
         {.sourceXpath = "/UserName", .targetKeyValue="UserName"},
-        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId"},
+        {.sourceXpath = "/RoleId", .targetKeyValue="RoleId", .handle=RoleIdHandler},
         {.sourceXpath = "/Null", .targetKeyValue="Privilege", .handle=EmptyPrivilegeHandler},
         {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled"},
+        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled", .handle=UtoolBoolToEnabledPropertyHandler},
         NULL
 };
 
