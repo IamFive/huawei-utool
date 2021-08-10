@@ -67,6 +67,11 @@
 #define DISPLAY_DOWNLOAD_FILE_DONE "Download remote file successfully"
 #define DISPLAY_DOWNLOAD_FILE_FAILED "Download remote file failed"
 
+#define DISPLAY_UPGRADE_CURRENT_PLANE_DONE "Upgrade firmware for current plane successfully"
+#define DISPLAY_UPGRADE_BAKUP_PLANE_START "Upgrade firmware for bakup plane start."
+#define DISPLAY_UPGRADE_BAKUP_PLANE_DONE "Upgrade firmware for bakup plane successfully."
+#define DISPLAY_UPGRADE_BAKUP_PLANE_FAILED "Upgrade firmware for bakup plane failed."
+
 #define DISPLAY_UPGRADE_START "Upgrade firmware start"
 #define DISPLAY_UPGRADE_FAILED "Upgrade firmware failed"
 #define DISPLAY_UPGRADE_DONE "Upgrade firmware successfully"
@@ -117,6 +122,7 @@ typedef struct _UpdateFirmwareOption {
     char *imageURI;
     char *activateMode;
     char *firmwareType;
+    char *dualImage;
 
     char *psn;
     bool isLocalFile;
@@ -141,6 +147,7 @@ static const FirmwareMapping firmwareMapping[] = {
 
 
 static const char *MODE_CHOICES[] = {UPGRADE_ACTIVATE_MODE_AUTO, UPGRADE_ACTIVATE_MODE_MANUAL, NULL};
+static const char *DUAL_CHOICES[] = {"Single", "Dual", NULL};
 static const char *TYPE_CHOICES[] = {"BMC", "BIOS", "CPLD", "PSUFW", NULL};
 static const char *IMAGE_PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "TFTP", "NFS", NULL};
 
@@ -153,6 +160,8 @@ static const char *OPTION_MODE_REQUIRED = "Error: option `activate-mode` is requ
 static const char *OPTION_MODE_ILLEGAL = "Error: option `activate-mode` is illegal, available choices: Auto, Manual.";
 static const char *OPTION_TYPE_ILLEGAL = "Error: option `firmware-type` is illegal, "
                                          "available choices: BMC, BIOS, CPLD, PSUFW.";
+static const char *OPTION_DUAL_ILLEGAL = "Error: option `dual-image` is illegal, "
+                                         "available choices: Single, Dual.";
 
 static const char *PRODUCT_SN_IS_NOT_SET = "Error: product SN is not correct.";
 static const char *FAILED_TO_CREATE_FOLDER = "Error: failed to create log folder.";
@@ -168,6 +177,8 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
 
 static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                            UtoolResult *result);
+
+static void UpdateFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
 static int ResetBMCAndWaitingAlive(UtoolRedfishServer *server);
 
@@ -222,8 +233,8 @@ static void DisplayProgress(int quiet, char *progress)
 int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *output = NULL,                   /** output result json*/
-            *payload = NULL,                /** payload json */
-            *lastRedfishUpdateTask = NULL;
+    *payload = NULL,                /** payload json */
+    *lastRedfishUpdateTask = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
@@ -237,6 +248,10 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
                         "firmware active mode, choices: {Auto, Manual}", NULL, 0, 0),
             OPT_STRING ('t', "firmware-type", &(updateFirmwareOption->firmwareType),
                         "firmware type, available choices: {BMC, BIOS, CPLD, PSUFW}",
+                        NULL, 0, 0),
+            OPT_STRING ('d', "dual-image", &(updateFirmwareOption->dualImage),
+                        "indicates whether should update firmware for both plane, "
+                        "available choices: {Single, Dual}",
                         NULL, 0, 0),
             OPT_END(),
     };
@@ -276,7 +291,95 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         goto FAILURE;
     }
 
+    // TODO dual image update
+    UpdateFirmware(server, updateFirmwareOption, result);
+
+    // if it still fails when reaching the maximum retries
+    if (result->broken) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
+    }
+
+    // if dual image update required
+    if (updateFirmwareOption->dualImage != NULL && UtoolStringEquals(updateFirmwareOption->dualImage, "Dual")) {
+        FREE_CJSON(result->data)
+        ZF_LOGI("Dual plane update is required, start now.");
+        DisplayProgress(server->quiet, DISPLAY_UPGRADE_CURRENT_PLANE_DONE);
+        WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_RUN, DISPLAY_UPGRADE_CURRENT_PLANE_DONE);
+
+        DisplayProgress(server->quiet, DISPLAY_UPGRADE_BAKUP_PLANE_START);
+        WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_RUN, DISPLAY_UPGRADE_BAKUP_PLANE_START);
+
+        // we need to reboot BMC to update another plane
+        RebootBMC(server, updateFirmwareOption, result);
+        if (result->broken) {
+            goto FAILURE;
+        }
+
+        // update bakup plane now
+        UpdateFirmware(server, updateFirmwareOption, result);
+        if (result->broken) {
+            FREE_CJSON(result->data)
+            ZF_LOGI("Updating firmware for bakup plane failed.");
+            DisplayProgress(server->quiet, DISPLAY_UPGRADE_BAKUP_PLANE_FAILED);
+            WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_FAILED, DISPLAY_UPGRADE_BAKUP_PLANE_FAILED);
+            goto FAILURE;
+        }
+
+        ZF_LOGI("Updating firmware for bakup plane succeed.");
+        DisplayProgress(server->quiet, DISPLAY_UPGRADE_BAKUP_PLANE_DONE);
+        WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_RUN, DISPLAY_UPGRADE_BAKUP_PLANE_DONE);
+    }
+
+    lastRedfishUpdateTask = result->data;
+
+    /* step4: wait util firmware updating effect */
+    cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
+    if (cJSON_IsString(firmwareType)) {
+        PrintFirmwareVersion(server, updateFirmwareOption, firmwareType, result);
+    }
+    FREE_CJSON(result->data)
+
+    /* if update success */
+    ZF_LOGI("Updating firmware task succeed.");
+    DisplayProgress(server->quiet, DISPLAY_UPGRADE_DONE);
+    WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_SUCCESS, "");
+
+    /* everything finished */
+    UtoolBuildDefaultSuccessResult(&(result->desc));
+    goto DONE;
+
+FAILURE:
+    FREE_CJSON(output)
+    goto DONE;
+
+DONE:
+    FREE_CJSON(payload)
+    FREE_CJSON(lastRedfishUpdateTask)
+    UtoolFreeRedfishServer(server);
+    UtoolFreeCurlResponse(response);
+
+    if (updateFirmwareOption->logFileFP != NULL) {
+        fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
+        _off_t position = ftello(updateFirmwareOption->logFileFP);
+        int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
+        if (ret != 0) {
+            ZF_LOGE("Failed to truncate update firmware log file");
+        }
+        fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
+        fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
+    }
+
+    *outputStr = result->desc;
+    return result->code;
+}
+
+
+void UpdateFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
+{
+    cJSON *payload = NULL;
     int retryTimes = 0; /* current retry round */
+
     while (retryTimes++ < UPGRADE_FIRMWARE_RETRY_TIMES) {
         ZF_LOGI("Start to update outband firmware now, round: %d.", retryTimes);
 
@@ -380,54 +483,15 @@ RETRY:
         continue;
     }
 
-    // if it still fails when reaching the maximum retries
-    if (result->broken) {
-        FREE_CJSON(result->data)
-        goto FAILURE;
-    }
-    lastRedfishUpdateTask = result->data;
-
-    /* step4: wait util firmware updating effect */
-    cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
-    if (cJSON_IsString(firmwareType)) {
-        PrintFirmwareVersion(server, updateFirmwareOption, firmwareType, result);
-    }
-    FREE_CJSON(result->data)
-
-    /* if update success */
-    ZF_LOGI("Updating firmware task succeed.");
-    DisplayProgress(server->quiet, DISPLAY_UPGRADE_DONE);
-    WriteLogEntry(updateFirmwareOption, STAGE_UPDATE, PROGRESS_SUCCESS, "");
-
-    /* everything finished */
-    UtoolBuildDefaultSuccessResult(&(result->desc));
     goto DONE;
 
 FAILURE:
-    FREE_CJSON(output)
     goto DONE;
 
 DONE:
     FREE_CJSON(payload)
-    FREE_CJSON(lastRedfishUpdateTask)
-    UtoolFreeRedfishServer(server);
-    UtoolFreeCurlResponse(response);
-
-    if (updateFirmwareOption->logFileFP != NULL) {
-        fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
-        _off_t position = ftello(updateFirmwareOption->logFileFP);
-        int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
-        if (ret != 0) {
-            ZF_LOGE("Failed to truncate update firmware log file");
-        }
-        fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
-        fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
-    }
-
-    *outputStr = result->desc;
-    return result->code;
+    return;
 }
-
 
 /**
 * wait update firmware job tasking effect
@@ -462,7 +526,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
         UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
         if (result->broken) {
             UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, DISPLAY_GET_FIRMWARE_VERSION_FAILED,
-                       mapping->firmwareName);
+                              mapping->firmwareName);
             DisplayProgress(server->quiet, displayMessage);
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, displayMessage);
             FREE_OBJ(result->desc)
@@ -478,7 +542,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
         }
 
         UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s firmware's current version is %s",
-                   mapping->firmwareName, versionNode->valuestring);
+                          mapping->firmwareName, versionNode->valuestring);
         DisplayProgress(server->quiet, displayMessage);
         WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, displayMessage);
         FREE_CJSON(result->data)
@@ -575,7 +639,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
 
             char message[MAX_OUTPUT_LEN];
             UtoolWrapSnprintf(message, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s firmware's new version is %s",
-                       mapping->firmwareName, versionNode->valuestring);
+                              mapping->firmwareName, versionNode->valuestring);
             DisplayProgress(server->quiet, message);
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_NEW_VERSION, message);
             FREE_CJSON(result->data)
@@ -628,8 +692,9 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    UtoolWrapSnprintf(folderName, PATH_MAX, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900, tm_now->tm_mon + 1,
-               tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
+    UtoolWrapSnprintf(folderName, PATH_MAX, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900,
+                      tm_now->tm_mon + 1,
+                      tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
 
     ZF_LOGE("Try to create folder for current updating, folder: %s.", folderName);
 #if defined(__MINGW32__)
@@ -731,7 +796,8 @@ DONE:
     return ret;
 }
 
-static int RebootBMC(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result) {
+static int RebootBMC(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
+{
 
     int ret;
 
@@ -871,6 +937,14 @@ static void ValidateUpdateFirmwareOptions(UpdateFirmwareOption *updateFirmwareOp
         }
     }
 
+    if (updateFirmwareOption->dualImage != NULL) {
+        if (!UtoolStringInArray(updateFirmwareOption->dualImage, DUAL_CHOICES)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPTION_DUAL_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
+    }
+
     updateFirmwareOption->isLocalFile = false;
 
     /** try to treat imageURI as a local file */
@@ -912,6 +986,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     ZF_LOGD("\t\tImageURI\t\t : %s", imageUri);
     ZF_LOGD("\t\tActivateMode\t : %s", updateFirmwareOption->activateMode);
     ZF_LOGD("\t\tFirmwareType\t : %s", updateFirmwareOption->firmwareType);
+    ZF_LOGD("\t\tDualImage\t : %s", updateFirmwareOption->dualImage);
     ZF_LOGD(" ");
 
     struct stat fileInfo;
@@ -988,7 +1063,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         if (!UtoolStringCaseInArray(parsedUrl->scheme, IMAGE_PROTOCOL_CHOICES)) {
             char message[MAX_FAILURE_MSG_LEN];
             UtoolWrapSnprintf(message, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, OPTION_IMAGE_URI_ILLEGAL_SCHEMA,
-                       parsedUrl->scheme);
+                              parsedUrl->scheme);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message),
                                                   &(result->desc));
             WriteLogEntry(updateFirmwareOption, STAGE_UPLOAD_FILE, PROGRESS_INVAILD_URI, message);
