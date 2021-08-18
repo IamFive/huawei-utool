@@ -55,7 +55,7 @@ static const UtoolOutputMapping getUserMappings[] = {
         {.sourceXpath = "/RoleId", .targetKeyValue="RoleId", .handle=RoleIdHandler},
         {.sourceXpath = "/Null", .targetKeyValue="Privilege", .handle=EmptyPrivilegeHandler},
         {.sourceXpath = "/Locked", .targetKeyValue="Locked"},
-        {.sourceXpath = "/Enabled", .targetKeyValue="Enabled", .handle=UtoolBoolToEnabledPropertyHandler},
+        {.sourceXpath = "/Enabled", .targetKeyValue="Enable", .handle=UtoolBoolToEnabledPropertyHandler},
         NULL
 };
 
