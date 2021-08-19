@@ -700,7 +700,9 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
 #if defined(__MINGW32__)
     int ret = mkdir(folderName);
 #else
+    int old = umask(S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
     int ret = mkdir(folderName, 0750);
+    umask(old);
 #endif
     if (ret != 0) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(FAILED_TO_CREATE_FOLDER),
