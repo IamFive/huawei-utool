@@ -169,7 +169,7 @@ static const char *FAILED_TO_CREATE_FILE = "Error: failed to create log file.";
 static const char *LOG_FILE_PATH_ILLEGAL = "Error: log file path is illegal, Please make sure the path exists.";
 
 static const char *const usage[] = {
-        "fwupdate -u image-uri -e activate-mode [-t firmware-type]",
+        "fwupdate -u image-uri -e activate-mode [-t firmware-type] [-d dual-image]",
         NULL,
 };
 
