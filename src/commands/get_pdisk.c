@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <securec.h>
+#include <string_utils.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
 #include "curl/curl.h"
@@ -61,11 +62,16 @@ static int VolumesHandler(UtoolRedfishServer *server, cJSON *target, const char 
     char *raid = NULL;
     char *volume = NULL;
     char *split = NULL;
+    char *nextp = NULL;
 
-    /** /redfish/v1/Systems/1/Storages/RAIDStorage0/Volumes/LogicalDrive0 */
-    strtok(node->valuestring, delim);
+    /**
+     * node value_string example::
+     *  /redfish/v1/Systems/1/Storages/RAIDStorage0/Volumes/LogicalDrive0
+     * */
+
+    UtoolStringTokens(node->valuestring, delim, &nextp);
     while (idx <= 7) {
-        split = strtok(NULL, delim);
+        split = UtoolStringTokens(NULL, delim, &nextp);
         if (split == NULL) {
             break;
         }

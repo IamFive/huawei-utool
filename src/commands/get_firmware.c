@@ -36,7 +36,7 @@ static int FirmwareTypeHandler(UtoolRedfishServer *server, cJSON *target, const 
 
     // it seems firmware name is not solid enough to parse Type
     // we will try to parse Type from Software-Id
-    char *type = strtok(node->valuestring, "-");
+    char *type = UtoolStringTokens(node->valuestring, "-", NULL);
     cJSON *newNode = cJSON_AddStringToObject(target, key, type);
     FREE_CJSON(node)
     int ret = UtoolAssetCreatedJsonNotNull(newNode);

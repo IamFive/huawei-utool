@@ -157,6 +157,17 @@ char *UtoolStringNDup(char *str, size_t size);
  */
 char *UtoolStringReplace(const char *orig, char *rep, char *with);
 
+
+/**
+ * thread safe strtok
+ *
+ * @param str       source string
+ * @param delim     delim to use
+ * @param nextp     pointer to the next segment
+ * @return
+ */
+char *UtoolStringTokens(char *str, const char *delim, char **nextp);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H

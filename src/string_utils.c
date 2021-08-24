@@ -235,10 +235,11 @@ bool UtoolStringIsNumeric(const char *str)
 char **UtoolStringSplit(char *source, const char delim)
 {
     char **result = 0;
-    size_t count = 0;
+    int count = 0;
     char *tmp = source;
     char *lastComma = 0;
 
+    char *nextp = NULL;
     char delimStr[2];
     delimStr[0] = delim;
     delimStr[1] = '\0';
@@ -272,12 +273,12 @@ char **UtoolStringSplit(char *source, const char delim)
 
     result = (char **) malloc(sizeof(char *) * count);
     if (result) {
-        size_t idx = 0;
-        char *token = strtok(source, delimStr);
+        int idx = 0;
+        char *token = UtoolStringTokens(source, delimStr, &nextp);
         while (token) {
             assert(idx < count);
             *(result + idx++) = strdup(token);
-            token = strtok(0, delimStr);
+            token = UtoolStringTokens(NULL, delimStr, &nextp);
         }
         assert(idx == count - 1);
         *(result + idx) = 0;
@@ -286,7 +287,8 @@ char **UtoolStringSplit(char *source, const char delim)
     return result;
 }
 
-void UtoolStringFreeArrays(char **arrays) {
+void UtoolStringFreeArrays(char **arrays)
+{
     if (arrays != NULL) {
         for (int idx = 0; *(arrays + idx); idx++) {
             free(*(arrays + idx));
@@ -309,9 +311,8 @@ char *UtoolStringNDup(char *str, size_t size)
     int n;
     char *buffer;
 
-    buffer = (char *) malloc(size +1);
-    if (buffer)
-    {
+    buffer = (char *) malloc(size + 1);
+    if (buffer) {
         for (n = 0; ((n < size) && (str[n] != 0)); n++) {
             buffer[n] = str[n];
         }
@@ -332,7 +333,8 @@ char *UtoolStringNDup(char *str, size_t size)
  * @param with replace with characters
  * @return
  */
-char *UtoolStringReplace(const char *orig, char *rep, char *with) {
+char *UtoolStringReplace(const char *orig, char *rep, char *with)
+{
     char *result; // the return string
     char *ins;    // the next insert point
     char *tmp;    // varies
@@ -386,4 +388,39 @@ char *UtoolStringReplace(const char *orig, char *rep, char *with) {
 
     strcpy(tmp, orig);
     return result;
+}
+
+/*
+ * Divide S into tokens separated by characters in DELIM.
+ *
+ * public domain strtok_r() by Charlie Gordon from comp.lang.c 9/14/2007
+ *      http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684
+ *     (Declaration that it's public domain):
+ *      http://groups.google.com/group/comp.lang.c/msg/7c7b39328fefab9c
+ */
+
+char *UtoolStringTokens(char *str, const char *delim, char **nextp)
+{
+    char *ret;
+
+    if (str == NULL) {
+        str = *nextp;
+    }
+
+    str += strspn(str, delim);
+    if (*str == '\0') {
+        return NULL;
+    }
+
+    ret = str;
+    str += strcspn(str, delim);
+
+    if (*str) {
+        *str++ = '\0';
+    }
+
+    if (nextp != NULL) {
+        *nextp = str;
+    }
+    return ret;
 }

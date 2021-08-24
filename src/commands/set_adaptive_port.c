@@ -200,6 +200,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
     cJSON *payload = NULL;
     char *inputPorts = NULL;
     char **selectedPortStrArray = NULL;
+    char *nextp = NULL;
 
     inputPorts = strdup(option->adaptivePortListStr);
     if (!inputPorts) {
@@ -244,8 +245,8 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
         char msg[MAX_FAILURE_MSG_LEN];
         UtoolWrapSnprintf(msg, sizeof(msg), sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
 
-        char *nic = strtok(selectedPortStr, ",");
-        char *left = strtok(NULL, "");
+        char *nic = UtoolStringTokens(selectedPortStr, ",", &nextp);
+        char *left = UtoolStringTokens(NULL, ",", &nextp);
         if (!UtoolStringIsNumeric(left)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_PORT_LIST_ILLEGAL),
                                                   &(result->desc));
