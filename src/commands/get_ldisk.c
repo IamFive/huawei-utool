@@ -201,7 +201,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         // try to load volume members
         char volumesUrl[MAX_URL_LEN];
         char *url = storageLinkNode->valuestring;
-        UtoolWrapSnprintf(volumesUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Volumes", url);
+        UtoolWrapSnprintf(volumesUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Volumes", url);
         ret = UtoolMakeCurlRequest(server, volumesUrl, HTTP_GET, NULL, NULL, getVolumesResponse);
         if (ret != UTOOLE_OK) {
             goto DONE;

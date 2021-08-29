@@ -107,7 +107,6 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
 int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *payload = NULL;
-    size_t numbytes;
     char *fileContent = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
@@ -197,6 +196,7 @@ DONE:
 
 void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
 {
+    int ret = 0;
     cJSON *payload = NULL;
     size_t numbytes;
     char *fileContent = NULL;
@@ -207,10 +207,25 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
         char realFilePath[PATH_MAX] = {0};
 
         /* Get the number of bytes */
-        fseek(option->importFileFP, 0L, SEEK_END);
+        ret = fseek(option->importFileFP, 0L, SEEK_END);
+        if (ret) {
+            ZF_LOGE("Failed to seek file: %s", option->importFileFP);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
         numbytes = ftell(option->importFileFP);
+        if (numbytes == -1) {
+            ZF_LOGE("Failed to get size of file: %s", option->importFileFP);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
         /* reset the file position indicator to the beginning of the file */
-        fseek(option->importFileFP, 0L, SEEK_SET);
+        ret = fseek(option->importFileFP, 0L, SEEK_SET);
+        if (ret) {
+            ZF_LOGE("Failed to seek file: %s", option->importFileFP);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
 
         /* grab sufficient memory for the buffer to hold the text */
         fileContent = (char *) calloc(numbytes + 1, sizeof(char));
@@ -302,7 +317,7 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), AD_WHITELIST, operation, option->netfun,
+    UtoolWrapSnprintf(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, AD_WHITELIST, operation, option->netfun,
                command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);

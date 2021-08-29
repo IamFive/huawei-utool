@@ -33,6 +33,10 @@ static const char *const usage[] = {
 int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
 {
     int ret;
+    cJSON *output = NULL,
+            *getCommandList = NULL,
+            *setCommandList = NULL;
+
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -43,8 +47,6 @@ int UtoolCmdGetCapabilities(UtoolCommandOption *commandOption, char **result)
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
-
-    cJSON *output, *getCommandList, *setCommandList;
 
     output = cJSON_CreateObject();
     ret = UtoolAssetCreatedJsonNotNull(output);

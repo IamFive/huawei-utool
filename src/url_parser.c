@@ -34,8 +34,8 @@ UtoolParsedUrl *UtoolParseURL(const char *url)
 {
     errno_t ok;
     struct ParsedUrl *parsedUrl;
-    const char *tmpstr;
-    const char *curstr;
+    const char *tmpstr = NULL;
+    const char *curstr = NULL;
     int len;
     int i;
     int userpassFlag;

@@ -195,7 +195,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
 
 static int RebootBMC(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
-static void DisplayRunningProgress(int quiet, char *progress)
+static void DisplayRunningProgress(int quiet, const char *progress)
 {
     if (!quiet) {
         char nowStr[100] = {0};
@@ -362,9 +362,13 @@ DONE:
     if (updateFirmwareOption->logFileFP != NULL) {
         fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
         _off_t position = ftello(updateFirmwareOption->logFileFP);
-        int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
-        if (ret != 0) {
-            ZF_LOGE("Failed to truncate update firmware log file");
+        if (position != -1) {
+            int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
+            if (ret != 0) {
+                ZF_LOGE("Failed to truncate update firmware log file");
+            }
+        } else {
+            ZF_LOGE("Failed to run ftello method against update firmware log file");
         }
         fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
         fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
@@ -388,7 +392,7 @@ void UpdateFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirm
          }*/
 
         char round[16];
-        UtoolWrapSnprintf(round, sizeof(round), sizeof(round), "Round %d", retryTimes);
+        UtoolWrapSnprintf(round, sizeof(round), sizeof(round) - 1, "Round %d", retryTimes);
 
         /* step1: build payload - upload local file if necessary */
         payload = BuildPayload(server, updateFirmwareOption, result);
@@ -525,7 +529,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
         ZF_LOGI("Try to get new firmware version ...");
         UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
         if (result->broken) {
-            UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, DISPLAY_GET_FIRMWARE_VERSION_FAILED,
+            UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, DISPLAY_GET_FIRMWARE_VERSION_FAILED,
                               mapping->firmwareName);
             DisplayProgress(server->quiet, displayMessage);
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, displayMessage);
@@ -541,7 +545,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
             goto FAILURE;
         }
 
-        UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s firmware's current version is %s",
+        UtoolWrapSnprintf(displayMessage, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, "%s firmware's current version is %s",
                           mapping->firmwareName, versionNode->valuestring);
         DisplayProgress(server->quiet, displayMessage);
         WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_CURRENT_VERSION, displayMessage);
@@ -638,7 +642,7 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
             }
 
             char message[MAX_OUTPUT_LEN];
-            UtoolWrapSnprintf(message, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s firmware's new version is %s",
+            UtoolWrapSnprintf(message, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, "%s firmware's new version is %s",
                               mapping->firmwareName, versionNode->valuestring);
             DisplayProgress(server->quiet, message);
             WriteLogEntry(updateFirmwareOption, STAGE_ACTIVATE, PROGRESS_GET_NEW_VERSION, message);
@@ -692,7 +696,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    UtoolWrapSnprintf(folderName, PATH_MAX, PATH_MAX, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900,
+    UtoolWrapSnprintf(folderName, PATH_MAX, PATH_MAX - 1, "%d%02d%02d%02d%02d%02d_%s", tm_now->tm_year + 1900,
                       tm_now->tm_mon + 1,
                       tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec, updateFirmwareOption->psn);
 
@@ -713,7 +717,7 @@ static void createUpdateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption
 
     char filepath[PATH_MAX] = {0};
     char realFilepath[PATH_MAX] = {0};
-    UtoolWrapSnprintf(filepath, PATH_MAX, PATH_MAX, "%s/update-firmware.log", folderName);
+    UtoolWrapSnprintf(filepath, PATH_MAX, PATH_MAX - 1, "%s/update-firmware.log", folderName);
 
     UtoolFileRealpath(filepath, realFilepath);
     updateFirmwareOption->logFileFP = fopen(realFilepath, "a");
@@ -1032,7 +1036,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
         char *filename = basename(imageUri);
         char uploadFilePath[MAX_FILE_PATH_LEN];
-        UtoolWrapSnprintf(uploadFilePath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "/tmp/web/%s", filename);
+        UtoolWrapSnprintf(uploadFilePath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN - 1, "/tmp/web/%s", filename);
 
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", uploadFilePath);
         result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
@@ -1064,7 +1068,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
 
         if (!UtoolStringCaseInArray(parsedUrl->scheme, IMAGE_PROTOCOL_CHOICES)) {
             char message[MAX_FAILURE_MSG_LEN];
-            UtoolWrapSnprintf(message, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, OPTION_IMAGE_URI_ILLEGAL_SCHEMA,
+            UtoolWrapSnprintf(message, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1, OPTION_IMAGE_URI_ILLEGAL_SCHEMA,
                               parsedUrl->scheme);
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(message),
                                                   &(result->desc));

@@ -116,7 +116,9 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
         }
         FREE_CJSON(attributes)
 
-        outputFileFP = fopen(option->fileURI, "wb");
+        char realFilePath[PATH_MAX] = {0};
+        UtoolFileRealpath(option->fileURI, realFilePath);
+        outputFileFP = fopen(realFilePath, "wb");
         if (!outputFileFP) {
             result->broken = 1;
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;

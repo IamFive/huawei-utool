@@ -256,7 +256,7 @@ void UtoolBuildDefaultSuccessResult(char **result);
 * @param result
 * @return
 */
-cJSON *UtoolWrapOem(char *oemName, cJSON *source, UtoolResult *result);
+cJSON *UtoolWrapOem(const char *oemName, cJSON *source, UtoolResult *result);
 
 
 /**

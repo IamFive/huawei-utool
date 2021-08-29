@@ -33,8 +33,7 @@ static const char *const usage[] = {
 };
 
 
-typedef struct _SetDiskIndicatorOption
-{
+typedef struct _SetDiskIndicatorOption {
     char *state;
     char *diskId;
 } SetDiskIndicatorOption;
@@ -94,7 +93,8 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char url[MAX_URL_LEN];
-    UtoolWrapSnprintf(url, sizeof(url), sizeof(url), "/redfish/v1/Chassis/%s/Drives/%s", server->systemId, option->diskId);
+    UtoolWrapSnprintf(url, MAX_URL_LEN, MAX_URL_LEN - 1, "/redfish/v1/Chassis/%s/Drives/%s", server->systemId,
+                      option->diskId);
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
 
     if (result->broken) {
@@ -165,8 +165,7 @@ static cJSON *BuildPayload(SetDiskIndicatorOption *option, UtoolResult *result)
     cJSON *node = NULL;
     if (UtoolStringEquals(STATE_ON, option->state)) {
         node = cJSON_AddStringToObject(payload, "IndicatorLED", INDICATOR_STATE_BLINKING);
-    }
-    else if (UtoolStringEquals(STATE_OFF, option->state)) {
+    } else if (UtoolStringEquals(STATE_OFF, option->state)) {
         node = cJSON_AddStringToObject(payload, "IndicatorLED", INDICATOR_STATE_OFF);
     }
     result->code = UtoolAssetCreatedJsonNotNull(node);

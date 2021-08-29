@@ -26,7 +26,7 @@ static const char *const usage[] = {
 
 static int ApplyResultPropertyHandler(UtoolRedfishServer *server, cJSON *target, const char *key, cJSON *node) {
 
-    cJSON *newNode;
+    cJSON *newNode = NULL;
     if (cJSON_IsNull(node) || (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0)) {
         newNode = cJSON_AddStringToObject(target, key, "Success");
     } else {

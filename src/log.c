@@ -41,12 +41,16 @@ static void LogToFileOutputCallback(const zf_log_message *msg, void *arg)
 {
     (void) arg;
     *msg->p = '\n';
-    fwrite(msg->buf, msg->p - msg->buf + 1, 1, g_UtoolLogFileFP);
+    size_t num = fwrite(msg->buf, msg->p - msg->buf + 1, 1, g_UtoolLogFileFP);
+    if (num != 1) {
+        perror("exception occurs when write log file.");
+    }
     fflush(g_UtoolLogFileFP);
 }
 
 static void UpdateAllLogBakFilePerm()
 {
+    int ret;
     DIR *d = opendir("."); // open the path
     if (d == NULL) {
         perror("Failed to open current workspace dir.");
@@ -56,10 +60,19 @@ static void UpdateAllLogBakFilePerm()
     struct dirent *dir;
     while ((dir = readdir(d)) != NULL) {
         if (dir->d_type != DT_DIR && UtoolStringStartsWith(dir->d_name, BAK_LOG_FILE_NAME)) {
-            chmod(dir->d_name, 0440);
+            ret = chmod(dir->d_name, 0440);
+            if (ret == -1) {
+                perror("Failed to update rotation log file mod to 0400.");
+                goto DONE;
+            }
         }
     }
-    closedir(d);
+
+DONE:
+    ret = closedir(d);
+    if (ret == -1) {
+        perror("Failed to call closedir on utool root.");
+    }
 }
 
 static void CloseLogFileOutput(void)
@@ -67,9 +80,10 @@ static void CloseLogFileOutput(void)
     UpdateAllLogBakFilePerm();
     ZF_LOGI("Application exit, close log file now.");
     fclose(g_UtoolLogFileFP);
+    g_UtoolLogFileFP = NULL;
 }
 
-static unsigned long long GetFileSize(int fd)
+static long long GetFileSize(int fd)
 {
     struct stat sb;
     int res = fstat(fd, &sb);
@@ -122,18 +136,24 @@ int UtoolSetLogFilePath(const char *const log_file_path)
 
 bool RemoveOldestLogFiles()
 {
+    errno_t ok;
     DIR *d = opendir("."); // open the path
     if (d == NULL) {
         perror("Failed to open current workspace dir.");
         return false;
     }
 
-    char rotationFileNames[64][MAX_ROTATION_FILE_NAME_LEN]; //for simplicity in this example
+    char rotationFileNames[64][MAX_ROTATION_FILE_NAME_LEN];
     int rotationFileCount = 0;
     struct dirent *dir;
     while ((dir = readdir(d)) != NULL) {
         if (dir->d_type != DT_DIR && UtoolStringStartsWith(dir->d_name, LOG_FILE_NAME)) {
-            strncpy(rotationFileNames[rotationFileCount++], dir->d_name, 250);
+            size_t rotationFileNameLen = strnlen(dir->d_name, MAX_ROTATION_FILE_NAME_LEN - 1);
+            errno_t ok = strncpy_s(rotationFileNames[rotationFileCount++], 64, dir->d_name, rotationFileNameLen);
+            if (ok != EOK) {
+                perror("Failed to remove rotation log files, reason: strncpy_s failed.");
+                return false;
+            }
         }
     }
     closedir(d);
@@ -161,9 +181,13 @@ bool RotationLogFile(const char *log_file_path)
         perror("Can not rotation log file");
         return false;
     }
-    UtoolWrapSnprintf(rotationFileName, PATH_MAX, PATH_MAX, "%s.%d%02d%02d%02d%02d%02d",
-               log_file_path, tm_now->tm_year + 1900, tm_now->tm_mon + 1,
-               tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
-    rename(log_file_path, rotationFileName);
+    UtoolWrapSnprintf(rotationFileName, PATH_MAX, PATH_MAX - 1, "%s.%d%02d%02d%02d%02d%02d",
+                      log_file_path, tm_now->tm_year + 1900, tm_now->tm_mon + 1,
+                      tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
+    int ret = rename(log_file_path, rotationFileName);
+    if (!ret) {
+        perror("Failed to rename rotation log file");
+        return false;
+    }
     return true;
 }

@@ -186,7 +186,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
         char buffer[MAX_FAILURE_MSG_LEN];
         cJSON *messageIdNode = cJSONUtils_GetPointer(task, "/Messages/MessageId");
         if (cJSON_IsNull(messageIdNode)) {
-            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[Critical] unknown error. Resolution: None.");
+            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                              "[Critical] unknown error. Resolution: None.");
         } else {
             cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
             cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
@@ -194,8 +195,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
             const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
             const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
-            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "[%s] %s Resolution: %s", severity, error,
-                       resolution);
+            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                              "[%s] %s Resolution: %s", severity, error, resolution);
         }
 
         cJSON *failure = cJSON_CreateString(buffer);
@@ -354,7 +355,7 @@ int UtoolMappingCJSONItems(UtoolRedfishServer *server, cJSON *source, cJSON *tar
 }
 
 
-cJSON *UtoolWrapOem(char *oemName, cJSON *source, UtoolResult *result)
+cJSON *UtoolWrapOem(const char *oemName, cJSON *source, UtoolResult *result)
 {
     cJSON *wrapped = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(wrapped);
@@ -472,7 +473,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved)
 {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
     /** PathCanonicalize(resolved, path); */
-    UtoolWrapSnprintf(resolved, PATH_MAX, PATH_MAX, "%s", path);
+    UtoolWrapSnprintf(resolved, PATH_MAX, PATH_MAX - 1, "%s", path);
     return resolved;
 #else
     return realpath(path, resolved);
@@ -488,7 +489,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved)
 const bool UtoolIsParentPathExists(const char *path)
 {
     char dupPath[MAX_FILE_PATH_LEN] = {0};
-    UtoolWrapSnprintf(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN, "%s", path);
+    UtoolWrapSnprintf(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN - 1, "%s", path);
 
     // remove end file name
     char *fileName = strrchr(dupPath, FILEPATH_SEP);
@@ -498,7 +499,7 @@ const bool UtoolIsParentPathExists(const char *path)
     }
     *fileName = '\0';
 
-    DIR* dir = opendir(dupPath);
+    DIR *dir = opendir(dupPath);
     if (dir) {
         closedir(dir);
         return true;
@@ -524,9 +525,9 @@ cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const ch
 {
     char xpath[MAX_XPATH_LEN] = {0};
     if (relativeXpath == NULL) {
-        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s", server->oemName);
+        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s", server->oemName);
     } else {
-        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN, "/Oem/%s/%s", server->oemName, relativeXpath);
+        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s/%s", server->oemName, relativeXpath);
     }
     return cJSONUtils_GetPointer(source, xpath);
 }
@@ -574,7 +575,7 @@ void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *
     va_start(argList, format);
     ret = vsnprintf_s(strDest, destMax, count, format, argList);
     va_end(argList);
-    (void)argList;              /* To clear e438 last value assigned not used , the compiler will optimize this code */
+    (void) argList;              /* To clear e438 last value assigned not used , the compiler will optimize this code */
 
     if (ret == -1) {
         perror("Function `snprintf_s` is wrong called.");

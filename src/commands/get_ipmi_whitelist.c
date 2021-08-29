@@ -109,7 +109,7 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
         }
 
         totalCount = *(first->total);
-        if (totalCount > 0) {
+        if (totalCount > 0 && totalCount <= 0xFF) {
             whitelists = (UtoolIPMICommand **) malloc(sizeof(UtoolIPMICommand *) * totalCount);
             result->code = UtoolAssetMallocNotNull(whitelists);
             if (result->code != UTOOLE_OK) {
@@ -197,7 +197,7 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     command->data = NULL;
 
     char getIpmiWhitelistCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN, GET_IPMI_WHITELIST, index);
+    UtoolWrapSnprintf(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, GET_IPMI_WHITELIST, index);
     sendIpmiCommandOption->data = getIpmiWhitelistCmd;
 
     /**
@@ -220,7 +220,7 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     // FIXME(turnbig): get data
     if (ipmiCmdOutputLen > 25) {
         int size = ipmiCmdOutputLen - 25;
-        command->data = (char *) malloc(sizeof(char) * (size+1));
+        command->data = (char *) malloc(sizeof(char) * (size + 1));
         result->code = UtoolAssetMallocNotNull(command->data);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
@@ -238,8 +238,10 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     if (result->code != UTOOLE_OK) {
         goto FAILURE;
     }
-    *(command->total) = (int) strtol(segments[3], NULL, 16);
 
+    if (segments[3] != NULL) {
+        *(command->total) = (int) strtol(segments[3], NULL, 16);
+    }
 
     if (segments[4] != NULL) {
         command->length = (int *) malloc(sizeof(int));

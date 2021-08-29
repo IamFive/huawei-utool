@@ -58,7 +58,7 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     // initialize output objects
     cJSON *userMembersJson = NULL,        // curl response user member as json
-            *userJson = NULL;              // curl response user as json
+    *userJson = NULL;              // curl response user as json
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -152,8 +152,9 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Failure: No user with name `%s` exists",
-                   setPasswordOption->username);
+        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                          "Failure: No user with name `%s` exists",
+                          setPasswordOption->username);
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, &(result->desc));
     } else {
         // update user

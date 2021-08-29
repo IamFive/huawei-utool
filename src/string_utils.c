@@ -168,7 +168,7 @@ void UtoolStringToUpper(char *str)
 * @param split
 * @return
 */
-char *UtoolStringLastSplit(char *source, char split)
+char *UtoolStringLastSplit(const char *source, const char split)
 {
     char *pLastSlash = strrchr(source, split);
     char *pLastSplit = pLastSlash ? pLastSlash + 1 : source;
@@ -276,11 +276,9 @@ char **UtoolStringSplit(char *source, const char delim)
         int idx = 0;
         char *token = UtoolStringTokens(source, delimStr, &nextp);
         while (token) {
-            assert(idx < count);
             *(result + idx++) = strdup(token);
             token = UtoolStringTokens(NULL, delimStr, &nextp);
         }
-        assert(idx == count - 1);
         *(result + idx) = 0;
     }
 
@@ -306,10 +304,14 @@ void UtoolStringFreeArrays(char **arrays)
  * @param size
  * @return
  */
-char *UtoolStringNDup(char *str, size_t size)
+char *UtoolStringNDup(const char *str, size_t size)
 {
     int n;
     char *buffer;
+
+    if (size <= 0) {
+        return NULL;
+    }
 
     buffer = (char *) malloc(size + 1);
     if (buffer) {
@@ -333,11 +335,11 @@ char *UtoolStringNDup(char *str, size_t size)
  * @param with replace with characters
  * @return
  */
-char *UtoolStringReplace(const char *orig, char *rep, char *with)
+char *UtoolStringReplace(const char *orig, const char *rep, const char *with)
 {
-    char *result; // the return string
-    char *ins;    // the next insert point
-    char *tmp;    // varies
+    char *result = NULL; // the return string
+    char *ins = NULL;    // the next insert point
+    char *tmp = NULL;    // varies
     size_t len_rep;  // length of rep (the string to remove)
     size_t len_with; // length of with (the string to replace rep with)
     size_t len_front; // distance between rep and end of last rep
@@ -362,6 +364,9 @@ char *UtoolStringReplace(const char *orig, char *rep, char *with)
     }
 
     size_t destLen = strlen(orig) + (len_with - len_rep) * count;
+    if (destLen <= 0) {
+        return NULL;
+    }
     tmp = result = malloc(destLen + 1);
 
     if (!result)
@@ -376,17 +381,28 @@ char *UtoolStringReplace(const char *orig, char *rep, char *with)
     while (count--) {
         ins = strstr(orig, rep);
         len_front = ins - orig;
-        ok = strncpy_s(tmp, destLen, orig, len_front);
+        ok = strncpy_s(tmp, len_front + 1, orig, len_front);
         if (ok != EOK) {
-            perror("Failed to `strncpy`.");
+            perror("Failed to call `strncpy_s`.");
             exit(EXIT_SECURITY_ERROR);
         }
         tmp = tmp + len_front;
-        tmp = strcpy(tmp, with) + len_with;
+        ok = strncpy_s(tmp, len_with + 1, with, len_with);
+        if (ok != EOK) {
+            perror("Failed to call `strncpy_s`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
+
+        tmp = tmp + len_with;
         orig += len_front + len_rep; // move to next "end of rep"
     }
 
-    strcpy(tmp, orig);
+    size_t left_segment_len = strlen(orig);
+    ok = strncpy_s(tmp, left_segment_len + 1, orig, left_segment_len);
+    if (ok != EOK) {
+        perror("Failed to call `strncpy_s`.");
+        exit(EXIT_SECURITY_ERROR);
+    }
     return result;
 }
 

@@ -243,7 +243,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
     for (int idx = 0; *(selectedPortStrArray + idx); idx++) {
         char *selectedPortStr = *(selectedPortStrArray + idx);
         char msg[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(msg, sizeof(msg), sizeof(msg), OPT_PORT_NOT_EXISTS, selectedPortStr);
+        UtoolWrapSnprintf(msg, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1, OPT_PORT_NOT_EXISTS, selectedPortStr);
 
         char *nic = UtoolStringTokens(selectedPortStr, ",", &nextp);
         char *left = UtoolStringTokens(NULL, ",", &nextp);
@@ -255,7 +255,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
 
         long p = strtol(left, NULL, 0);
         bool matched = false;
-        cJSON *allowableValue;
+        cJSON *allowableValue = NULL;
         cJSON_ArrayForEach(allowableValue, allowableValues) {
             cJSON *portType = cJSON_GetObjectItem(allowableValue, "Type");
             cJSON *portNumber = cJSON_GetObjectItem(allowableValue, "PortNumber");

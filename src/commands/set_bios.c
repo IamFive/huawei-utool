@@ -196,6 +196,7 @@ DONE:
 
 static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
 {
+    int ret = 0;
     cJSON *attributes = NULL;
     cJSON *payload = NULL;
     FILE *infile = NULL;
@@ -223,10 +224,25 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
         } /* can't continue */
 
         /* Get the number of bytes */
-        fseek(infile, 0L, SEEK_END);
+        ret = fseek(infile, 0L, SEEK_END);
+        if (ret) {
+            ZF_LOGE("Failed to seek file: %s", option->fileURI);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
         numbytes = ftell(infile);
+        if (numbytes == -1) {
+            ZF_LOGE("Failed to get size of file: %s", option->fileURI);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
         /* reset the file position indicator to the beginning of the file */
-        fseek(infile, 0L, SEEK_SET);
+        ret = fseek(infile, 0L, SEEK_SET);
+        if (ret) {
+            ZF_LOGE("Failed to seek file: %s", option->fileURI);
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
 
         /* grab sufficient memory for the buffer to hold the text */
         fileContent = (char *) calloc(numbytes + 1, sizeof(char));

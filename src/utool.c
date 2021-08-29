@@ -98,8 +98,8 @@ UtoolCommand g_UtoolCommands[] = {
 
 
         // Test purpose start
-        {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = DEBUG},
-        {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = DEBUG},
+        // {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = DEBUG},
+        // {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = DEBUG},
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
         {.name = "scp", .pFuncExecute = UtoolCmdScpFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
@@ -178,7 +178,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
 
     if (commandOption->flag == FEAT_VERSION) {
         char buff[MAX_FAILURE_MSG_LEN] = {0};
-        UtoolWrapSnprintf(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN,
+        UtoolWrapSnprintf(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
                    "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     } else if (commandOption->flag == FEAT_SHOW_VENDOR) {
@@ -186,7 +186,7 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
         if (*result == NULL) {
             return UTOOLE_INTERNAL;
         }
-        UtoolWrapSnprintf(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, "%s", UTOOL_VENDOR);
+        UtoolWrapSnprintf(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, "%s", UTOOL_VENDOR);
         return UTOOLE_OK;
     } else if (commandOption->flag == FEAT_HELP) {
         return UTOOLE_OK;
@@ -208,9 +208,15 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
  * @return
  */
 static int initialize(char **result) {
+    int ret = 0;
     if (!initialized) {
         // get mutex
-        pthread_mutex_lock(&mutex);
+        ret = pthread_mutex_lock(&mutex);
+        if (ret) {
+            ZF_LOGE("Failed to lock thread");
+            return UTOOLE_INTERNAL; /* pthread_mutex_lock failed */
+        }
+
         CURLcode flag = CURLE_OK;
         if (!initialized) {
             // init log file
@@ -224,7 +230,7 @@ static int initialize(char **result) {
             umask(S_IXUSR | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 
             // check whether file exists
-            int ret = UtoolSetLogFilePath(LOG_FILE_NAME);
+            ret = UtoolSetLogFilePath(LOG_FILE_NAME);
             if (!ret) {
                 ZF_LOGI("Initialize zf-log done.");
             } else {
@@ -239,7 +245,11 @@ static int initialize(char **result) {
                 ZF_LOGE("Failed to global initialize curl, reason: %s", curl_easy_strerror(flag));
                 UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(curl_easy_strerror(flag)), result);
             }
-            atexit(curl_global_cleanup);
+            ret = atexit(curl_global_cleanup);
+            if (ret) {
+                ZF_LOGE("Failed to bind atexit function");
+                return UTOOLE_INTERNAL; /* atexit failed */
+            }
 
             ZF_LOGI("Global initialize CURL done.");
 
@@ -248,7 +258,11 @@ static int initialize(char **result) {
         }
 
         // release mutex
-        pthread_mutex_unlock(&mutex);
+        ret = pthread_mutex_unlock(&mutex);
+        if(ret) {
+            ZF_LOGE("Failed to unlock thread");
+            return UTOOLE_INTERNAL; /* pthread_mutex_unlock failed */
+        }
 
         if (flag != CURLE_OK) {
             return flag;
@@ -320,7 +334,8 @@ int utool_main(int argc, char *argv[], char **result) {
     } else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
         char buffer[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN, "Error: Sub-command `%s` is not supported.",
+        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                          "Error: Sub-command `%s` is not supported.",
                    commandName);
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
         goto DONE;
@@ -333,7 +348,8 @@ FAILURE:
     // we can not use cJSON to build result here, because it may cause problems...
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
     if (buffer != NULL) {
-        UtoolWrapSnprintf(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE, errorString);
+        UtoolWrapSnprintf(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE,
+                          errorString);
         *result = buffer;
     } else {
         *result = OUTPUT_INTERNAL_FAILED_JSON;

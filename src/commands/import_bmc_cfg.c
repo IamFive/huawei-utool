@@ -251,7 +251,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolImportBMCCfgOption *
         char *filename = basename(opt->importFileUrl);
         opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
         if (opt->bmcTempFileUrl != NULL) {
-            UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
+            UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
             node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
             result->code = UtoolAssetCreatedJsonNotNull(node);
             if (result->code != UTOOLE_OK) {

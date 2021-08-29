@@ -62,27 +62,27 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     }
 
 
-    char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(ipmiCmd, sizeof(ipmiCmd), sizeof(ipmiCmd), IPMITOOL_CMD, option->host, option->username,
+    const char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
+    UtoolWrapSnprintf(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, option->host, option->username,
                option->password, option->ipmiPort, ipmiRawCmd);
 
 
     char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(secureIpmiCmd, sizeof(secureIpmiCmd), sizeof(secureIpmiCmd), IPMITOOL_CMD, option->host,
+    UtoolWrapSnprintf(secureIpmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, option->host,
                option->username, "******", option->ipmiPort, ipmiRawCmd);
     ZF_LOGI("execute IPMI command: %s", secureIpmiCmd);
-
-    if ((fp = popen(ipmiCmd, "r")) == NULL) {
-        ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
-        result->desc = IPMITOOL_CMD_RUN_FAILED;
-        result->broken = 1;
-        return NULL;
-    }
 
     cmdOutput = (char *) malloc(MAX_IPMI_CMD_OUTPUT_LEN);
     if (cmdOutput == NULL) {
         result->broken = 1;
         result->code = UTOOLE_INTERNAL;
+        return NULL;
+    }
+
+    if ((fp = popen(ipmiCmd, "r")) == NULL) {
+        ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
+        result->desc = IPMITOOL_CMD_RUN_FAILED;
+        result->broken = 1;
         return NULL;
     }
 
@@ -130,7 +130,7 @@ unsigned char hex2uchar(unsigned char hexChar)
 int hexstr2uchar(unsigned char *hexstr, unsigned char *binstr)
 {
     int binLen = 0;
-    int hexLen = strlen((char *) hexstr);
+    int hexLen = strnlen((char *) hexstr, MAX_IPMI_CMD_OUTPUT_LEN);
     binLen = hexLen / 2;
     hexLen = binLen * 2;
 
@@ -156,10 +156,10 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result)
 
     ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
     if (!result->broken && ipmiCmdOutput != NULL) {
-        hexPortString[0] = ipmiCmdOutput[157];
-        hexPortString[1] = ipmiCmdOutput[158];
-        hexPortString[2] = ipmiCmdOutput[160];
-        hexPortString[3] = ipmiCmdOutput[161];
+        hexPortString[0] = (unsigned char) ipmiCmdOutput[157];
+        hexPortString[1] = (unsigned char) ipmiCmdOutput[158];
+        hexPortString[2] = (unsigned char) ipmiCmdOutput[160];
+        hexPortString[3] = (unsigned char) ipmiCmdOutput[161];
         hexPortString[4] = '\0';
 
         hexstr2uchar(hexPortString, ucharPortStr);

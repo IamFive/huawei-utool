@@ -78,18 +78,27 @@ static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char 
         return UTOOLE_OK;
     }
 
+    char *first = NULL, *second = NULL, *third = NULL;
     char **segments = UtoolStringSplit(version, '.');
-    char *first = *segments == NULL ? "00" : *segments;
-    char *second = *(segments + 1) == NULL ? "00" : *(segments + 1);
-    char *third = *(segments + 2) == NULL ? "00" : *(segments + 2);
-
-    char output[16] = {0};
-    UtoolWrapSnprintf(output, sizeof(output), sizeof(output), "%s.%s.%s", first, second, third);
-
-    for (int idx = 0; *(segments + idx); idx++) {
-        free(*(segments + idx));
+    if (segments != NULL) {
+        first = *segments == NULL ? "00" : *segments;
+        second = *(segments + 1) == NULL ? "00" : *(segments + 1);
+        third = *(segments + 2) == NULL ? "00" : *(segments + 2);
+    } else {
+        first = "00";
+        second = "00";
+        third = "00";
     }
-    free(segments);
+
+    char output[32] = {0};
+    UtoolWrapSnprintf(output, 32, 32 - 1, "%s.%s.%s", first, second, third);
+
+    if (segments) {
+        for (int idx = 0; *(segments + idx); idx++) {
+            free(*(segments + idx));
+        }
+        free(segments);
+    }
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, output);
     FREE_CJSON(node)
@@ -262,7 +271,7 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr)
                     if (cJSON_IsString(location) && cJSON_IsString(deviceLocator) && location->valuestring != NULL &&
                         deviceLocator->valuestring != NULL) {
                         char mapping[256] = {0};
-                        UtoolWrapSnprintf(mapping, sizeof(mapping), sizeof(mapping), "%s%s_CPLD",
+                        UtoolWrapSnprintf(mapping, sizeof(mapping), sizeof(mapping) - 1, "%s%s_CPLD",
                                    location->valuestring == LOCATION_REAR ? "Rear" : "", deviceLocator->valuestring);
                         cJSON_SetValuestring(name, mapping);
                     }
@@ -271,7 +280,7 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr)
         }
     }
 
-    cJSON *item;
+    cJSON *item = NULL;
     cJSON_ArrayForEach(item, firmwares) {
         cJSON_DeleteItemFromObject(item, "RelatedItem");
         cJSON_DeleteItemFromObject(item, "Location");

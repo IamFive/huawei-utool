@@ -46,7 +46,7 @@ typedef struct _CollectBoardInfoOption {
 static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result);
 
 static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRedfishServer *server,
-                                      UtoolResult*result);
+                                      UtoolResult *result);
 
 /**
 * collect diagnostic information with one click, command handler for `collect`
@@ -202,10 +202,10 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRed
                 ZF_LOGI("product serial number is null.");
             }
 
-            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%sdump_%s_%s.tar.gz", opt->exportToFileUrl,
-                       psn, nowStr);
+            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%sdump_%s_%s.tar.gz",
+                              opt->exportToFileUrl, psn, nowStr);
         } else {
-            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX, "%s", opt->exportToFileUrl);
+            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%s", opt->exportToFileUrl);
         }
 
         int pathOk = UtoolIsParentPathExists(opt->localExportToFileUrl);
@@ -284,10 +284,16 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             goto FAILURE;
         } else {
             ZF_LOGI("%s is a valid local file.", opt->localExportToFileUrl);
+            if (close(fd) < 0) {
+                ZF_LOGE("Failed to close fd of %s.", opt->localExportToFileUrl);
+                result->code = UTOOLE_INTERNAL;
+                goto FAILURE;
+            }
+
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
+                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

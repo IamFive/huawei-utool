@@ -110,7 +110,8 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr) {
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    UtoolWrapSnprintf(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN, "%s/Actions/Oem/${Oem}/LogService.CollectSel", log0Url);
+    UtoolWrapSnprintf(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Actions/Oem/${Oem}/LogService.CollectSel",
+                      log0Url);
 
     UtoolRedfishPost(server, querySelLogUrl, payload, NULL, NULL, result);
     if (result->broken) {
@@ -258,10 +259,16 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
             goto FAILURE;
         } else {
             ZF_LOGI("%s is a valid local file.", opt->exportToFileUrl);
+            if (close(fd) < 0) {
+                ZF_LOGE("Failed to close fd of %s.", opt->exportToFileUrl);
+                result->code = UTOOLE_INTERNAL;
+                goto FAILURE;
+            }
+
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX, "/tmp/web/%s", filename);
+                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

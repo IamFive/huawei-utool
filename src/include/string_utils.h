@@ -94,7 +94,7 @@ void UtoolStringToUpper(char *str);
 * @param split
 * @return the last split string segment
 */
-char *UtoolStringLastSplit(char *source, char split);
+char *UtoolStringLastSplit(const char *source, const char split);
 
 /**
 * find a string in an array ignore case
@@ -143,7 +143,7 @@ void UtoolStringFreeArrays(char **arrays);
  * @param size
  * @return
  */
-char *UtoolStringNDup(char *str, size_t size);
+char *UtoolStringNDup(const char *str, size_t size);
 
 
 /**
@@ -155,7 +155,7 @@ char *UtoolStringNDup(char *str, size_t size);
  * @param with
  * @return
  */
-char *UtoolStringReplace(const char *orig, char *rep, char *with);
+char *UtoolStringReplace(const char *orig, const char *rep, const char *with);
 
 
 /**
