@@ -161,12 +161,12 @@ char *UtoolStringReplace(const char *orig, const char *rep, const char *with);
 /**
  * thread safe strtok
  *
- * @param str       source string
- * @param delim     delim to use
- * @param nextp     pointer to the next segment
+ * @param source       source string
+ * @param delimiter     delimiter to use
+ * @param nextToken     pointer to the head of next token
  * @return
  */
-char *UtoolStringTokens(char *str, const char *delim, char **nextp);
+char *UtoolStringTokens(char *source, const char *delimiter, char **nextToken);
 
 #ifdef __cplusplus
 }

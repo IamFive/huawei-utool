@@ -406,37 +406,41 @@ char *UtoolStringReplace(const char *orig, const char *rep, const char *with)
     return result;
 }
 
-/*
- * Divide S into tokens separated by characters in DELIM.
+/**
+ * thread safe strtok
  *
- * public domain strtok_r() by Charlie Gordon from comp.lang.c 9/14/2007
- *      http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684
- *     (Declaration that it's public domain):
- *      http://groups.google.com/group/comp.lang.c/msg/7c7b39328fefab9c
+ * @param source       source string
+ * @param delimiter     delimiter to use
+ * @param nextToken     pointer to the head of next token
+ * @return
  */
-
-char *UtoolStringTokens(char *str, const char *delim, char **nextp)
+char *UtoolStringTokens(char *source, const char *delimiters, char **nextToken)
 {
-    char *ret;
+    char *token;
 
-    if (str == NULL) {
-        str = *nextp;
+    if (source == NULL) {
+        source = *nextToken;
     }
 
-    str += strspn(str, delim);
-    if (*str == '\0') {
+    if (source == NULL) {
         return NULL;
     }
 
-    ret = str;
-    str += strcspn(str, delim);
-
-    if (*str) {
-        *str++ = '\0';
+    size_t head = strspn(source, delimiters);
+    /** if all chars are contained in delimiters */
+    if (strlen(source) == head) {
+        return NULL;
     }
 
-    if (nextp != NULL) {
-        *nextp = str;
+    token = source + head; /** store the pointer to current token */
+    size_t tokenLen = strcspn(token, delimiters);
+
+    if (strlen(token) == tokenLen) {
+        *nextToken = token + tokenLen;
+    } else {
+        *(token + tokenLen) = '\0';
+        *nextToken = token + tokenLen + 1;
     }
-    return ret;
+
+    return token;
 }
