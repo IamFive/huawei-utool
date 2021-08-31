@@ -83,6 +83,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
         ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
         result->desc = IPMITOOL_CMD_RUN_FAILED;
         result->broken = 1;
+        free(cmdOutput);
         return NULL;
     }
 

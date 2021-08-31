@@ -434,12 +434,15 @@ char *UtoolStringTokens(char *source, const char *delimiters, char **nextToken)
 
     token = source + head; /** store the pointer to current token */
     size_t tokenLen = strcspn(token, delimiters);
+    size_t nextTokenOffset = tokenLen;
 
-    if (strlen(token) == tokenLen) {
-        *nextToken = token + tokenLen;
-    } else {
+    if (strlen(token) > tokenLen) {
         *(token + tokenLen) = '\0';
-        *nextToken = token + tokenLen + 1;
+        nextTokenOffset++;
+    }
+
+    if (nextToken != NULL) {
+        *nextToken = token + nextTokenOffset;
     }
 
     return token;

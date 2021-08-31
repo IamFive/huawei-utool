@@ -211,7 +211,7 @@ static void DisplayRunningProgress(int quiet, const char *progress)
 }
 
 
-static void DisplayProgress(int quiet, char *progress)
+static void DisplayProgress(int quiet, const char *progress)
 {
     if (!quiet) {
         DisplayRunningProgress(quiet, progress);

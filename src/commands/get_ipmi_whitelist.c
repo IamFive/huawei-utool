@@ -109,10 +109,11 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
         }
 
         totalCount = *(first->total);
-        if (totalCount > 0 && totalCount <= 0xFF) {
+        if (totalCount != NULL && totalCount > 0 && totalCount <= 0xFF) {
             whitelists = (UtoolIPMICommand **) malloc(sizeof(UtoolIPMICommand *) * totalCount);
             result->code = UtoolAssetMallocNotNull(whitelists);
             if (result->code != UTOOLE_OK) {
+                FreeIpmiCommand(first);
                 goto FAILURE;
             }
             *whitelists = first;
@@ -120,13 +121,17 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
             commands = cJSON_AddArrayToObject(output, "Command");
         } else {
             FreeIpmiCommand(first);
+            result->code = UTOOLE_UNEXPECT_IPMITOOL_RESULT;
+            goto FAILURE;
         }
 
         for (int index = 2; index <= totalCount; index++) {
             UtoolIPMICommand *command = getIpmiWhitelistCommand(commandOption, index, result);
-            if (!result->broken) {
-                *(whitelists + index - 1) = command;
+            if (result->broken) {
+                goto FAILURE;
             }
+
+            *(whitelists + index - 1) = command;
         }
 
         // FIXME(turnbig): group command by netfun
@@ -154,6 +159,9 @@ DONE:
 
     for (int index = 0; index < totalCount; index++) {
         UtoolIPMICommand *command = *(whitelists + index);
+        if (command == NULL) {
+            break;
+        }
         FreeIpmiCommand(command);
     }
     FREE_OBJ(whitelists)
@@ -233,6 +241,10 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     }
 
     segments = UtoolStringSplit(ipmiCmdOutput, ' ');
+    if (segments == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
     command->total = (int *) malloc(sizeof(int));
     result->code = UtoolAssetMallocNotNull(command->total);
     if (result->code != UTOOLE_OK) {
