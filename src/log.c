@@ -149,7 +149,7 @@ bool RemoveOldestLogFiles()
     while ((dir = readdir(d)) != NULL) {
         if (dir->d_type != DT_DIR && UtoolStringStartsWith(dir->d_name, LOG_FILE_NAME)) {
             size_t rotationFileNameLen = strnlen(dir->d_name, MAX_ROTATION_FILE_NAME_LEN - 1);
-            ok = strncpy_s(rotationFileNames[rotationFileCount++], 64, dir->d_name, rotationFileNameLen);
+            ok = strncpy_s(rotationFileNames[rotationFileCount++], MAX_ROTATION_FILE_NAME_LEN, dir->d_name, rotationFileNameLen);
             if (ok != EOK) {
                 perror("Failed to remove rotation log files, reason: strncpy_s failed.");
                 closedir(d);

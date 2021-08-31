@@ -29,7 +29,7 @@ extern "C" {
 
 #define MAX_XPATH_LEN 256
 #define MAX_URL_LEN 256
-#define MAX_HEADER_LEN 128
+#define MAX_HEADER_LEN 512
 #define MAX_COMMAND_NAME_LEN 50
 #define MAX_FAILURE_MSG_LEN 1024
 #define MAX_OUTPUT_LEN 2048

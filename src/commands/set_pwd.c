@@ -245,6 +245,7 @@ static cJSON *BuildPayload(UtoolSetPasswordOption *option)
     }
 
     cJSON *password = cJSON_AddStringToObject(payload, "Password", option->password);
+    option->password = NULL;
     ret = UtoolAssetCreatedJsonNotNull(password);
     if (ret != UTOOLE_OK) {
         goto FAILURE;

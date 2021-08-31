@@ -928,6 +928,9 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
             content[fullSize - 2] = '\0';
 
             int len = strlen(content) - strlen(HEADER_CONTENT_TYPE) + 1;
+            if (len <= 0 || len > MAX_HEADER_LEN) {
+                return 0;
+            }
             char *contentType = (char *) malloc(len);
             if (contentType != NULL) {
                 ok = memcpy_s(contentType, len, content + strlen(HEADER_CONTENT_TYPE), len);

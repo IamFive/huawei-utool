@@ -307,7 +307,7 @@ void UtoolStringFreeArrays(char **arrays)
 char *UtoolStringNDup(const char *str, size_t size)
 {
     int n;
-    char *buffer;
+    char *buffer = NULL;
 
     if (size <= 0) {
         return NULL;
