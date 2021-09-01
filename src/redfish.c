@@ -908,13 +908,13 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
                 return 0;
             }
             char *etag = (char *) malloc(len);
+            response->etag = etag;
             if (etag != NULL) {
                 errno_t ok = memcpy_s(etag, len, content + strlen(HEADER_ETAG), len);
                 if (ok != EOK) {
                     return 0;
                 }
             }
-            response->etag = etag;
         }
 
         if (UtoolStringCaseStartsWith((const char *) buffer, (const char *) HEADER_CONTENT_TYPE)) {
@@ -932,13 +932,13 @@ static int UtoolCurlGetHeaderCallback(const char *buffer, size_t size, size_t ni
                 return 0;
             }
             char *contentType = (char *) malloc(len);
+            response->contentType = contentType;
             if (contentType != NULL) {
                 ok = memcpy_s(contentType, len, content + strlen(HEADER_CONTENT_TYPE), len);
                 if (ok != EOK) {
                     return 0;
                 }
             }
-            response->contentType = contentType;
         }
     }
 

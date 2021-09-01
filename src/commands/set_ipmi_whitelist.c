@@ -430,14 +430,13 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
         } /* can't continue */
+        option->importFileFP = importFileFP;
 
         ///* get the file size */
         if (fstat(fileno(importFileFP), &fileInfo) != 0) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
             goto FAILURE;
         } /* can't continue */
-
-        option->importFileFP = importFileFP;
     }
 
     // if user does not want to operation whitelist, operation option should not present

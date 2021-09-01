@@ -275,15 +275,15 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, cJSON *ethernet, UtoolSet
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
                 }
-                cJSON_DeleteItemFromObject(cloned, "LinkStatus");
 
+                cJSON_AddItemToArray(adaptivePortArray, cloned);
+
+                cJSON_DeleteItemFromObject(cloned, "LinkStatus");
                 cJSON *flag = cJSON_AddBoolToObject(cloned, "AdaptiveFlag", cJSON_True);
                 result->code = UtoolAssetCreatedJsonNotNull(flag);
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
                 }
-
-                cJSON_AddItemToArray(adaptivePortArray, cloned);
                 break;
             }
         }

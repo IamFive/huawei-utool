@@ -419,6 +419,9 @@ char *UtoolStringTokens(char *source, const char *delimiters, char **nextToken)
     char *token;
 
     if (source == NULL) {
+        if (nextToken == NULL) {
+            return NULL;
+        }
         source = *nextToken;
     }
 

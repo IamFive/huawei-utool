@@ -124,7 +124,7 @@ int
 UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct argparse_option *options,
                                     const char *const *usage, char **result)
 {
-    struct argparse parser;
+    struct argparse parser = {0};
     argparse_init(&parser, options, usage, 0);
     argparse_describe(&parser, TOOL_DESC, CMD_EPI_LOG);
     int left_argc = argparse_parse(&parser, commandOption->commandArgc, commandOption->commandArgv);

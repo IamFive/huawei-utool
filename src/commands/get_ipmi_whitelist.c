@@ -157,14 +157,16 @@ DONE:
     FREE_OBJ(ipmiCmdOutput)
     UtoolFreeRedfishServer(server);
 
-    for (int index = 0; index < totalCount; index++) {
-        UtoolIPMICommand *command = *(whitelists + index);
-        if (command == NULL) {
-            break;
+    if (whitelists) {
+        for (int index = 0; index < totalCount; index++) {
+            UtoolIPMICommand *command = *(whitelists + index);
+            if (command == NULL) {
+                break;
+            }
+            FreeIpmiCommand(command);
         }
-        FreeIpmiCommand(command);
+        FREE_OBJ(whitelists)
     }
-    FREE_OBJ(whitelists)
 
     *outputStr = result->desc;
     return result->code;

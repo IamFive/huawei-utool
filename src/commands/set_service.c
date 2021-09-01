@@ -336,6 +336,12 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateServiceOption 
             goto FAILURE;
         }
 
+        payload = UtoolWrapOem(server->oemName, ipmiOemNode, result);
+        if (result->broken) {
+            FREE_CJSON(ipmiOemNode)
+            goto FAILURE;
+        }
+
         cJSON *nest = cJSON_AddObjectToObject(ipmiOemNode, serviceName);
         result->code = UtoolAssetCreatedJsonNotNull(nest);
         if (result->code != UTOOLE_OK) {
@@ -345,12 +351,6 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UtoolUpdateServiceOption 
         cJSON *port2 = cJSON_AddNumberToObject(nest, "Port2", option->port2);
         result->code = UtoolAssetCreatedJsonNotNull(port2);
         if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        payload = UtoolWrapOem(server->oemName, ipmiOemNode, result);
-        if (result->broken) {
-            FREE_CJSON(ipmiOemNode)
             goto FAILURE;
         }
     }
