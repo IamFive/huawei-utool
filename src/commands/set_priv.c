@@ -152,9 +152,9 @@ int UtoolCmdSetUserPriv(UtoolCommandOption *commandOption, char **outputStr)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                          "Failure: No user with name `%s` exists",
-                          setPasswordOption->username);
+        UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                        "Failure: No user with name `%s` exists",
+                        setPasswordOption->username);
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, &(result->desc));
     } else {
         // update user

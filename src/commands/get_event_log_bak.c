@@ -101,9 +101,9 @@ int UtoolCmdGetEventLogBak(UtoolCommandOption *commandOption, char **outputStr)
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    UtoolWrapSnprintf(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN - 1,
-                      "%s/Actions/Oem/${Oem}/LogService.QuerySelLogEntries",
-                      log0Url);
+    UtoolWrapSecFmt(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN - 1,
+                    "%s/Actions/Oem/${Oem}/LogService.QuerySelLogEntries",
+                    log0Url);
 
     /** query sel */
     int currentEntryId = 1;

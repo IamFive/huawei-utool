@@ -287,7 +287,7 @@ const char *UtoolGetStringError(UtoolCode code);
  * @param resolved
  * @return
  */
-const char *UtoolFileRealpath(const char *path, char *resolved);
+const char *UtoolFileRealpath(const char *path, char *resolved, size_t pathLen);
 
 /**
  * check whether parent folder exists
@@ -329,7 +329,7 @@ int UtoolPrintf(int quiet, FILE * stream, const char * format, ...);
  * @param format
  * @param ...
  */
-void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *format, ...);
+void UtoolWrapSecFmt(char *strDest, size_t destMax, size_t count, const char *format, ...);
 
 /**
  * a wrap of HUAWEI strcat_s function.
@@ -338,7 +338,7 @@ void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *
  * @param destMax
  * @param strSrc
  */
-void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc);
+void UtoolWrapStringAppend(char *strDest, size_t destMax, const char *strSrc);
 
 
 /**
@@ -348,7 +348,7 @@ void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc);
  * @param strSrc
  * @param count
  */
-void UtoolWrapStrncat(char *strDest, size_t destMax, const char *strSrc, size_t count);
+void UtoolWrapStringNAppend(char *strDest, size_t destMax, const char *strSrc, size_t count);
 
 #ifdef __cplusplus
 }

@@ -186,8 +186,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
         char buffer[MAX_FAILURE_MSG_LEN];
         cJSON *messageIdNode = cJSONUtils_GetPointer(task, "/Messages/MessageId");
         if (cJSON_IsNull(messageIdNode)) {
-            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                              "[Critical] unknown error. Resolution: None.");
+            UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                            "[Critical] unknown error. Resolution: None.");
         } else {
             cJSON *severityNode = cJSONUtils_GetPointer(task, "/Messages/Severity");
             cJSON *resolutionNode = cJSONUtils_GetPointer(task, "/Messages/Resolution");
@@ -195,8 +195,8 @@ int UtoolBuildRsyncTaskOutputResult(cJSON *task, char **result)
             const char *error = cJSON_IsString(messageNode) ? messageNode->valuestring : "unknown error.";
             const char *severity = cJSON_IsString(severityNode) ? severityNode->valuestring : SEVERITY_WARNING;
             const char *resolution = cJSON_IsString(severityNode) ? resolutionNode->valuestring : "None";
-            UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                              "[%s] %s Resolution: %s", severity, error, resolution);
+            UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                            "[%s] %s Resolution: %s", severity, error, resolution);
         }
 
         cJSON *failure = cJSON_CreateString(buffer);
@@ -453,8 +453,10 @@ const char *UtoolGetStringError(UtoolCode code)
             return "Failed to open local download file.";
         case UTOOLE_SSH_PROTOCOL_DISABLED:
             return "Failed to transfer file to bmc, because SSH protocol is disabled.";
-        case UTOOLE_FAILED_TO_WRITE_FILE:
-            return "Failed to write content to local file.";
+        case UTOOLE_UNEXPECT_IPMITOOL_RESULT:
+            return "ipmitool returns unexpect format result, failed to parse the result.";
+        case UTOOLE_INSECURE_INPUT_CHARS:
+            return "Your input contains insecure chars like ""|;&$><`\\!\\n""";
         default:
             return "Unknown error";
     }
@@ -469,11 +471,11 @@ const char *UtoolGetStringError(UtoolCode code)
  * @param resolved
  * @return
  */
-const char *UtoolFileRealpath(const char *path, char *resolved)
+const char *UtoolFileRealpath(const char *path, char *resolved, size_t pathLen)
 {
 #if defined(__CYGWIN__) || defined(__MINGW32__)
     /** PathCanonicalize(resolved, path); */
-    UtoolWrapSnprintf(resolved, PATH_MAX, PATH_MAX - 1, "%s", path);
+    UtoolWrapSecFmt(resolved, pathLen, pathLen - 1, "%s", path);
     return resolved;
 #else
     return realpath(path, resolved);
@@ -489,7 +491,7 @@ const char *UtoolFileRealpath(const char *path, char *resolved)
 const bool UtoolIsParentPathExists(const char *path)
 {
     char dupPath[MAX_FILE_PATH_LEN] = {0};
-    UtoolWrapSnprintf(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN - 1, "%s", path);
+    UtoolWrapSecFmt(dupPath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN - 1, "%s", path);
 
     // remove end file name
     char *fileName = strrchr(dupPath, FILEPATH_SEP);
@@ -525,9 +527,9 @@ cJSON *UtoolGetOemNode(const UtoolRedfishServer *server, cJSON *source, const ch
 {
     char xpath[MAX_XPATH_LEN] = {0};
     if (relativeXpath == NULL) {
-        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s", server->oemName);
+        UtoolWrapSecFmt(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s", server->oemName);
     } else {
-        UtoolWrapSnprintf(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s/%s", server->oemName, relativeXpath);
+        UtoolWrapSecFmt(xpath, MAX_XPATH_LEN, MAX_XPATH_LEN - 1, "/Oem/%s/%s", server->oemName, relativeXpath);
     }
     return cJSONUtils_GetPointer(source, xpath);
 }
@@ -567,7 +569,7 @@ int UtoolPrintf(int quiet, FILE *stream, const char *format, ...)
  * @param format
  * @param ...
  */
-void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *format, ...)
+void UtoolWrapSecFmt(char *strDest, size_t destMax, size_t count, const char *format, ...)
 {
     int ret;                    /* If initialization causes  e838 */
     va_list argList;
@@ -590,7 +592,7 @@ void UtoolWrapSnprintf(char *strDest, size_t destMax, size_t count, const char *
  * @param destMax
  * @param strSrc
  */
-void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc)
+void UtoolWrapStringAppend(char *strDest, size_t destMax, const char *strSrc)
 {
     int ret = strcat_s(strDest, destMax, strSrc);
     if (ret != EOK) {
@@ -606,7 +608,7 @@ void UtoolWrapStrcat(char *strDest, size_t destMax, const char *strSrc)
  * @param strSrc
  * @param count
  */
-void UtoolWrapStrncat(char *strDest, size_t destMax, const char *strSrc, size_t count)
+void UtoolWrapStringNAppend(char *strDest, size_t destMax, const char *strSrc, size_t count)
 {
     int ret = strncat_s(strDest, destMax, strSrc, count);
     if (ret != EOK) {

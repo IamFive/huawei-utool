@@ -202,10 +202,10 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRed
                 ZF_LOGI("product serial number is null.");
             }
 
-            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%sdump_%s_%s.tar.gz",
-                              opt->exportToFileUrl, psn, nowStr);
+            UtoolWrapSecFmt(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%sdump_%s_%s.tar.gz",
+                            opt->exportToFileUrl, psn, nowStr);
         } else {
-            UtoolWrapSnprintf(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%s", opt->exportToFileUrl);
+            UtoolWrapSecFmt(opt->localExportToFileUrl, PATH_MAX, PATH_MAX - 1, "%s", opt->exportToFileUrl);
         }
 
         int pathOk = UtoolIsParentPathExists(opt->localExportToFileUrl);
@@ -216,7 +216,7 @@ static void ValidateSubcommandOptions(UtoolCollectBoardInfoOption *opt, UtoolRed
         }
 
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath, PATH_MAX);
         int fd = open(realFilepath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->localExportToFileUrl);
@@ -275,7 +275,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             goto FAILURE;
         }
 
-        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->localExportToFileUrl, realFilepath, PATH_MAX);
         int fd = open(realFilepath, O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
@@ -293,7 +293,7 @@ static cJSON *BuildPayload(UtoolCollectBoardInfoOption *opt, UtoolResult *result
             char *filename = basename(opt->localExportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
+                UtoolWrapSecFmt(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

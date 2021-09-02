@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <securec.h>
 #include <constants.h>
+#include <limits.h>
 
 
 /**
@@ -309,7 +310,7 @@ char *UtoolStringNDup(const char *str, size_t size)
     int n;
     char *buffer = NULL;
 
-    if (size <= 0) {
+    if (size <= 0 || size >= INT_MAX - 1) {
         return NULL;
     }
 

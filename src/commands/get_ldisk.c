@@ -72,8 +72,8 @@ static int DrivesPropertyHandler(UtoolRedfishServer *server, cJSON *target, cons
         }
 
         char *driveId = UtoolStringLastSplit(link->valuestring, '/');
-        UtoolWrapStrncat(buffer, 256, driveId, strnlen(driveId, 32));
-        UtoolWrapStrcat(buffer, 256, ",");
+        UtoolWrapStringNAppend(buffer, 256, driveId, strnlen(driveId, 32));
+        UtoolWrapStringAppend(buffer, 256, ",");
     }
 
     buffer[strnlen(buffer, 256) - 1] = '\0';
@@ -201,7 +201,7 @@ int UtoolCmdGetLogicalDisks(UtoolCommandOption *commandOption, char **result)
         // try to load volume members
         char volumesUrl[MAX_URL_LEN];
         char *url = storageLinkNode->valuestring;
-        UtoolWrapSnprintf(volumesUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Volumes", url);
+        UtoolWrapSecFmt(volumesUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Volumes", url);
         ret = UtoolMakeCurlRequest(server, volumesUrl, HTTP_GET, NULL, NULL, getVolumesResponse);
         if (ret != UTOOLE_OK) {
             goto DONE;

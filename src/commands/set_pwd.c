@@ -166,9 +166,9 @@ int UtoolCmdSetPassword(UtoolCommandOption *commandOption, char **result)
 
     if (!foundUserWithName) {
         char buffer[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                          "Failure: No user with name `%s` exists",
-                          setPasswordOption->username);
+        UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                        "Failure: No user with name `%s` exists",
+                        setPasswordOption->username);
         ret = UtoolBuildStringOutputResult(STATE_FAILURE, buffer, result);
     } else {
         // update user
@@ -245,7 +245,6 @@ static cJSON *BuildPayload(UtoolSetPasswordOption *option)
     }
 
     cJSON *password = cJSON_AddStringToObject(payload, "Password", option->password);
-    option->password = NULL;
     ret = UtoolAssetCreatedJsonNotNull(password);
     if (ret != UTOOLE_OK) {
         goto FAILURE;

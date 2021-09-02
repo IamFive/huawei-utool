@@ -101,7 +101,7 @@ int UtoolSetLogFilePath(const char *const log_file_path)
         bool pathOk = UtoolIsParentPathExists(log_file_path);
         if (pathOk) {
             // check whether file exists
-            UtoolFileRealpath(log_file_path, realFilepath);
+            UtoolFileRealpath(log_file_path, realFilepath, PATH_MAX);
             g_UtoolLogFileFP = fopen(realFilepath, "a");
             if (!g_UtoolLogFileFP) {
                 ZF_LOGW("Failed to open log file %s", log_file_path);
@@ -182,9 +182,9 @@ bool RotationLogFile(const char *log_file_path)
         perror("Can not rotation log file");
         return false;
     }
-    UtoolWrapSnprintf(rotationFileName, PATH_MAX, PATH_MAX - 1, "%s.%d%02d%02d%02d%02d%02d",
-                      log_file_path, tm_now->tm_year + 1900, tm_now->tm_mon + 1,
-                      tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
+    UtoolWrapSecFmt(rotationFileName, PATH_MAX, PATH_MAX - 1, "%s.%d%02d%02d%02d%02d%02d",
+                    log_file_path, tm_now->tm_year + 1900, tm_now->tm_mon + 1,
+                    tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
     int ret = rename(log_file_path, rotationFileName);
     if (!ret) {
         perror("Failed to rename rotation log file");

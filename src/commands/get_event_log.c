@@ -110,8 +110,8 @@ int UtoolCmdGetEventLog(UtoolCommandOption *commandOption, char **outputStr) {
     // get log service 0
     char querySelLogUrl[MAX_URL_LEN];
     char *log0Url = logService0->valuestring;
-    UtoolWrapSnprintf(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Actions/Oem/${Oem}/LogService.CollectSel",
-                      log0Url);
+    UtoolWrapSecFmt(querySelLogUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Actions/Oem/${Oem}/LogService.CollectSel",
+                    log0Url);
 
     UtoolRedfishPost(server, querySelLogUrl, payload, NULL, NULL, result);
     if (result->broken) {
@@ -192,7 +192,7 @@ static void ValidateSubcommandOptions(UtoolGetEventLog *opt, UtoolResult *result
         }
 
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->exportToFileUrl, realFilepath, PATH_MAX);
         int fd = open(realFilepath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
@@ -250,7 +250,7 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
         }
 
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->exportToFileUrl, realFilepath, PATH_MAX);
         int fd = open(realFilepath, O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
@@ -268,7 +268,7 @@ static cJSON *BuildPayload(UtoolGetEventLog *opt, UtoolResult *result) {
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
+                UtoolWrapSecFmt(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

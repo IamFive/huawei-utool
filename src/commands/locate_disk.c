@@ -93,8 +93,8 @@ int UtoolCmdLocateDisk(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char url[MAX_URL_LEN];
-    UtoolWrapSnprintf(url, MAX_URL_LEN, MAX_URL_LEN - 1, "/redfish/v1/Chassis/%s/Drives/%s", server->systemId,
-                      option->diskId);
+    UtoolWrapSecFmt(url, MAX_URL_LEN, MAX_URL_LEN - 1, "/redfish/v1/Chassis/%s/Drives/%s", server->systemId,
+                    option->diskId);
     UtoolRedfishPatch(server, url, payload, NULL, NULL, NULL, result);
 
     if (result->broken) {

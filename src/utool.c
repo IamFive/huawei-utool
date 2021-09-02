@@ -25,6 +25,7 @@
 #include <ipmi.h>
 #include <securec.h>
 #include <ftw.h>
+#include <signal.h>
 
 static bool initialized = false;
 static pthread_mutex_t mutex;
@@ -178,15 +179,15 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
 
     if (commandOption->flag == FEAT_VERSION) {
         char buff[MAX_FAILURE_MSG_LEN] = {0};
-        UtoolWrapSnprintf(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                   "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
+        UtoolWrapSecFmt(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                        "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     } else if (commandOption->flag == FEAT_SHOW_VENDOR) {
         *result = (char *) malloc(MAX_OUTPUT_LEN);
         if (*result == NULL) {
             return UTOOLE_INTERNAL;
         }
-        UtoolWrapSnprintf(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, "%s", UTOOL_VENDOR);
+        UtoolWrapSecFmt(*result, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, "%s", UTOOL_VENDOR);
         return UTOOLE_OK;
     } else if (commandOption->flag == FEAT_HELP) {
         return UTOOLE_OK;
@@ -272,10 +273,21 @@ static int initialize(char **result) {
     return CURLE_OK;
 }
 
+void sig_handler(int signum){
+    printf("Inside handler function\n");
+    raise (signum);
+}
+void sig_handler2(int signum){
+    printf("Inside handler function 2\n");
+}
+
 
 int utool_main(int argc, char *argv[], char **result) {
     int ret;
     const char *errorString = NULL;
+
+    signal(SIGINT ,sig_handler);
+    signal(SIGINT ,sig_handler2);
 
     ret = initialize(result);
     if (ret != UTOOLE_OK) {
@@ -334,9 +346,9 @@ int utool_main(int argc, char *argv[], char **result) {
     } else {
         ZF_LOGW("Can not find command handler for %s.", commandName);
         char buffer[MAX_FAILURE_MSG_LEN];
-        UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                          "Error: Sub-command `%s` is not supported.",
-                   commandName);
+        UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
+                        "Error: Sub-command `%s` is not supported.",
+                        commandName);
         ret = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(buffer), result);
         goto DONE;
     }
@@ -348,8 +360,8 @@ FAILURE:
     // we can not use cJSON to build result here, because it may cause problems...
     char *buffer = (char *) malloc(MAX_OUTPUT_LEN);
     if (buffer != NULL) {
-        UtoolWrapSnprintf(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE,
-                          errorString);
+        UtoolWrapSecFmt(buffer, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, OUTPUT_JSON, STATE_FAILURE, STATE_FAILURE,
+                        errorString);
         *result = buffer;
     } else {
         *result = OUTPUT_INTERNAL_FAILED_JSON;

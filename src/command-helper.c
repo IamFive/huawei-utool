@@ -124,6 +124,10 @@ int
 UtoolValidateSubCommandBasicOptions(UtoolCommandOption *commandOption, struct argparse_option *options,
                                     const char *const *usage, char **result)
 {
+    if (options == NULL) {
+        perror("argparse options can not be null");
+        return UTOOLE_INTERNAL;
+    }
     struct argparse parser = {0};
     argparse_init(&parser, options, usage, 0);
     argparse_describe(&parser, TOOL_DESC, CMD_EPI_LOG);

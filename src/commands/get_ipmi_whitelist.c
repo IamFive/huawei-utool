@@ -207,7 +207,7 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     command->data = NULL;
 
     char getIpmiWhitelistCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, GET_IPMI_WHITELIST, index);
+    UtoolWrapSecFmt(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, GET_IPMI_WHITELIST, index);
     sendIpmiCommandOption->data = getIpmiWhitelistCmd;
 
     /**

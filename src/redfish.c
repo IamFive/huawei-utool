@@ -101,7 +101,7 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
     struct curl_slist *curlHeaderList = NULL;
 
     char path[PATH_MAX] = {0};
-    char *ok = UtoolFileRealpath(uploadFilePath, path);
+    char *ok = UtoolFileRealpath(uploadFilePath, path, PATH_MAX);
     if (ok == NULL) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
@@ -227,7 +227,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
         return;
     }
 
-    UtoolFileRealpath(localFileUri, realFilepath);
+    UtoolFileRealpath(localFileUri, realFilepath, PATH_MAX);
     if (realFilepath == NULL) {
         result->broken = 1;
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
@@ -258,7 +258,7 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 
     // setup payload, payload should be freed by caller
     char payload[MAX_PAYLOAD_LEN] = {0};
-    UtoolWrapSnprintf(payload, MAX_PAYLOAD_LEN, MAX_PAYLOAD_LEN - 1, DOWNLOAD_BMC_FILE_PAYLOAD, bmcFileUri);
+    UtoolWrapSecFmt(payload, MAX_PAYLOAD_LEN, MAX_PAYLOAD_LEN - 1, DOWNLOAD_BMC_FILE_PAYLOAD, bmcFileUri);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
 
@@ -344,7 +344,7 @@ void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, 
     struct stat fileInfo;
 
     char path[PATH_MAX] = {0};
-    char *ok = UtoolFileRealpath(uploadFilePath, path);
+    char *ok = UtoolFileRealpath(uploadFilePath, path, PATH_MAX);
     if (ok == NULL) {
         result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
         goto FAILURE;
@@ -376,8 +376,8 @@ void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, 
         int sshPort = sshPortNode->valueint;
         // sftp://user:pwd@example.com:port/path/filename
         char *encodedPassword = curl_easy_escape(NULL, server->password, strnlen(server->password, 64));
-        UtoolWrapSnprintf(sftpRemoteFileUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "sftp://%s:%s@%s:%d/tmp/web/%s",
-                   server->username, encodedPassword, server->host, sshPort, basename(uploadFilePath));
+        UtoolWrapSecFmt(sftpRemoteFileUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "sftp://%s:%s@%s:%d/tmp/web/%s",
+                        server->username, encodedPassword, server->host, sshPort, basename(uploadFilePath));
     } else {
         result->code = UTOOLE_SSH_PROTOCOL_DISABLED;
         goto FAILURE;
@@ -468,7 +468,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
             ifMatchHeader = header;
         }
         char buffer[MAX_HEADER_LEN] = {0};
-        UtoolWrapSnprintf(buffer, MAX_HEADER_LEN, MAX_HEADER_LEN - 1, "%s: %s", header->name, header->value);
+        UtoolWrapSecFmt(buffer, MAX_HEADER_LEN, MAX_HEADER_LEN - 1, "%s: %s", header->name, header->value);
         curlHeaderList = curl_slist_append(curlHeaderList, buffer);
     }
 
@@ -483,7 +483,7 @@ int UtoolMakeCurlRequest(UtoolRedfishServer *server,
             }
 
             char ifMatch[MAX_HEADER_LEN] = {0};
-            UtoolWrapSnprintf(ifMatch, MAX_HEADER_LEN, MAX_HEADER_LEN - 1, "%s: %s", HEADER_IF_MATCH, response->etag);
+            UtoolWrapSecFmt(ifMatch, MAX_HEADER_LEN, MAX_HEADER_LEN - 1, "%s: %s", HEADER_IF_MATCH, response->etag);
             curlHeaderList = curl_slist_append(curlHeaderList, ifMatch);
             UtoolFreeCurlResponse(response);
         }
@@ -540,17 +540,17 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server, const char 
     if (curl) {
         // replace %s with redfish-system-id if necessary
         char fullURL[MAX_URL_LEN] = {0};
-        UtoolWrapStrncat(fullURL, MAX_URL_LEN, server->baseUrl, strnlen(server->baseUrl, MAX_URL_LEN));
+        UtoolWrapStringNAppend(fullURL, MAX_URL_LEN, server->baseUrl, strnlen(server->baseUrl, MAX_URL_LEN));
         if (strstr(resourceURL, "/redfish/v1") == NULL) {
-            UtoolWrapStrcat(fullURL, MAX_URL_LEN, "/redfish/v1");
+            UtoolWrapStringAppend(fullURL, MAX_URL_LEN, "/redfish/v1");
         }
 
         if (strstr(resourceURL, "%s") != NULL) {
             char _resourceURL[MAX_URL_LEN] = {0};
-            UtoolWrapSnprintf(_resourceURL, MAX_URL_LEN, MAX_URL_LEN - 1, resourceURL, server->systemId);
-            UtoolWrapStrncat(fullURL, MAX_URL_LEN, _resourceURL, strnlen(_resourceURL, MAX_URL_LEN));
+            UtoolWrapSecFmt(_resourceURL, MAX_URL_LEN, MAX_URL_LEN - 1, resourceURL, server->systemId);
+            UtoolWrapStringNAppend(fullURL, MAX_URL_LEN, _resourceURL, strnlen(_resourceURL, MAX_URL_LEN));
         } else {
-            UtoolWrapStrncat(fullURL, MAX_URL_LEN, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
+            UtoolWrapStringNAppend(fullURL, MAX_URL_LEN, resourceURL, strnlen(resourceURL, MAX_URL_LEN));
         }
 
         /* enable verbose for easier tracing */
@@ -734,8 +734,8 @@ int UtoolGetFailuresFromResponse(UtoolCurlResponse *response, cJSON *failures)
                 }
 
                 char buffer[MAX_FAILURE_MSG_LEN];
-                UtoolWrapSnprintf(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1, "[%s] %s Resolution: %s",
-                           severity->valuestring, message->valuestring, resolution->valuestring);
+                UtoolWrapSecFmt(buffer, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1, "[%s] %s Resolution: %s",
+                                severity->valuestring, message->valuestring, resolution->valuestring);
 
                 cJSON *failure = cJSON_CreateString(buffer);
                 if (failure != NULL) {
@@ -770,7 +770,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
     if (baseUrl == NULL) {
         return UTOOLE_INTERNAL;
     }
-    UtoolWrapSnprintf(baseUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "https://%s:%d", option->host, option->port);
+    UtoolWrapSecFmt(baseUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "https://%s:%d", option->host, option->port);
     server->baseUrl = baseUrl;
 
     size_t sizeHostUrl = strnlen(option->host, MAX_URL_LEN);
@@ -988,7 +988,7 @@ static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmem
         }
     }
 
-    UtoolWrapStrncat(response->content, response->size + 1, (char *) buffer, fullSize);
+    UtoolWrapStringNAppend(response->content, response->size + 1, (char *) buffer, fullSize);
 
     // return content size
     return fullSize;
@@ -1369,8 +1369,8 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         } else {
             char *taskName = task->message->message == NULL ? task->name : task->message->message;
             char taskProgress[256] = {0};
-            UtoolWrapSnprintf(taskProgress, sizeof(taskProgress), sizeof(taskProgress) - 1,
-                       "%s Progress: %s complete.", taskName, task->taskPercentage);
+            UtoolWrapSecFmt(taskProgress, sizeof(taskProgress), sizeof(taskProgress) - 1,
+                            "%s Progress: %s complete.", taskName, task->taskPercentage);
             UtoolPrintf(server->quiet, stdout, "%s %-96s\r", nowStr, taskProgress);
         }
 

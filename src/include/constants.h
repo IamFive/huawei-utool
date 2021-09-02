@@ -188,6 +188,7 @@ typedef enum _Code
     UTOOLE_SSH_PROTOCOL_DISABLED = 144,          /** failed to transfer file to bmc because ssh service is disabled */
     UTOOLE_FAILED_TO_WRITE_FILE = 145,          /** Failed to write local file */
     UTOOLE_UNEXPECT_IPMITOOL_RESULT = 146,
+    UTOOLE_INSECURE_INPUT_CHARS = 147,
 } UtoolCode;
 
 #ifdef __cplusplus

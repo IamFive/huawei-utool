@@ -148,7 +148,7 @@ static void ValidateSubcommandOptions(UtoolSetBiosAttrOption *option, UtoolResul
         struct stat fileInfo;
 
         char realFilePath[PATH_MAX] = {0};
-        char *ok = UtoolFileRealpath(option->fileURI, realFilePath);
+        char *ok = UtoolFileRealpath(option->fileURI, realFilePath, PATH_MAX);
         if (ok == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
@@ -212,7 +212,7 @@ static cJSON *BuildPayload(UtoolSetBiosAttrOption *option, UtoolResult *result)
     if (!UtoolStringIsEmpty(option->fileURI)) {
         ZF_LOGI("Try to parse file %s now.", option->fileURI);
         char realFilePath[PATH_MAX] = {0};
-        char *ok = UtoolFileRealpath(option->fileURI, realFilePath);
+        char *ok = UtoolFileRealpath(option->fileURI, realFilePath, PATH_MAX);
         if (ok == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;

@@ -76,8 +76,8 @@ int UtoolCmdClearSEL(UtoolCommandOption *commandOption, char **outputStr)
 
     /** send clear SEL request */
     char clearSELUrl[MAX_URL_LEN];
-    UtoolWrapSnprintf(clearSELUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Actions/LogService.ClearLog",
-               logService0LinkNode->valuestring);
+    UtoolWrapSecFmt(clearSELUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "%s/Actions/LogService.ClearLog",
+                    logService0LinkNode->valuestring);
     payload = cJSON_CreateObject();
     result->code = UtoolAssetCreatedJsonNotNull(payload);
     if (result->code != UTOOLE_OK) {

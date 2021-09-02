@@ -172,7 +172,7 @@ static void ValidateSubcommandOptions(UtoolExportBMCCfg *opt, UtoolResult *resul
             goto FAILURE;
         }
 
-        UtoolFileRealpath(opt->exportToFileUrl, realFilePath);
+        UtoolFileRealpath(opt->exportToFileUrl, realFilePath, PATH_MAX);
         int fd = open(realFilePath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
@@ -231,7 +231,7 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result) {
         }
 
         char realFilepath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->exportToFileUrl, realFilepath);
+        UtoolFileRealpath(opt->exportToFileUrl, realFilepath, PATH_MAX);
         int fd = open(realFilepath, O_RDWR | O_CREAT, 0644);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->exportToFileUrl);
@@ -250,7 +250,7 @@ static cJSON *BuildPayload(UtoolExportBMCCfg *opt, UtoolResult *result) {
             char *filename = basename(opt->exportToFileUrl);
             opt->bmcTempFileUrl = (char *) malloc(PATH_MAX);
             if (opt->bmcTempFileUrl != NULL) {
-                UtoolWrapSnprintf(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
+                UtoolWrapSecFmt(opt->bmcTempFileUrl, PATH_MAX, PATH_MAX - 1, "/tmp/web/%s", filename);
                 node = cJSON_AddStringToObject(payload, "Content", opt->bmcTempFileUrl);
                 result->code = UtoolAssetCreatedJsonNotNull(node);
                 if (result->code != UTOOLE_OK) {

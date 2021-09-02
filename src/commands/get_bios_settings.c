@@ -117,7 +117,7 @@ int UtoolCmdGetBiosSettings(UtoolCommandOption *commandOption, char **outputStr)
         FREE_CJSON(attributes)
 
         char realFilePath[PATH_MAX] = {0};
-        UtoolFileRealpath(option->fileURI, realFilePath);
+        UtoolFileRealpath(option->fileURI, realFilePath, PATH_MAX);
         outputFileFP = fopen(realFilePath, "wb");
         if (!outputFileFP) {
             result->broken = 1;
@@ -181,7 +181,7 @@ static void ValidateSubcommandOptions(UtoolGetBiosSettingsOption *opt, UtoolResu
         }
 
         char realFilePath[PATH_MAX] = {0};
-        UtoolFileRealpath(opt->fileURI, realFilePath);
+        UtoolFileRealpath(opt->fileURI, realFilePath, PATH_MAX);
         int fd = open(realFilePath, O_RDWR | O_CREAT, 0664);
         if (fd == -1) {
             ZF_LOGI("%s is not a valid local file path.", opt->fileURI);

@@ -92,7 +92,7 @@ static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char 
     }
 
     char output[32] = {0};
-    UtoolWrapSnprintf(output, 32, 32 - 1, "%s.%s.%s", first, second, third);
+    UtoolWrapSecFmt(output, 32, 32 - 1, "%s.%s.%s", first, second, third);
 
     if (segments) {
         for (int idx = 0; *(segments + idx); idx++) {
@@ -272,8 +272,9 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr)
                     if (cJSON_IsString(location) && cJSON_IsString(deviceLocator) && location->valuestring != NULL &&
                         deviceLocator->valuestring != NULL) {
                         char mapping[256] = {0};
-                        UtoolWrapSnprintf(mapping, sizeof(mapping), sizeof(mapping) - 1, "%s%s_CPLD",
-                                   location->valuestring == LOCATION_REAR ? "Rear" : "", deviceLocator->valuestring);
+                        UtoolWrapSecFmt(mapping, sizeof(mapping), sizeof(mapping) - 1, "%s%s_CPLD",
+                                        location->valuestring == LOCATION_REAR ? "Rear" : "",
+                                        deviceLocator->valuestring);
                         cJSON_SetValuestring(name, mapping);
                     }
                 }

@@ -317,8 +317,8 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSnprintf(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, AD_WHITELIST, operation, option->netfun,
-               command, subFunc);
+    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, AD_WHITELIST, operation, option->netfun,
+                    command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
     ZF_LOGI("ipmi raw command resp: %s", ipmiCmdOutput);
@@ -419,7 +419,7 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
 
         struct stat fileInfo;
         char realFilePath[PATH_MAX] = {0};
-        char *ok = UtoolFileRealpath(option->importFilePath, realFilePath);
+        char *ok = UtoolFileRealpath(option->importFilePath, realFilePath, PATH_MAX);
         if (ok == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
