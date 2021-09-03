@@ -273,21 +273,9 @@ static int initialize(char **result) {
     return CURLE_OK;
 }
 
-void sig_handler(int signum){
-    printf("Inside handler function\n");
-    raise (signum);
-}
-void sig_handler2(int signum){
-    printf("Inside handler function 2\n");
-}
-
-
 int utool_main(int argc, char *argv[], char **result) {
     int ret;
     const char *errorString = NULL;
-
-    signal(SIGINT ,sig_handler);
-    signal(SIGINT ,sig_handler2);
 
     ret = initialize(result);
     if (ret != UTOOLE_OK) {
