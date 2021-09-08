@@ -10,6 +10,7 @@
 #include <zf_log.h>
 #include <commons.h>
 #include <securec.h>
+#include <string_utils.h>
 
 #define MAX_IPMI_CMD_OUTPUT_LEN 5012
 #define IPMITOOL_CMD_RUN_FAILED "Failure: failed to execute IPMI command"
@@ -18,6 +19,8 @@
 #else
 #define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #endif
+
+#define ESCAPE_CHARS "|;&$><`\\!\n"
 
 
 char *
@@ -72,8 +75,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
                     option->username, "******", option->ipmiPort, ipmiRawCmd);
     ZF_LOGI("execute IPMI command: %s", secureIpmiCmd);
 
-    char *escapeChars = "|;&$><`\\!\n";
-    size_t firstOccur = strcspn(ipmiRawCmd, escapeChars);
+    size_t firstOccur = strcspn(ipmiRawCmd, ESCAPE_CHARS);
     if (strlen(ipmiRawCmd) != firstOccur) {
         result->code = UTOOLE_INSECURE_INPUT_CHARS;
         return NULL;
@@ -113,7 +115,15 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
         cmdOutput[len-1] = '\0';
     }
 
-    return cmdOutput;
+    char *escaped = UtoolStringReplace(cmdOutput, ESCAPE_CHARS, " ");
+    free(cmdOutput);
+    if (!escaped) {
+        result->broken = 1;
+        result->code = UTOOLE_INTERNAL;
+        return NULL;
+    }
+
+    return escaped;
 }
 
 
