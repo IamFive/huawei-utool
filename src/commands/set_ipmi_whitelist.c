@@ -52,6 +52,7 @@ static const char *OPT_CMD_FILE_EXCLUSION = "Error: option `cmd-file` and option
 static const char *OPT_CMD_OPTION_REQUIRED = "Error: option `cmd-file` or option `netfun` is required if you want to "
                                              "operation IPMI whitelist.";
 static const char *OPT_NETFN_IS_REQUIRED = "Error: option `netfun` is required when `command` option present.";
+static const char *OPT_CMD_IS_REQUIRED_1 = "Error: option `command` is required when `netfun` option present.";
 static const char *OPT_CMD_IS_REQUIRED = "Error: option `command` is required when `sub-function` option present.";
 static const char *OPT_SUB_FUNC_IS_REQUIRED = "Error: option `sub-function` is required.";
 
@@ -274,7 +275,7 @@ HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelist
             if (!cJSON_IsString(command)) {
                 goto STRUCT_UNKNOWN;
             }
-            option->command = commandList->valuestring;
+            option->command = command->valuestring;
 
             if (subFuncList != NULL) {
                 // get sub function string at index 1
@@ -282,7 +283,7 @@ HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelist
                 if (!cJSON_IsString(subFunc)) {
                     goto STRUCT_UNKNOWN;
                 }
-                option->subFunc = subFuncList->valuestring;
+                option->subFunc = subFunc->valuestring;
             } else {
                 option->subFunc = "";
             }
@@ -423,6 +424,12 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolResult *resu
 
     if (UtoolStringIsEmpty(option->netfun) && !UtoolStringIsEmpty(option->command)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_NETFN_IS_REQUIRED),
+                                              &(result->desc));
+        goto FAILURE;
+    }
+
+    if (!UtoolStringIsEmpty(option->netfun) && UtoolStringIsEmpty(option->command)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_CMD_IS_REQUIRED_1),
                                               &(result->desc));
         goto FAILURE;
     }

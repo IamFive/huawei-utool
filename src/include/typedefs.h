@@ -187,11 +187,11 @@ typedef struct _IPMIRawCmdOption {
 
 /* IPMI option */
 typedef struct _IPMICommand {
-    int *length;
+    int length;
     char *command;
     char *data;
     char *netfun;
-    int *total;
+    int total;
 } UtoolIPMICommand;
 
 #ifdef __cplusplus

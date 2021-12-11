@@ -45,8 +45,6 @@ void FreeIpmiCommand(UtoolIPMICommand *command)
         FREE_OBJ(command->netfun)
         FREE_OBJ(command->command)
         FREE_OBJ(command->data)
-        FREE_OBJ(command->total)
-        FREE_OBJ(command->length)
         FREE_OBJ(command)
     }
 }
@@ -63,11 +61,9 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
 {
     char *ipmiCmdOutput = NULL;
     char **segments = NULL;
-
-    UtoolIPMICommand *command = NULL;
     UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
 
-    command = (UtoolIPMICommand *) malloc(sizeof(UtoolIPMICommand));
+    UtoolIPMICommand *command = malloc(sizeof(UtoolIPMICommand));
     if (command == NULL) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
@@ -99,48 +95,6 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
         goto FAILURE;
     }
 
-    segments = UtoolStringSplit(ipmiCmdOutput, ' ');
-    if (segments == NULL) {
-        result->code = UTOOLE_INTERNAL;
-        goto FAILURE;
-    }
-    command->total = (int *) malloc(sizeof(int));
-    result->code = UtoolAssetMallocNotNull(command->total);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    if (segments[3] != NULL) {
-        *(command->total) = (int) strtol(segments[3], NULL, 16);
-    }
-
-    if (segments[4] != NULL) {
-        command->length = (int *) malloc(sizeof(int));
-        result->code = UtoolAssetMallocNotNull(command->length);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-        *(command->length) = (int) strtol(segments[4], NULL, 16);
-
-        if (*command->length > 1) {
-            char *netfun = segments[5];
-            command->netfun = UtoolStringNDup(netfun, strnlen(netfun, MAX_COMMAND_NAME_LEN));
-            result->code = UtoolAssetMallocNotNull(command->netfun);
-            if (result->code != UTOOLE_OK) {
-                goto FAILURE;
-            }
-        }
-
-        if (*command->length > 2) {
-            char *cmd = segments[6];
-            command->command = UtoolStringNDup(cmd, strnlen(cmd, MAX_COMMAND_NAME_LEN));
-            result->code = UtoolAssetMallocNotNull(command->command);
-            if (result->code != UTOOLE_OK) {
-                goto FAILURE;
-            }
-        }
-    }
-
     // update command data part
     size_t ipmiCmdOutputLen = strnlen(ipmiCmdOutput, MAX_IPMI_CMD_LEN);
     int dataPartStartAt = SINGLE_BYTE_LEN * (DATA_PART_POS - 1) + 1;
@@ -158,6 +112,38 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
         }
     }
 
+    // split function will update orignal string
+    segments = UtoolStringSplit(ipmiCmdOutput, ' ');
+    if (segments == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+
+    if (segments[3] != NULL) {
+        command->total = (int) strtol(segments[3], NULL, 16);
+    }
+
+    if (segments[4] != NULL) {
+        command->length = (int) strtol(segments[4], NULL, 16);
+
+        if (command->length > 1) {
+            char *netfun = segments[5];
+            command->netfun = UtoolStringNDup(netfun, strnlen(netfun, MAX_COMMAND_NAME_LEN));
+            result->code = UtoolAssetMallocNotNull(command->netfun);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+
+        if (command->length > 2) {
+            char *cmd = segments[6];
+            command->command = UtoolStringNDup(cmd, strnlen(cmd, MAX_COMMAND_NAME_LEN));
+            result->code = UtoolAssetMallocNotNull(command->command);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+        }
+    }
 
     goto DONE;
 
@@ -241,20 +227,20 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
 
     // if white list is enabled, we should get all whitelist commands
     if (whitelistEnabled) {
+        first = getIpmiWhitelistCommand(commandOption, 1, result);
+        if (result->broken) {
+            goto FAILURE;
+        }
+        totalCount = first->total;
+
         // pre-malloc whitelists
-        whitelists = (UtoolIPMICommand **) malloc(sizeof(UtoolIPMICommand *) * totalCount);
+        whitelists = malloc(totalCount * sizeof(struct UtoolIPMICommand *));
         result->code = UtoolAssetMallocNotNull(whitelists);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
 
-        first = getIpmiWhitelistCommand(commandOption, 1, result);
-        *whitelists = first;
-        if (result->broken) {
-            goto FAILURE;
-        }
-
-        totalCount = *(first->total);
+        whitelists[0] = first;
         if (totalCount == 0) {
             // output to outputStr
             result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
@@ -275,7 +261,7 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
         for (int index = 2; index <= totalCount; index++) {
             UtoolIPMICommand *command = getIpmiWhitelistCommand(commandOption, index, result);
             // add whitelist command to whitelist
-            *(whitelists + index - 1) = command;
+            whitelists[index - 1] = command;
             if (result->broken) {
                 goto FAILURE;
             }
@@ -289,10 +275,54 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
                 goto FAILURE;
             }
 
-            UtoolIPMICommand *command = *(whitelists + index);
-            cJSON_AddStringToObject(item, "NetFunction", command->netfun);
-            cJSON_AddStringToObject(item, "CmdList", command->command);
-            cJSON_AddStringToObject(item, "SubFunction", command->data);
+            UtoolIPMICommand *command = whitelists[index];
+            if (command->netfun != NULL) {
+                cJSON *netfun = cJSON_AddStringToObject(item, "NetFunctcion", command->netfun);
+                result->code = UtoolAssetCreatedJsonNotNull(netfun);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+            }
+
+            if (command->command != NULL) {
+                cJSON *cmdList = cJSON_AddArrayToObject(item, "CmdList");
+                result->code = UtoolAssetCreatedJsonNotNull(cmdList);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+
+                cJSON *cmd = cJSON_CreateString(command->command);
+                result->code = UtoolAssetCreatedJsonNotNull(cmd);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+                cJSON_bool succeed = cJSON_AddItemToArray(cmdList, cmd);
+                if (!succeed) {
+                    result->code = UTOOLE_CREATE_JSON_NULL;
+                    goto FAILURE;
+                }
+            }
+
+            // validate whether null.
+            if (command->data != NULL) {
+                cJSON *subFunctionList = cJSON_AddArrayToObject(item, "SubFunction");
+                result->code = UtoolAssetCreatedJsonNotNull(subFunctionList);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+
+                cJSON *data = cJSON_CreateString(command->data);
+                result->code = UtoolAssetCreatedJsonNotNull(data);
+                if (result->code != UTOOLE_OK) {
+                    goto FAILURE;
+                }
+                cJSON_bool succeed = cJSON_AddItemToArray(subFunctionList, data);
+                if (!succeed) {
+                    result->code = UTOOLE_CREATE_JSON_NULL;
+                    goto FAILURE;
+                }
+            }
+
             cJSON_AddItemToArray(commands, item);
         }
     }
@@ -312,7 +342,7 @@ DONE:
     if (whitelistEnabled) {
         if (whitelists) {
             for (int index = 0; index < totalCount; index++) {
-                UtoolIPMICommand *command = *(whitelists + index);
+                UtoolIPMICommand *command = whitelists[index];
                 if (command == NULL) {
                     break;
                 }
