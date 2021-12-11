@@ -82,7 +82,7 @@ static int TypeHandler(UtoolRedfishServer *server, cJSON *target, const char *ke
     } else if (UtoolStringEquals(funcTypeNode->valuestring, "FPGA Card")) {
         mapping = CARD_TYPE_FPGA;
     } else if (UtoolStringEquals(funcTypeNode->valuestring, "Net Card")) {
-        if (cJSON_IsNull(cardTypeNode) || cardTypeNode->valuestring == NULL) {
+        if (cardTypeNode == NULL || cJSON_IsNull(cardTypeNode) || cardTypeNode->valuestring == NULL) {
             mapping = CARD_TYPE_NET;
         } else if (UtoolStringEquals(cardTypeNode->valuestring, "NIC") ||
                    UtoolStringEquals(cardTypeNode->valuestring, "IB")) {
@@ -192,6 +192,7 @@ int UtoolCmdGetPCIe(UtoolCommandOption *commandOption, char **outputStr)
                 FREE_CJSON(pcieFuncLinkNode)
                 goto FAILURE;
             }
+            FREE_CJSON(result->data)
         }
 
         FREE_CJSON(pcieFuncLinkNode)

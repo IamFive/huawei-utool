@@ -198,26 +198,26 @@ int UtoolCmdGetFirmware(UtoolCommandOption *commandOption, char **outputStr)
 
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
+        goto FAILURE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
+        goto FAILURE;
     }
 
     result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
     if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
+        goto FAILURE;
     }
 
     result->code = UtoolMakeCurlRequest(server, "/UpdateService/FirmwareInventory", HTTP_GET, NULL, NULL, memberResp);
     if (result->code != UTOOLE_OK) {
-        goto DONE;
+        goto FAILURE;
     }
     if (memberResp->httpStatusCode >= 400) {
         result->code = UtoolResolveFailureResponse(memberResp, &(result->desc));
-        goto DONE;
+        goto FAILURE;
     }
 
     // process response

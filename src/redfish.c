@@ -1414,6 +1414,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         sleep(1); /** next task query interval */
     }
 
+
 FAILURE:
     result->broken = 1;
     goto DONE;
