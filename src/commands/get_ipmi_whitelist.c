@@ -9,22 +9,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <libgen.h>
 #include <securec.h>
 #include <ipmi.h>
-#include "cJSON_Utils.h"
 #include "commons.h"
-#include "curl/curl.h"
 #include "zf_log.h"
 #include "constants.h"
 #include "command-helps.h"
 #include "command-interfaces.h"
 #include "argparse.h"
-#include "redfish.h"
 #include "string_utils.h"
-#include "url_parser.h"
 
 #define WHITELIST_ENABLED "01 01"
 
@@ -34,6 +28,8 @@ static const char *const usage[] = {
 };
 
 static const char *const GET_IPMI_WHITELIST_CONF = "0x30 0x93 0xdb 0x07 0x00 0x4c";
+static const int SINGLE_BYTE_LEN = 3;
+static const int DATA_PART_POS = 9;
 
 // %x stands for the index of white list ipmi command to query
 static const char *const GET_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x00 0x4b 0x01 0x%02x";
@@ -42,135 +38,6 @@ static UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOpti
 
 
 void FreeIpmiCommand(UtoolIPMICommand *command);
-
-/**
-* get IPMI command white list for server internal channel (LPC/USB etc.), command handler for `getipmiwhitelist`
-*
-* @param commandOption
-* @param result
-* @return
-* */
-int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr)
-{
-    cJSON *output = NULL;
-    cJSON *commands = NULL;
-
-    int totalCount = 0;
-    char *ipmiCmdOutput = NULL;
-    UtoolResult *result = &(UtoolResult) {0};
-    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
-    UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
-    UtoolIPMICommand **whitelists = NULL;
-
-    struct argparse_option options[] = {
-            OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
-            OPT_END()
-    };
-
-    output = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(output);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
-    if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
-    }
-
-    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
-    if (commandOption->flag != EXECUTABLE) {
-        goto DONE;
-    }
-
-    // get ipmi white list feature status
-    sendIpmiCommandOption->data = GET_IPMI_WHITELIST_CONF;
-    ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
-    ZF_LOGI("query IPMI whitelist status resp: %s", ipmiCmdOutput);
-    if (result->broken) {
-        goto FAILURE;
-    }
-
-    bool isWhitelistEnabled = UtoolStringEndsWith(ipmiCmdOutput, WHITELIST_ENABLED);
-    ZF_LOGI("IPMI whitelist status: %s", isWhitelistEnabled ? ENABLED : DISABLED);
-    FREE_OBJ(ipmiCmdOutput)
-
-    cJSON *node = cJSON_AddStringToObject(output, "Enable", isWhitelistEnabled ? ENABLED : DISABLED);
-    result->code = UtoolAssetCreatedJsonNotNull(node);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    // if white list is enabled, we should get
-    if (isWhitelistEnabled) {
-        UtoolIPMICommand *first = getIpmiWhitelistCommand(commandOption, 1, result);
-        if (result->broken) {
-            goto FAILURE;
-        }
-
-        totalCount = *(first->total);
-        if (totalCount != NULL && totalCount > 0 && totalCount <= 0xFF) {
-            whitelists = (UtoolIPMICommand **) malloc(sizeof(UtoolIPMICommand *) * totalCount);
-            result->code = UtoolAssetMallocNotNull(whitelists);
-            if (result->code != UTOOLE_OK) {
-                FreeIpmiCommand(first);
-                goto FAILURE;
-            }
-            *whitelists = first;
-
-            commands = cJSON_AddArrayToObject(output, "Command");
-        } else {
-            FreeIpmiCommand(first);
-            result->code = UTOOLE_UNEXPECT_IPMITOOL_RESULT;
-            goto FAILURE;
-        }
-
-        for (int index = 2; index <= totalCount; index++) {
-            UtoolIPMICommand *command = getIpmiWhitelistCommand(commandOption, index, result);
-            if (result->broken) {
-                goto FAILURE;
-            }
-
-            *(whitelists + index - 1) = command;
-        }
-
-        // FIXME(turnbig): group command by netfun
-        for (int index = 0; index < totalCount; index++) {
-            UtoolIPMICommand *command = *(whitelists + index);
-            cJSON *item = cJSON_CreateObject();
-            cJSON_AddStringToObject(item, "NetFunction", command->netfun);
-            cJSON_AddStringToObject(item, "CmdList", command->command);
-            cJSON_AddStringToObject(item, "SubFunction", command->data);
-            cJSON_AddItemToArray(commands, item);
-        }
-    }
-
-    // output to outputStr
-    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
-    goto DONE;
-
-FAILURE:
-    FREE_CJSON(output)
-    goto DONE;
-
-DONE:
-    FREE_OBJ(ipmiCmdOutput)
-    UtoolFreeRedfishServer(server);
-
-    if (whitelists) {
-        for (int index = 0; index < totalCount; index++) {
-            UtoolIPMICommand *command = *(whitelists + index);
-            if (command == NULL) {
-                break;
-            }
-            FreeIpmiCommand(command);
-        }
-        FREE_OBJ(whitelists)
-    }
-
-    *outputStr = result->desc;
-    return result->code;
-}
 
 void FreeIpmiCommand(UtoolIPMICommand *command)
 {
@@ -184,9 +51,16 @@ void FreeIpmiCommand(UtoolIPMICommand *command)
     }
 }
 
+/**
+ * get a single IPMI whitelist command.
+ *
+ * @param commandOption
+ * @param index             the index of whitelist command list
+ * @param result
+ * @return
+ */
 UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int index, UtoolResult *result)
 {
-    char *data = NULL;
     char *ipmiCmdOutput = NULL;
     char **segments = NULL;
 
@@ -195,9 +69,8 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
 
     command = (UtoolIPMICommand *) malloc(sizeof(UtoolIPMICommand));
     if (command == NULL) {
-        result->broken = 1;
         result->code = UTOOLE_INTERNAL;
-        goto DONE;
+        goto FAILURE;
     }
 
     command->length = NULL;
@@ -224,22 +97,6 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     ZF_LOGI("Get IPMI whitelist with index %d resp：%s", index, ipmiCmdOutput);
     if (result->broken) {
         goto FAILURE;
-    }
-
-    size_t ipmiCmdOutputLen = strnlen(ipmiCmdOutput, MAX_IPMI_CMD_LEN);
-    // FIXME(turnbig): get data
-    if (ipmiCmdOutputLen > 25) {
-        int size = ipmiCmdOutputLen - 25;
-        command->data = (char *) malloc(sizeof(char) * (size + 1));
-        result->code = UtoolAssetMallocNotNull(command->data);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-        errno_t ok = strncpy_s(command->data, size + 1, ipmiCmdOutput + 25, size);
-        if (ok != EOK) {
-            perror("Failed to `strncpy`.");
-            exit(EXIT_SECURITY_ERROR);
-        }
     }
 
     segments = UtoolStringSplit(ipmiCmdOutput, ' ');
@@ -284,13 +141,187 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
         }
     }
 
+    // update command data part
+    size_t ipmiCmdOutputLen = strnlen(ipmiCmdOutput, MAX_IPMI_CMD_LEN);
+    int dataPartStartAt = SINGLE_BYTE_LEN * (DATA_PART_POS - 1) + 1;
+    if (ipmiCmdOutputLen > dataPartStartAt) {
+        int size = ipmiCmdOutputLen - dataPartStartAt;
+        command->data = (char *) malloc(sizeof(char) * (size + 1));
+        result->code = UtoolAssetMallocNotNull(command->data);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+        errno_t ok = strncpy_s(command->data, size + 1, ipmiCmdOutput + dataPartStartAt, size);
+        if (ok != EOK) {
+            perror("Failed to `strncpy`.");
+            exit(EXIT_SECURITY_ERROR);
+        }
+    }
+
+
     goto DONE;
 
 FAILURE:
+    result->broken = 1;
     goto DONE;
 
 DONE:
     FREE_OBJ(ipmiCmdOutput)
     UtoolStringFreeArrays(segments);
     return command;
+}
+
+/**
+* get IPMI command white list for server internal channel (LPC/USB etc.), command handler for `getipmiwhitelist`
+ *
+ * Test tips:
+ *      - whitelist enabled/disable
+ *      - whitelist enabled, but no command
+ *      - whitelist enabled, one command
+ *      - whitelist enabled, multiple commands
+*
+* @param commandOption
+* @param result
+* @return
+* */
+int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr)
+{
+    cJSON *output = NULL;
+    cJSON *commands = NULL;
+
+    int totalCount = 0;
+    char *ipmiCmdOutput = NULL;
+    UtoolResult *result = &(UtoolResult) {0};
+    UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
+    UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
+
+    bool whitelistEnabled = false;
+    UtoolIPMICommand *first = NULL;
+    UtoolIPMICommand **whitelists = NULL;
+
+    struct argparse_option options[] = {
+            OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
+            OPT_END()
+    };
+
+    output = cJSON_CreateObject();
+    result->code = UtoolAssetCreatedJsonNotNull(output);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
+    if (commandOption->flag != EXECUTABLE) {
+        goto DONE;
+    }
+
+    result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
+    if (commandOption->flag != EXECUTABLE) {
+        goto DONE;
+    }
+
+    // get ipmi white list feature status
+    sendIpmiCommandOption->data = GET_IPMI_WHITELIST_CONF;
+    ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
+    ZF_LOGI("query IPMI whitelist status resp: %s", ipmiCmdOutput);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+    whitelistEnabled = UtoolStringEndsWith(ipmiCmdOutput, WHITELIST_ENABLED);
+    ZF_LOGI("IPMI whitelist status: %s", whitelistEnabled ? ENABLED : DISABLED);
+    FREE_OBJ(ipmiCmdOutput)
+
+    // add Enabled output node
+    cJSON *whitelistEnabledNode = cJSON_AddStringToObject(output, "Enable", whitelistEnabled ? ENABLED : DISABLED);
+    result->code = UtoolAssetCreatedJsonNotNull(whitelistEnabledNode);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    // if white list is enabled, we should get all whitelist commands
+    if (whitelistEnabled) {
+        // pre-malloc whitelists
+        whitelists = (UtoolIPMICommand **) malloc(sizeof(UtoolIPMICommand *) * totalCount);
+        result->code = UtoolAssetMallocNotNull(whitelists);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        first = getIpmiWhitelistCommand(commandOption, 1, result);
+        *whitelists = first;
+        if (result->broken) {
+            goto FAILURE;
+        }
+
+        totalCount = *(first->total);
+        if (totalCount == 0) {
+            // output to outputStr
+            result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
+            goto DONE;
+        }
+
+        if (totalCount == NULL || totalCount < 0 && totalCount > 0xFF) {
+            result->code = UTOOLE_UNEXPECT_IPMITOOL_RESULT;
+            goto FAILURE;
+        }
+
+        commands = cJSON_AddArrayToObject(output, "Command");
+        result->code = UtoolAssetCreatedJsonNotNull(commands);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+
+        for (int index = 2; index <= totalCount; index++) {
+            UtoolIPMICommand *command = getIpmiWhitelistCommand(commandOption, index, result);
+            // add whitelist command to whitelist
+            *(whitelists + index - 1) = command;
+            if (result->broken) {
+                goto FAILURE;
+            }
+        }
+
+        // we can not group netfunc or subfunc for now. so, we should just plain output as it is.
+        for (int index = 0; index < totalCount; index++) {
+            cJSON *item = cJSON_CreateObject();
+            result->code = UtoolAssetCreatedJsonNotNull(item);
+            if (result->code != UTOOLE_OK) {
+                goto FAILURE;
+            }
+
+            UtoolIPMICommand *command = *(whitelists + index);
+            cJSON_AddStringToObject(item, "NetFunction", command->netfun);
+            cJSON_AddStringToObject(item, "CmdList", command->command);
+            cJSON_AddStringToObject(item, "SubFunction", command->data);
+            cJSON_AddItemToArray(commands, item);
+        }
+    }
+
+    // output to outputStr
+    result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
+    goto DONE;
+
+FAILURE:
+    FREE_CJSON(output)
+    goto DONE;
+
+DONE:
+    FREE_OBJ(ipmiCmdOutput)
+    UtoolFreeRedfishServer(server);
+
+    if (whitelistEnabled) {
+        if (whitelists) {
+            for (int index = 0; index < totalCount; index++) {
+                UtoolIPMICommand *command = *(whitelists + index);
+                if (command == NULL) {
+                    break;
+                }
+                FreeIpmiCommand(command);
+            }
+            FREE_OBJ(whitelists)
+        }
+    }
+
+    *outputStr = result->desc;
+    return result->code;
 }

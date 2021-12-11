@@ -7,13 +7,9 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <libgen.h>
-#include <securec.h>
 #include <ipmi.h>
 #include "cJSON_Utils.h"
 #include "commons.h"
@@ -23,9 +19,7 @@
 #include "command-helps.h"
 #include "command-interfaces.h"
 #include "argparse.h"
-#include "redfish.h"
 #include "string_utils.h"
-#include "url_parser.h"
 
 #define OPERATION_ADD "Add"
 #define OPERATION_REMOVE "Remove"
@@ -42,7 +36,7 @@ static const char *const DISABLE_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x0 0x4a 
  *           Add: 00; Remove: 01; <----|                    |
  *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
  */
-static const char *const AD_WHITELIST = "0x30 0x93 0xdb 0x07 0x00 0x3f 0x01 %s 0x01 %s %s 0x08 %s";
+static const char *const OP_WHITELIST = "0x30 0x93 0xdb 0x07 0x00 0x3f 0x01 %s 0x01 %s %s 0x08 %s";
 
 
 static const char *OPERATION_CHOICES[] = {
@@ -59,6 +53,7 @@ static const char *OPT_CMD_OPTION_REQUIRED = "Error: option `cmd-file` or option
                                              "operation IPMI whitelist.";
 static const char *OPT_NETFN_IS_REQUIRED = "Error: option `netfun` is required when `command` option present.";
 static const char *OPT_CMD_IS_REQUIRED = "Error: option `command` is required when `sub-function` option present.";
+static const char *OPT_SUB_FUNC_IS_REQUIRED = "Error: option `sub-function` is required.";
 
 static const char *OPT_WHITELIST_DISABLED = "Error: all other options is disabled when option `enabled` is set to "
                                             "'Disabled'.";
@@ -84,10 +79,7 @@ typedef struct _SetIpmiWhitelistOption {
 
 } UtoolSetIpmiWhitelistOption;
 
-static cJSON *BuildPayload(UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
-
-static void ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServer *server,
-                                      UtoolResult *result);
+static void ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
 
 void
 ToggleIpmiWhitelist(UtoolCommandOption *commandOption, const UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
@@ -95,7 +87,8 @@ ToggleIpmiWhitelist(UtoolCommandOption *commandOption, const UtoolSetIpmiWhiteli
 void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmiWhitelistOption *option,
                            UtoolResult *result);
 
-void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
+void
+HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
 
 /**
 * get IPMI command white list for server internal channel (LPC/USB etc.), command handler for `getipmiwhitelist`
@@ -107,14 +100,10 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
 int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr)
 {
     cJSON *payload = NULL;
-    char *fileContent = NULL;
 
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolSetIpmiWhitelistOption *option = &(UtoolSetIpmiWhitelistOption) {0};
-
-    char *ipmiCmdOutput = NULL;
-    UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -148,7 +137,7 @@ int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
         goto DONE;
     }
 
-    ValidateSubcommandOptions(option, server, result);
+    ValidateSubcommandOptions(option, result);
     if (result->broken) {
         goto DONE;
     }
@@ -194,9 +183,9 @@ DONE:
     return result->code;
 }
 
-void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
+void
+HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
 {
-    int ret = 0;
     cJSON *payload = NULL;
     size_t numbytes;
     char *fileContent = NULL;
@@ -204,15 +193,15 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
     // handle multiple IPMI whitelist add/remove
     if (option->importFileFP) {
         ZF_LOGI("Try to parse whitelist JSON file: %s now.", option->importFilePath);
-        char realFilePath[PATH_MAX] = {0};
 
         /* Get the number of bytes */
-        ret = fseek(option->importFileFP, 0L, SEEK_END);
+        int ret = fseek(option->importFileFP, 0L, SEEK_END);
         if (ret) {
             ZF_LOGE("Failed to seek file: %s", option->importFileFP);
             result->code = UTOOLE_INTERNAL;
             goto FAILURE;
         }
+
         numbytes = ftell(option->importFileFP);
         if (numbytes == -1) {
             ZF_LOGE("Failed to get size of file: %s", option->importFileFP);
@@ -244,7 +233,8 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
         payload = cJSON_Parse(fileContent);
         if (size != numbytes || !payload) {
             ZF_LOGI("File format is illegal, not well json formed, position: %s.", cJSON_GetErrorPtr());
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_ILLEGAL), &(result->desc));
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_ILLEGAL),
+                                                  &(result->desc));
             goto FAILURE;
         }
 
@@ -258,14 +248,45 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
             cJSON *netfun = cJSON_GetObjectItem(element, "NetFunction");
             cJSON *commandList = cJSON_GetObjectItem(element, "CmdList");
             cJSON *subFuncList = cJSON_GetObjectItem(element, "SubFunction");
-            if (netfun == NULL || netfun->valuestring == NULL) {
+
+            if (netfun == NULL || !cJSON_IsString(netfun) || netfun->valuestring == NULL) {
                 goto STRUCT_UNKNOWN;
             }
 
-            // FIXME(turnbig), other fields validation?
+            // we only support single IPMI command in a node, grouped command list is not supported now.
+            if (commandList == NULL || !cJSON_IsArray(commandList) || cJSON_GetArraySize(commandList) != 1) {
+                goto STRUCT_UNKNOWN;
+            }
+
+            // we only support single IPMI command in a node, grouped sub-function is not supported now.
+            // sub function list could be null in some command, example: ipmitool raw 0x60 0x01
+            if (subFuncList != NULL) {
+                // illegal format
+                if (!cJSON_IsArray(subFuncList) || cJSON_GetArraySize(subFuncList) != 1) {
+                    goto STRUCT_UNKNOWN;
+                }
+            }
+
             option->netfun = netfun->valuestring;
+
+            // get command string at index 1
+            cJSON *command = cJSON_GetArrayItem(commandList, 0);
+            if (!cJSON_IsString(command)) {
+                goto STRUCT_UNKNOWN;
+            }
             option->command = commandList->valuestring;
-            option->subFunc = subFuncList->valuestring;
+
+            if (subFuncList != NULL) {
+                // get sub function string at index 1
+                cJSON *subFunc = cJSON_GetArrayItem(subFuncList, 0);
+                if (!cJSON_IsString(subFunc)) {
+                    goto STRUCT_UNKNOWN;
+                }
+                option->subFunc = subFuncList->valuestring;
+            } else {
+                option->subFunc = "";
+            }
+
             HandleWhitelistAction(commandOption, option, result);
             if (result->broken) {
                 goto FAILURE;
@@ -276,7 +297,8 @@ void HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhit
     goto DONE;
 
 STRUCT_UNKNOWN:
-    result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_STRUCT_UNKNOWN), &(result->desc));
+    result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_STRUCT_UNKNOWN),
+                                          &(result->desc));
     goto FAILURE;
 
 FAILURE:
@@ -291,7 +313,6 @@ DONE:
         fclose(option->importFileFP);
         option->importFileFP = NULL;
     }
-
 }
 
 void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmiWhitelistOption *option,
@@ -307,7 +328,6 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
     char *command = UtoolStringIsEmpty(option->command) ? "" : option->command;
     char *subFunc = UtoolStringIsEmpty(option->subFunc) ? "" : option->subFunc;
 
-    // FIXME(turnbig): what last "data" comes from.
     /**
      * 0x30 0x93 0xdb 0x07 0x00 0x3f 0x01  %s  0x01  %s    %s 0x08  %s
      * 0x30 0x93 0xdb 0x07 0x00 0x3f 0x01 0x00 0x01 netfn cmd chan data
@@ -317,7 +337,7 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, AD_WHITELIST, operation, option->netfun,
+    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, OP_WHITELIST, operation, option->netfun,
                     command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
@@ -325,6 +345,13 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
     FREE_OBJ(ipmiCmdOutput);
 }
 
+/**
+ * Enable/Disable IPMI whitelist feature.
+ *
+ * @param commandOption
+ * @param option
+ * @param result
+ */
 void
 ToggleIpmiWhitelist(UtoolCommandOption *commandOption, const UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
 {
@@ -338,13 +365,11 @@ ToggleIpmiWhitelist(UtoolCommandOption *commandOption, const UtoolSetIpmiWhiteli
             sendIpmiCommandOption->data = DISABLE_IPMI_WHITELIST;
             ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
             ZF_LOGI("Disable IPMI whitelist action resp: %s", ipmiCmdOutput);
-            FREE_OBJ(ipmiCmdOutput)
         } else if (UtoolStringEquals(option->enabled, ENABLED)) {
             ZF_LOGI("Enable IPMI whitelist feature now.");
             sendIpmiCommandOption->data = ENABLE_IPMI_WHITELIST;
             ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
             ZF_LOGI("Enable IPMI whitelist action resp: %s", ipmiCmdOutput);
-            FREE_OBJ(ipmiCmdOutput)
         }
     }
 
@@ -363,7 +388,7 @@ DONE:
 * @return
 */
 static void
-ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServer *server, UtoolResult *result)
+ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
 {
     FILE *importFileFP = NULL;
 
@@ -408,6 +433,16 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
         goto FAILURE;
     }
 
+    // data part is not required, it maybe null
+    // validate if sub function(data) part is missing.
+    /**
+    if (!UtoolStringIsEmpty(option->netfun) && !UtoolStringIsEmpty(option->command) &&
+        UtoolStringIsEmpty(option->subFunc)) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SUB_FUNC_IS_REQUIRED),
+                                              &(result->desc));
+        goto FAILURE;
+    } */
+
     if (!UtoolStringIsEmpty(option->importFilePath)) {
 
         if (!UtoolStringIsEmpty(option->netfun) || !UtoolStringIsEmpty(option->command) ||
@@ -419,7 +454,7 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
 
         struct stat fileInfo;
         char realFilePath[PATH_MAX] = {0};
-        char *ok = UtoolFileRealpath(option->importFilePath, realFilePath, PATH_MAX);
+        const char *ok = UtoolFileRealpath(option->importFilePath, realFilePath, PATH_MAX);
         if (ok == NULL) {
             result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
             goto FAILURE;
@@ -448,7 +483,7 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolRedfishServe
         }
     }
 
-    // if user does not want to operation whitelist, operation option should not present
+    // if want to operation whitelist, operation option should present
     if (!UtoolStringIsEmpty(option->netfun) || !UtoolStringIsEmpty(option->importFilePath)) {
         if (UtoolStringIsEmpty(option->operation)) {
             result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_OPERATION_REQUIRED),
@@ -465,26 +500,4 @@ FAILURE:
 
 DONE:
     return;
-}
-
-static cJSON *BuildPayload(UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
-{
-    cJSON *payload = cJSON_CreateObject();
-    result->code = UtoolAssetCreatedJsonNotNull(payload);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    cJSON *node = cJSON_AddStringToObject(payload, "Type", "URI");
-    result->code = UtoolAssetCreatedJsonNotNull(node);
-    if (result->code != UTOOLE_OK) {
-        goto FAILURE;
-    }
-
-    return payload;
-
-FAILURE:
-    result->broken = 1;
-    FREE_CJSON(payload)
-    return NULL;
 }

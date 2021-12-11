@@ -96,11 +96,12 @@ UtoolCommand g_UtoolCommands[] = {
         {.name = "setfan", .pFuncExecute = UtoolCmdSetFan, .type = SET},
         {.name = "locatedisk", .pFuncExecute = UtoolCmdLocateDisk, .type = SET},
         {.name = "sendipmirawcmd", .pFuncExecute = UtoolCmdSendIPMIRawCommand, .type = SET},
+        {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = GET},
+        {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = SET},
+        {.name = "getoverallpowerstatus", .pFuncExecute = UtoolCmdGetOverallPowerStatus, .type = GET},
 
 
         // Test purpose start
-        // {.name = "getipmiwhitelist", .pFuncExecute = UtoolCmdGetIpmiWhitelist, .type = DEBUG},
-        // {.name = "setipmiwhitelist", .pFuncExecute = UtoolCmdSetIpmiWhitelist, .type = DEBUG},
         {.name = "upload", .pFuncExecute = UtoolCmdUploadFileToBMC, .type = DEBUG},
         {.name = "scp", .pFuncExecute = UtoolCmdScpFileToBMC, .type = DEBUG},
         {.name = "download", .pFuncExecute = UtoolCmdDownloadBMCFile, .type = DEBUG},
