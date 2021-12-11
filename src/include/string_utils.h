@@ -79,6 +79,14 @@ bool UtoolStringCaseInArray(const char *str, const char **array);
 bool UtoolStringEquals(const char *str, const char *literal);
 
 /**
+* check whether string  equals to a string literal ignore case
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringCaseEquals(const char *str, const char *literal);
+
+/**
 * check whether string  equals to a string literal
 *
 * @param str

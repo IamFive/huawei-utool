@@ -21,6 +21,9 @@
 #include "argparse.h"
 #include "string_utils.h"
 
+#define DFT_SUB_FUNC "0xff"
+#define OEM_NETFUNC "0x30"
+#define OEM_SUB_FUNC_PREFIX "0xdb 0x07 0x00"
 #define OPERATION_ADD "Add"
 #define OPERATION_REMOVE "Remove"
 
@@ -60,7 +63,7 @@ static const char *OPT_WHITELIST_DISABLED = "Error: all other options is disable
                                             "'Disabled'.";
 
 static const char *OPT_JSON_FILE_ILLEGAL = "Error: input whitelist JSON file is not well formed.";
-static const char *OPT_JSON_FILE_STRUCT_UNKNOWN = "Error: input whitelist JSON file is not well structured.";
+static const char *OPT_JSON_FILE_STRUCT_ILLEGAL = "Error: input whitelist JSON file is illegal, illegal command: %s";
 
 
 static const char *const usage[] = {
@@ -80,6 +83,8 @@ typedef struct _SetIpmiWhitelistOption {
 
 } UtoolSetIpmiWhitelistOption;
 
+static bool cJSON_IsNullOrEmptyArray(cJSON *node);
+
 static void ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
 
 void
@@ -90,6 +95,31 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
 
 void
 HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result);
+
+
+/**
+ * check whether a cJSON node is null or empty array
+ *
+ * @param node
+ * @return
+ */
+static bool cJSON_IsNullOrEmptyArray(cJSON *node)
+{
+    if (node == NULL) {
+        return true;
+    }
+
+    if (cJSON_IsNull(node)) {
+        return true;
+    }
+
+    if (cJSON_IsArray(node) && cJSON_GetArraySize(node) == 0) {
+        return true;
+    }
+
+    return false;
+}
+
 
 /**
 * get IPMI command white list for server internal channel (LPC/USB etc.), command handler for `getipmiwhitelist`
@@ -184,12 +214,15 @@ DONE:
     return result->code;
 }
 
+
 void
 HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelistOption *option, UtoolResult *result)
 {
     cJSON *payload = NULL;
     size_t numbytes;
     char *fileContent = NULL;
+    cJSON *element = NULL;
+    char *issueElement = NULL;
 
     // handle multiple IPMI whitelist add/remove
     if (option->importFileFP) {
@@ -241,65 +274,102 @@ HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelist
 
         cJSON *root = cJSONUtils_GetPointer(payload, "/Command");
         if (root == NULL || !cJSON_IsArray(root) || cJSON_GetArraySize(root) == 0) {
-            goto STRUCT_UNKNOWN;
+            goto STRUCT_ILLEGAL;
         }
 
-        cJSON *element = NULL;
+
         cJSON_ArrayForEach(element, root) {
             cJSON *netfun = cJSON_GetObjectItem(element, "NetFunction");
             cJSON *commandList = cJSON_GetObjectItem(element, "CmdList");
             cJSON *subFuncList = cJSON_GetObjectItem(element, "SubFunction");
 
             if (netfun == NULL || !cJSON_IsString(netfun) || netfun->valuestring == NULL) {
-                goto STRUCT_UNKNOWN;
+                goto STRUCT_ILLEGAL;
             }
 
-            // we only support single IPMI command in a node, grouped command list is not supported now.
-            if (commandList == NULL || !cJSON_IsArray(commandList) || cJSON_GetArraySize(commandList) != 1) {
-                goto STRUCT_UNKNOWN;
+            /**
+               currently, we support this two kind of compose.
+                {
+                    "NetFunction":"0x0A",
+                    "CmdList": ["0x44", "0x47"]
+                },
+                {
+                    "NetFunction":"0x0C",
+                    "CmdList":[ "0x1" ],
+                    "SubFunction":["1", "0x05"]
+                }
+             */
+            if (commandList == NULL || !cJSON_IsArray(commandList) || cJSON_GetArraySize(commandList) == 0) {
+                goto STRUCT_ILLEGAL;
             }
 
-            // we only support single IPMI command in a node, grouped sub-function is not supported now.
-            // sub function list could be null in some command, example: ipmitool raw 0x60 0x01
-            if (subFuncList != NULL) {
-                // illegal format
-                if (!cJSON_IsArray(subFuncList) || cJSON_GetArraySize(subFuncList) != 1) {
-                    goto STRUCT_UNKNOWN;
+            // if command list size equals 1, sub-func can be null or array.
+            int lenCmdList = cJSON_GetArraySize(commandList);
+            if (lenCmdList == 1) {
+                if (subFuncList != NULL && !cJSON_IsNull(subFuncList)) {
+                    if (!cJSON_IsArray(subFuncList)) {
+                        goto STRUCT_ILLEGAL;
+                    }
                 }
             }
 
-            option->netfun = netfun->valuestring;
-
-            // get command string at index 1
-            cJSON *command = cJSON_GetArrayItem(commandList, 0);
-            if (!cJSON_IsString(command)) {
-                goto STRUCT_UNKNOWN;
-            }
-            option->command = command->valuestring;
-
-            if (subFuncList != NULL) {
-                // get sub function string at index 1
-                cJSON *subFunc = cJSON_GetArrayItem(subFuncList, 0);
-                if (!cJSON_IsString(subFunc)) {
-                    goto STRUCT_UNKNOWN;
+            // if command list size greater than 1, sub-func must be 'empty'
+            if (lenCmdList > 1) {
+                bool isSubFuncEmpty = cJSON_IsNullOrEmptyArray(subFuncList);
+                if (!isSubFuncEmpty) {
+                    goto STRUCT_ILLEGAL;
                 }
-                option->subFunc = subFunc->valuestring;
-            } else {
-                option->subFunc = "";
             }
 
-            HandleWhitelistAction(commandOption, option, result);
-            if (result->broken) {
-                goto FAILURE;
+
+
+            cJSON *command;
+            cJSON *subFunc;
+            cJSON_ArrayForEach(command, commandList) {
+                if (!cJSON_IsString(command)) {
+                    goto STRUCT_ILLEGAL;
+                }
+            }
+
+            if (!cJSON_IsNullOrEmptyArray(subFuncList)) {
+                cJSON_ArrayForEach(subFunc, subFuncList) {
+                    if (!cJSON_IsString(subFunc)) {
+                        goto STRUCT_ILLEGAL;
+                    }
+                }
+            }
+
+            // setup IPMI whitelist
+            cJSON_ArrayForEach(command, commandList) {
+                option->netfun = netfun->valuestring;
+                option->command = command->valuestring;
+                if (cJSON_IsArray(subFuncList)) {
+                    cJSON_ArrayForEach(subFunc, subFuncList) {
+                        option->subFunc = subFunc->valuestring;
+                        HandleWhitelistAction(commandOption, option, result);
+                        if (result->broken) {
+                            goto FAILURE;
+                        }
+                    }
+                } else {
+                    // if sub-function is not provided.
+                    option->subFunc = NULL;
+                    HandleWhitelistAction(commandOption, option, result);
+                    if (result->broken) {
+                        goto FAILURE;
+                    }
+                }
             }
         }
     }
 
     goto DONE;
 
-STRUCT_UNKNOWN:
-    result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_JSON_FILE_STRUCT_UNKNOWN),
-                                          &(result->desc));
+STRUCT_ILLEGAL:
+    issueElement = cJSON_PrintUnformatted(element);
+    char reason[MAX_OUTPUT_LEN];
+    UtoolWrapSecFmt(reason, MAX_OUTPUT_LEN, MAX_OUTPUT_LEN - 1, OPT_JSON_FILE_STRUCT_ILLEGAL, issueElement);
+    result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(reason), &(result->desc));
     goto FAILURE;
 
 FAILURE:
@@ -309,6 +379,7 @@ FAILURE:
 DONE:
     FREE_CJSON(payload)
     FREE_OBJ(fileContent)
+    FREE_OBJ(issueElement)
 
     if (option->importFileFP) {                  /* close FP */
         fclose(option->importFileFP);
@@ -319,15 +390,42 @@ DONE:
 void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmiWhitelistOption *option,
                            UtoolResult *result)
 {
+    char netFunc[MAX_IPMI_CMD_LEN] = {0};
+    char command[MAX_IPMI_CMD_LEN] = {0};
+    char subFunc[MAX_IPMI_CMD_LEN] = {0};
     char *ipmiCmdOutput = NULL;
     UtoolIPMIRawCmdOption *sendIpmiCommandOption = &(UtoolIPMIRawCmdOption) {0};
 
     ZF_LOGI("%s whitelist:: netfun: %s, command: %s, sub-function: %s", option->operation, option->netfun, option
             ->command, option->subFunc);
+
     char *operation = UtoolStringEquals(option->operation, OPERATION_ADD) ?
                       ACTION_ADD_WHITELIST : ACTION_DEL_WHITELIST;
-    char *command = UtoolStringIsEmpty(option->command) ? "" : option->command;
-    char *subFunc = UtoolStringIsEmpty(option->subFunc) ? "" : option->subFunc;
+
+    /** if net-func not starts with '0x', we need to add it */
+    UtoolWrapSecFmt(netFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1,
+                    UtoolStringCaseStartsWith(option->netfun, "0x") ? "%s" : "0x%s",
+                    option->netfun);
+
+    /** if command not starts with '0x', we need to add it */
+    UtoolWrapSecFmt(command, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1,
+                    UtoolStringCaseStartsWith(option->command, "0x") ? "%s" : "0x%s",
+                    option->command);
+
+    // if sub-func is empty, we should set it to '0xff'
+    if (UtoolStringIsEmpty(option->subFunc)) {
+        UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s", DFT_SUB_FUNC);
+    } else {
+        /** if netfun is '0x30', and sun-func is not empty, we need to add oem prefix for sub-func */
+        if (UtoolStringCaseEquals(netFunc, OEM_NETFUNC)) {
+            UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s %s", OEM_SUB_FUNC_PREFIX,
+                            option->subFunc);
+        } else {
+            UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s", option->subFunc);
+        }
+    }
+
+    ZF_LOGI("Final %s whitelist:: netfun: %s, command: %s, sub-function: %s", option->operation, netFunc, command, subFunc);
 
     /**
      * 0x30 0x93 0xdb 0x07 0x00 0x3f 0x01  %s  0x01  %s    %s 0x08  %s
@@ -338,7 +436,7 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, OP_WHITELIST, operation, option->netfun,
+    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, OP_WHITELIST, operation, netFunc,
                     command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);

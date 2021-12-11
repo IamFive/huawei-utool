@@ -22,6 +22,10 @@
 
 #define WHITELIST_ENABLED "01 01"
 
+#define DFT_SUB_FUNC "ff"
+#define OEM_NETFUNC "30"
+#define OEM_SUB_FUNC_PREFIX "db 07 00"
+
 static const char *const usage[] = {
         "getipmiwhitelist",
         NULL,
@@ -232,15 +236,8 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
             goto FAILURE;
         }
         totalCount = first->total;
+        ZF_LOGI("Total count of IPMI whitelist is: %d", totalCount);
 
-        // pre-malloc whitelists
-        whitelists = malloc(totalCount * sizeof(struct UtoolIPMICommand *));
-        result->code = UtoolAssetMallocNotNull(whitelists);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        }
-
-        whitelists[0] = first;
         if (totalCount == 0) {
             // output to outputStr
             result->code = UtoolBuildOutputResult(STATE_SUCCESS, output, &(result->desc));
@@ -251,6 +248,14 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
             result->code = UTOOLE_UNEXPECT_IPMITOOL_RESULT;
             goto FAILURE;
         }
+
+        // pre-malloc whitelists
+        whitelists = malloc(totalCount * sizeof(struct UtoolIPMICommand *));
+        result->code = UtoolAssetMallocNotNull(whitelists);
+        if (result->code != UTOOLE_OK) {
+            goto FAILURE;
+        }
+        whitelists[0] = first;
 
         commands = cJSON_AddArrayToObject(output, "Command");
         result->code = UtoolAssetCreatedJsonNotNull(commands);
@@ -277,7 +282,7 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
 
             UtoolIPMICommand *command = whitelists[index];
             if (command->netfun != NULL) {
-                cJSON *netfun = cJSON_AddStringToObject(item, "NetFunctcion", command->netfun);
+                cJSON *netfun = cJSON_AddStringToObject(item, "NetFunction", command->netfun);
                 result->code = UtoolAssetCreatedJsonNotNull(netfun);
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
@@ -305,21 +310,32 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
 
             // validate whether null.
             if (command->data != NULL) {
-                cJSON *subFunctionList = cJSON_AddArrayToObject(item, "SubFunction");
-                result->code = UtoolAssetCreatedJsonNotNull(subFunctionList);
-                if (result->code != UTOOLE_OK) {
-                    goto FAILURE;
+                char *data = command->data;
+                // if netfun is 0x30
+                if (UtoolStringCaseEquals(command->netfun, OEM_NETFUNC)) {
+                    // if data starts with db 07 00, we should remove it.
+                    if (UtoolStringCaseStartsWith(data, OEM_SUB_FUNC_PREFIX)) {
+                        data = command->data + 9;
+                    }
                 }
 
-                cJSON *data = cJSON_CreateString(command->data);
-                result->code = UtoolAssetCreatedJsonNotNull(data);
-                if (result->code != UTOOLE_OK) {
-                    goto FAILURE;
-                }
-                cJSON_bool succeed = cJSON_AddItemToArray(subFunctionList, data);
-                if (!succeed) {
-                    result->code = UTOOLE_CREATE_JSON_NULL;
-                    goto FAILURE;
+                if (!UtoolStringCaseEquals(data, "ff")) {
+                    cJSON *dataNode = cJSON_CreateString(data);
+                    result->code = UtoolAssetCreatedJsonNotNull(dataNode);
+                    if (result->code != UTOOLE_OK) {
+                        goto FAILURE;
+                    }
+
+                    cJSON *subFunctionList = cJSON_AddArrayToObject(item, "SubFunction");
+                    result->code = UtoolAssetCreatedJsonNotNull(subFunctionList);
+                    if (result->code != UTOOLE_OK) {
+                        goto FAILURE;
+                    }
+                    cJSON_bool succeed = cJSON_AddItemToArray(subFunctionList, dataNode);
+                    if (!succeed) {
+                        result->code = UTOOLE_CREATE_JSON_NULL;
+                        goto FAILURE;
+                    }
                 }
             }
 
@@ -349,6 +365,8 @@ DONE:
                 FreeIpmiCommand(command);
             }
             FREE_OBJ(whitelists)
+        } else {
+            FREE_OBJ(first)
         }
     }
 

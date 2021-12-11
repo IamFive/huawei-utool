@@ -59,6 +59,10 @@ bool UtoolStringStartsWith(const char *source, const char *prefix)
  */
 bool UtoolStringCaseStartsWith(const char *source, const char *prefix)
 {
+    if (source == NULL) {
+        return false;
+    }
+
     size_t lenSource = strlen(source),
             lenPrefix = strlen(prefix);
     return lenSource < lenPrefix ? false : strncasecmp(prefix, source, lenPrefix) == 0;
@@ -144,6 +148,18 @@ bool UtoolStringCaseInArray(const char *str, const char **array)
 bool UtoolStringEquals(const char *str, const char *literal)
 {
     return strncmp(str, literal, strlen(literal) + 1) == 0;
+}
+
+/**
+* check whether string  equals to a string literal ignore case
+*
+* @param str
+* @param array
+* @return
+*/
+bool UtoolStringCaseEquals(const char *str, const char *literal)
+{
+    return strncasecmp(str, literal, strlen(literal) + 1) == 0;
 }
 
 
