@@ -32,8 +32,9 @@ typedef struct _Result
                          **/
     char *desc;         /** result desc */
     cJSON *data;         /** result data */
-    int broken;      /** whether the program is broken, default no(0) otherwise yes */
+    int broken;          /** whether the program is broken, default no(0) otherwise yes */
     int retryable;
+    int reboot;         /** whether reboot can fix the issue. default no(0) otherwise yes */
     int notfound;
 } UtoolResult;
 

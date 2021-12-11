@@ -32,6 +32,15 @@ static const char *const HTTP_DELETE = "DELETE";
  */
 int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result);
 
+/**
+ * get redfish server information from command options
+ *
+ * @param option
+ * @param server
+ * @return
+ */
+void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *server, UtoolResult* result);
+
 
 /**
 * Upload file to BMC temp storage. Will try upload through http, then sftp if failed.
