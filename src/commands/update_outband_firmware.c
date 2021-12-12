@@ -30,7 +30,7 @@
 #include "url_parser.h"
 
 #define TIME_LIMIT_SHUTDOWN 120
-#define TIME_LIMIT_POWER_ON 420
+#define TIME_LIMIT_POWER_ON 4200
 #define REBOOT_CHECK_INTERVAL 3
 #define LOG_HEAD "{\"log\":[   \n"
 #define LOG_TAIL "\n]}"
@@ -84,14 +84,14 @@
 #define DISPLAY_UPGRADE_BACKUP_PLANE_DONE "Upgrade firmware for backup plane succeed."
 #define DISPLAY_UPGRADE_BACKUP_PLANE_FAILED "Upgrade firmware for backup plane failed."
 
-#define DISPLAY_UPGRADE_START "Upgrade firmware start"
-#define DISPLAY_UPGRADE_DONE "Upgrade firmware successfully"
+#define DISPLAY_UPGRADE_START "Upgrade firmware start."
+#define DISPLAY_UPGRADE_DONE "Upgrade firmware successfully."
 #define DISPLAY_UPGRADE_FAILED "Upgrade firmware failed."
 
 
 #define DISPLAY_ACTIVE_START "Activate firmware start."
-#define DISPLAY_ACTIVE_IN_PROGRESS "Activate inprogress"
-#define DISPLAY_ACTIVE_DONE "Activate successfully"
+#define DISPLAY_ACTIVE_IN_PROGRESS "Activate inprogress."
+#define DISPLAY_ACTIVE_DONE "Activate successfully."
 
 #define DISPLAY_BMC_REBOOT_REQUIRED "Reboot is required to get the new version of BMC."
 #define DISPLAY_BMC_REBOOT_START "Reboot BMC start."
@@ -523,7 +523,7 @@ static void UploadLocalFile(UtoolRedfishServer *server, UpdateFirmwareOption *up
         goto FAILURE;
     }
 
-    goto FAILURE;
+    goto DONE;
 
 FAILURE:
     result->reboot = 1;
@@ -563,6 +563,13 @@ DONE:
     return;
 }
 
+/**
+ * be caution that result->data will carry last task cJSON object if whole progress success.
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
 void UpgradeFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
 {
     ZF_LOGI("Start to update outband firmware now");
@@ -590,8 +597,8 @@ void UpgradeFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFir
 
     /* waiting util task complete or exception */
     ZF_LOGI("Waiting util updating task finished...");
-
     WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_FIRMWARE, PROGRESS_RUN, "Start execute update firmware task.");
+
     UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
     if (result->broken) {
         DisplayProgress(server->quiet, DISPLAY_UPGRADE_FAILED);
@@ -609,6 +616,13 @@ DONE:
     return;
 }
 
+/**
+ * be caution that result->data will carry last task cJSON object if whole progress success.
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
 static void StartUpgradeFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                          UtoolResult *result)
 {
@@ -752,7 +766,6 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_FIRMWARE, PROGRESS_RUN, DISPLAY_UPGRADE_BACKUP_PLANE_START);
         ZF_LOGI(DISPLAY_UPGRADE_BACKUP_PLANE_START);
 
-        // TODO(qianbiao.ng): is logic correct?
         // we need to reboot BMC to update another plane
         RebootBMC(STAGE_UPGRADE_BACKUP_PLANE, server, updateFirmwareOption, result);
         if (result->broken) {
@@ -777,16 +790,23 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
 
     /* step4: wait util firmware updating effect */
-    cJSON *firmwareType = cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0");
-    if (cJSON_IsString(firmwareType)) {
-        PrintFirmwareVersion(server, updateFirmwareOption, firmwareType, result);
-    }
+    cJSON *firmwareType = cJSON_Duplicate(cJSONUtils_GetPointer(result->data, "/Messages/MessageArgs/0"), false);
+    ZF_LOGI("Detected firmware type from `/Messages/MessageArgs/0`, value is: %s", firmwareType);
+
+    // Free task cJSON object carried by result->data;
     FREE_CJSON(result->data)
 
-    /* if upgrade success */
+    if (cJSON_IsString(firmwareType)) {
+        PrintFirmwareVersion(server, updateFirmwareOption, firmwareType, result);
+        FREE_CJSON(result->data)
+    }
+    FREE_CJSON(firmwareType)
+
+
+    /* if upgrade success
     DisplayProgress(server->quiet, DISPLAY_UPGRADE_DONE);
     WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_FIRMWARE, PROGRESS_SUCCESS, "");
-    ZF_LOGI(DISPLAY_UPGRADE_DONE);
+    ZF_LOGI(DISPLAY_UPGRADE_DONE);*/
 
     /* everything finished */
     UtoolBuildDefaultSuccessResult(&(result->desc));
@@ -1141,8 +1161,8 @@ static int RebootBMC(char *stage, UtoolRedfishServer *server, UpdateFirmwareOpti
 
     // when activate, BMC will automate reboot.
     if (!UtoolStringEquals(stage, STAGE_ACTIVATE)) {
-        DisplayProgress(server->quiet, "Try reboot to resolve failures.");
-        ZF_LOGI("Try reboot to resolve failures.");
+        // DisplayProgress(server->quiet, "Try reboot to resolve failures.");
+        // ZF_LOGI("Try reboot to resolve failures.");
 
         // build payload
         char *payloadString = "{\"ResetType\" : \"ForceRestart\" }";
@@ -1176,14 +1196,14 @@ static int RebootBMC(char *stage, UtoolRedfishServer *server, UpdateFirmwareOpti
         UtoolCurlResponse *getRedfishResp = &(UtoolCurlResponse) {0};
         ret = UtoolMakeCurlRequest(server, "/", HTTP_GET, NULL, NULL, getRedfishResp);
         if (ret != CURLE_OK || getRedfishResp->httpStatusCode > 300) {
-            DisplayRunningProgress(server->quiet, DISPLAY_BMC_HAS_BEEN_SHUTDOWN);
-            WriteLogEntry(updateFirmwareOption, stage, PROGRESS_SHUTDOWN_SUCCEED, "");
-            ZF_LOGI(DISPLAY_BMC_HAS_BEEN_SHUTDOWN);
-
             UtoolFreeCurlResponse(getRedfishResp);
             hasShutdown = true;
             // shutdown progress finished
             UtoolPrintf(server->quiet, stdout, "\n");
+
+            DisplayProgress(server->quiet, DISPLAY_BMC_HAS_BEEN_SHUTDOWN);
+            WriteLogEntry(updateFirmwareOption, stage, PROGRESS_SHUTDOWN_SUCCEED, "");
+            ZF_LOGI(DISPLAY_BMC_HAS_BEEN_SHUTDOWN);
 
             // waiting BMC power on
             DisplayRunningProgress(server->quiet, DISPLAY_WAIT_BMC_POWER_ON);

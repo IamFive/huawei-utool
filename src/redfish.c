@@ -1363,6 +1363,7 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
     UtoolRedfishTask *task = NULL;
     cJSON *jsonTask = cJSONTask;
 
+    int maxRetryTimes = 60;
     while (true) {
         task = UtoolRedfishMapTaskFromJson(server, jsonTask, result);
         if (result->broken) {
@@ -1405,10 +1406,18 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         /** if task is still processing */
         UtoolRedfishGet(server, task->url, NULL, NULL, result);
         if (result->broken) {
-            goto FAILURE;
+            FREE_OBJ(result->desc)
+            maxRetryTimes--;
+            if(maxRetryTimes < 0){
+                goto FAILURE;
+            }
+
+            result->broken = 0;
         }
-        FREE_CJSON(jsonTask)        /** free last json TASK */
-        jsonTask = result->data;
+        else {
+            FREE_CJSON(jsonTask)        /** free last json TASK */
+            jsonTask = result->data;
+        }
 
         UtoolFreeRedfishTask(task); /** free task structure */
         sleep(1); /** next task query interval */
