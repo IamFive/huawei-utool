@@ -282,7 +282,9 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
 
             UtoolIPMICommand *command = whitelists[index];
             if (command->netfun != NULL) {
-                cJSON *netfun = cJSON_AddStringToObject(item, "NetFunction", command->netfun);
+                char netFunc[MAX_IPMI_CMD_LEN] = {0};
+                UtoolWrapSecFmt(netFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "0x%s", command->netfun);
+                cJSON *netfun = cJSON_AddStringToObject(item, "NetFunction", netFunc);
                 result->code = UtoolAssetCreatedJsonNotNull(netfun);
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
@@ -296,7 +298,9 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
                     goto FAILURE;
                 }
 
-                cJSON *cmd = cJSON_CreateString(command->command);
+                char commandName[MAX_IPMI_CMD_LEN] = {0};
+                UtoolWrapSecFmt(commandName, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "0x%s", command->command);
+                cJSON *cmd = cJSON_CreateString(commandName);
                 result->code = UtoolAssetCreatedJsonNotNull(cmd);
                 if (result->code != UTOOLE_OK) {
                     goto FAILURE;
@@ -320,7 +324,10 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
                 }
 
                 if (!UtoolStringCaseEquals(data, "ff")) {
-                    cJSON *dataNode = cJSON_CreateString(data);
+                    char prefixedData[MAX_IPMI_CMD_LEN] = {0};
+                    UtoolWrapSecFmt(prefixedData, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "0x%s", data);
+
+                    cJSON *dataNode = cJSON_CreateString(prefixedData);
                     result->code = UtoolAssetCreatedJsonNotNull(dataNode);
                     if (result->code != UTOOLE_OK) {
                         goto FAILURE;

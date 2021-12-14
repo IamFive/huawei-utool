@@ -21,6 +21,7 @@
 #include "argparse.h"
 #include "string_utils.h"
 
+#define HEX_PREFIX "0x"
 #define DFT_SUB_FUNC "0xff"
 #define OEM_NETFUNC "0x30"
 #define OEM_SUB_FUNC_PREFIX "0xdb 0x07 0x00"
@@ -57,7 +58,9 @@ static const char *OPT_CMD_OPTION_REQUIRED = "Error: option `cmd-file` or option
 static const char *OPT_NETFN_IS_REQUIRED = "Error: option `netfun` is required when `command` option present.";
 static const char *OPT_CMD_IS_REQUIRED_1 = "Error: option `command` is required when `netfun` option present.";
 static const char *OPT_CMD_IS_REQUIRED = "Error: option `command` is required when `sub-function` option present.";
-static const char *OPT_SUB_FUNC_IS_REQUIRED = "Error: option `sub-function` is required.";
+static const char *OPT_SUB_FUNC_IS_REQUIRED = "Error: option `command` is required when `sub-function` option present.";
+static const char *OPT_SUB_FUNC_ILLEGAL = "Error: option `sub-function` is illegal. It must be hex string, "
+                                          "for example: 0x01, 01.";
 
 static const char *OPT_WHITELIST_DISABLED = "Error: all other options is disabled when option `enabled` is set to "
                                             "'Disabled'.";
@@ -322,7 +325,6 @@ HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelist
             }
 
 
-
             cJSON *command;
             cJSON *subFunc;
             cJSON_ArrayForEach(command, commandList) {
@@ -334,6 +336,14 @@ HandleWhitelistJsonFile(UtoolCommandOption *commandOption, UtoolSetIpmiWhitelist
             if (!cJSON_IsNullOrEmptyArray(subFuncList)) {
                 cJSON_ArrayForEach(subFunc, subFuncList) {
                     if (!cJSON_IsString(subFunc)) {
+                        goto STRUCT_ILLEGAL;
+                    }
+
+                    int len = strnlen(subFunc->valuestring, 16);
+                    if ((UtoolStringCaseStartsWith(subFunc->valuestring, HEX_PREFIX) && len > 4)
+                        || (!UtoolStringCaseStartsWith(subFunc->valuestring, HEX_PREFIX) && len > 2)) {
+                        // result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SUB_FUNC_ILLEGAL),
+                        //                                       &(result->desc));
                         goto STRUCT_ILLEGAL;
                     }
                 }
@@ -425,7 +435,8 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
         }
     }
 
-    ZF_LOGI("Final %s whitelist:: netfun: %s, command: %s, sub-function: %s", option->operation, netFunc, command, subFunc);
+    ZF_LOGI("Final %s whitelist:: netfun: %s, command: %s, sub-function: %s", option->operation, netFunc, command,
+            subFunc);
 
     /**
      * 0x30 0x93 0xdb 0x07 0x00 0x3f 0x01  %s  0x01  %s    %s 0x08  %s
@@ -536,6 +547,16 @@ ValidateSubcommandOptions(UtoolSetIpmiWhitelistOption *option, UtoolResult *resu
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_CMD_IS_REQUIRED),
                                               &(result->desc));
         goto FAILURE;
+    }
+
+    if (!UtoolStringIsEmpty(option->subFunc)) {
+        int len = strnlen(option->subFunc, 16);
+        if ((UtoolStringCaseStartsWith(option->subFunc, HEX_PREFIX) && len > 4)
+            || (!UtoolStringCaseStartsWith(option->subFunc, HEX_PREFIX) && len > 2)) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_SUB_FUNC_ILLEGAL),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
     }
 
     // data part is not required, it maybe null
