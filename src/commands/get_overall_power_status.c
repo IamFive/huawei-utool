@@ -73,9 +73,9 @@ int UtoolCmdGetOverallPowerStatus(UtoolCommandOption *commandOption, char **outp
         goto DONE;
     }
 
-    result->code = UtoolGetRedfishServer(commandOption, server, &(result->desc));
-    if (result->code != UTOOLE_OK || server->systemId == NULL) {
-        goto DONE;
+    UtoolGetRedfishServer2(commandOption, server, result);
+    if (result->broken || result->code != UTOOLE_OK || server->systemId == NULL) {
+        goto FAILURE;
     }
 
     output = cJSON_CreateObject();
