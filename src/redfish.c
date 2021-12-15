@@ -760,7 +760,7 @@ DONE:
 int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result) {
     UtoolResult *utoolResult = &(UtoolResult) {0};
     UtoolGetRedfishServer2(option, server, utoolResult);
-    *result = &(utoolResult->desc);
+    *result = utoolResult->desc;
     return utoolResult->code;
 }
 
