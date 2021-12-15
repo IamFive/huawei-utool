@@ -1031,6 +1031,9 @@ void PrintFirmwareVersion(UtoolRedfishServer *server, UpdateFirmwareOption *upda
                 goto FAILURE;
             }
 
+            // even BMC reboot succeed, may not all service is ready, wait 10s in case.
+            sleep(10);
+
             UtoolRedfishGet(server, mapping->firmwareURL, NULL, NULL, result);
             if (result->broken) {
                 DisplayProgress(server->quiet, MSG_FAILED_TO_GET_NEW_VERSION);
