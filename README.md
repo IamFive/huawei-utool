@@ -29,7 +29,7 @@ cd utool
 
 ### Build curl
 The CURL version required is >=7.56.0, the `third-party/curl` provide along with source code is `curl-7_65_0`.
-Please make sure `libssl-dev` and `libssh2-dev` is ready before making CURL (the dev package name maybe different in
+Please make sure `libssl-dev` is ready before making CURL (the dev package name maybe different in
 your ENV).
 
 1. To install libssl-dev
@@ -37,19 +37,13 @@ your ENV).
 - ubuntu: `sudo apt install libssl-dev`
 - RedHat: `sudo yum install openssl-devel`
 
-1. To install libssh2-dev
-
-- ubuntu: `sudo apt install libssh2-*-dev`
-- RedHat: `sudo yum install libssh2-devel`
-
-
 1. Build CURL
 
 ```bash
 cd ${your-workspace}/utool
 cd third-party/curl
 ./buildconf
-./configure --with-ssl --with-libssh2
+./configure --with-ssl
 make
 ```
 
@@ -81,7 +75,7 @@ You can install libcurl through package manager like `apt-get`, `yum` or through
 ```bash
 cd ${your-workspace}/utool/third-party/curl
 ./buildconf
-./configure --with-ssl --with-libssh2
+./configure --with-ssl
 make 
 sudo make install
 ```

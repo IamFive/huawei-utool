@@ -71,12 +71,17 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     UtoolHttpUploadFileToBMC(server, uploadFilePath, result);
-    if (result->notfound && result->broken) {
-        ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
-        result->broken = 0;
-        result->code = UTOOLE_OK;
-        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
-    }
+
+    /**
+     *  do not need to support scp now.
+
+        if (result->notfound && result->broken) {
+            ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
+            result->broken = 0;
+            result->code = UTOOLE_OK;
+            UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
+        }
+     */
 }
 
 
