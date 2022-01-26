@@ -30,7 +30,7 @@
 #include "url_parser.h"
 
 #define TIME_LIMIT_SHUTDOWN 120
-#define TIME_LIMIT_POWER_ON 4200
+#define TIME_LIMIT_POWER_ON 420
 #define REBOOT_CHECK_INTERVAL 3
 #define LOG_HEAD "{\"log\":[   \n"
 #define LOG_TAIL "\n]}"
