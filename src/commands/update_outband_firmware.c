@@ -122,6 +122,7 @@
 #define DISPLAY_UPDATE_FAILED_RETRY_NOW "Update failed, will retry now."
 #define BMC_INSUFFICIENT_CAPACITY "insufficient memory capacity"
 
+#define FM_TYPE_BMC "BMC"
 
 /**
     2019-09-22 15:25:02 Ping https successfully
@@ -1122,9 +1123,19 @@ DONE:
 static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                                 UtoolResult *result)
 {
+    if (updateFirmwareOption->firmwareType == NULL) {
+        // detect whether firmware type is BMC from imageUri
+        char *index = strstr(updateFirmwareOption->imageURI, "BMC");
+        if (index == NULL) {
+            return false;
+        }
+    } else if (!UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
+        return false;
+    }
+
     //NOTE(qianbiao): only 2288HV5 & 2298 V5 requires transition firmware upgrade
-    if (!UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2288HV5) && !UtoolStringEquals
-            (updateFirmwareOption->productName, SERVER_NAME_2298V5)) {
+    if (!UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2288HV5) &&
+        !UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2298V5)) {
         return false;
     }
 
