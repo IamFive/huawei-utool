@@ -1139,7 +1139,6 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
-    // TODO: validate
     RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
     if (result->broken) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
@@ -1150,35 +1149,44 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
     // new 4 segments bmc version format does not need transition firmware
     // example: 1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm
     int targetBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->targetBmcVersion, '.');
-    if (targetBmcVersionDotCount != 4) { // old version format
-        int targetBmcVersion = atoi(updateFirmwareOption->targetBmcVersion);
-        // 需求：判断待升级包是否需要升级过渡版本，
-        // 通过文件名（如：2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm）获取版本号，判断条件：版本号>=6.39
-        if (targetBmcVersion < BMC_TRANSITION_VERSION) {
-            return false;
-        }
+    if (targetBmcVersionDotCount == 3) { // new format
+        ZF_LOGI("target BMC version(%s) is 4 segments, no transition upgrade required.",
+                updateFirmwareOption->targetBmcVersion);
+        return false;
+    }
+
+    // old version format
+    int targetBmcVersion = atoi(updateFirmwareOption->targetBmcVersion);
+    // 需求：判断待升级包是否需要升级过渡版本，
+    // 通过文件名（如：2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm）获取版本号，判断条件：版本号>=6.39
+    if (targetBmcVersion < BMC_TRANSITION_VERSION) {
+        return false;
     }
 
     // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
     int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
-    if (activeBmcVersionDotCount != 4) { // new bmc version format does not need transition firmware
-        if (UtoolStringEquals(updateFirmwareOption->activeBmcVersion, BMC_TRANSITION_FM_VERSION)) {
-            return false;
-        }
+    if (activeBmcVersionDotCount == 3) { // new format
+        ZF_LOGI("Active BMC version(%s) is 4 segments, no transition upgrade required.",
+                updateFirmwareOption->targetBmcVersion);
+        return false;
+    }
 
-        char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
-        if (version == NULL) {
-            result->code = UTOOLE_INTERNAL;
-            goto FAILURE;
-        }
-        int major = version[0] != NULL ? atoi(version[0]) : 0;
-        int minor = version[1] != NULL ? atoi(version[1]) : 0;
-        UtoolStringFreeArrays(version);
+    if (UtoolStringEquals(updateFirmwareOption->activeBmcVersion, BMC_TRANSITION_FM_VERSION)) {
+        return false;
+    }
 
-        if (major < BMC_TRANSITION_MAJOR_VERSION ||
-            (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
-            return true;
-        }
+    char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
+    if (version == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+    int major = version[0] != NULL ? atoi(version[0]) : 0;
+    int minor = version[1] != NULL ? atoi(version[1]) : 0;
+    UtoolStringFreeArrays(version);
+
+    if (major < BMC_TRANSITION_MAJOR_VERSION ||
+        (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
+        return true;
     }
 
     return false;
