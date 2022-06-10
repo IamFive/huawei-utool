@@ -72,7 +72,11 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
         ZF_LOGI("Get utool path error");
         return NULL;
     }
-    path[res - 6] = '\0';
+
+    char *binFileName = strrchr(path, FILEPATH_SEP);
+    if (binFileName != NULL) {
+        *binFileName = '\0';
+    }
 
     const char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
     UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, path, path, option->host,
