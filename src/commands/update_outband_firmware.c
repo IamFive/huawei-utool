@@ -1124,13 +1124,8 @@ DONE:
 static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                                 UtoolResult *result)
 {
-    if (updateFirmwareOption->firmwareType == NULL) {
-        // detect whether firmware type is BMC from imageUri
-        char *index = strstr(updateFirmwareOption->imageURI, "BMC");
-        if (index == NULL) {
-            return false;
-        }
-    } else if (!UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
+    if (updateFirmwareOption->firmwareType == NULL ||
+        !UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
         return false;
     }
 
@@ -1807,12 +1802,23 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         updateFirmwareOption->isRemoteFile = true;
     }
 
-    parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
-    if (updateFirmwareOption->targetBmcVersion == NULL) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                              cJSON_CreateString(OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI),
-                                              &(result->desc));
-        goto FAILURE;
+    if (updateFirmwareOption->firmwareType == NULL) {
+        // detect whether firmware type is BMC from filename
+        char *index = strstr(filename, FM_TYPE_BMC);
+        if (index != NULL) {
+            updateFirmwareOption->firmwareType = FM_TYPE_BMC;
+        }
+    }
+
+    if (updateFirmwareOption->firmwareType != NULL &&
+        UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
+        parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
+        if (updateFirmwareOption->targetBmcVersion == NULL) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE,
+                                                  cJSON_CreateString(OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI),
+                                                  &(result->desc));
+            goto FAILURE;
+        }
     }
 
     goto DONE;
