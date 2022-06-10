@@ -38,6 +38,8 @@ extern "C" {
 #define MAX_FILE_PATH_LEN 512
 #define MAX_OEM_NAME_LEN 128
 #define MAX_PSN_LEN 128
+#define MAX_PRODUCT_NAME_LEN 128
+#define MAX_FM_VERSION_LEN 128
 
 #define IPMI_PORT 623
 #define HTTPS_PORT 443

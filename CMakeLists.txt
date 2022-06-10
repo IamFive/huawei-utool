@@ -51,8 +51,8 @@ set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT
 set(MINGW_64_PATH "d:/tools/msys2/mingw64")
 #set(MINGW_64_PATH "/d/tools/msys2/mingw64")
 set(CYGWIN64_BIN_PATH "/cygdrive/c/cygwin64/bin")
-set(UTOOL_INCLUDE_DIR src/include)
-set(UTOOL_BIN_DIR bin)
+set(UTOOL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/src/include)
+set(UTOOL_BIN_DIR ${PROJECT_SOURCE_DIR}/bin)
 set(UTOOL_LIB_DIR ${PROJECT_SOURCE_DIR}/lib)
 
 IF (WIN32)
@@ -92,7 +92,9 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 message(STATUS "Copying libcurl shared libraries.")
 set(ThirdPartyLibPath "${CMAKE_CURRENT_BINARY_DIR}/libs")
+set(ResourcesPath "${CMAKE_CURRENT_BINARY_DIR}/resources")
 file(COPY "${LIBCURL_PATH}/lib/.libs/" DESTINATION "${ThirdPartyLibPath}")
+file(COPY "${PROJECT_SOURCE_DIR}/resources/" DESTINATION "${ResourcesPath}")
 #configure_file("${LIBCURL_PATH}/lib/.libs/libcurl.so.4.5.0" "${ThirdPartyLibPath}/libcurl.so.4.5.0" COPYONLY)
 
 include_directories(
@@ -196,6 +198,7 @@ ENDIF ()
 
 #install(TARGETS utool-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(FILES "${IPMITOOL_BIN_PATH}" DESTINATION "${UTOOL_BIN_DIR}")
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/resources/" DESTINATION "${UTOOL_BIN_DIR}/resources")
 
 # install libraries
 IF (WIN32)

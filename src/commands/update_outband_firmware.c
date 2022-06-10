@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: command handler for `fwupdate`
 * Author:
 * Create: 2019-06-14
@@ -29,6 +29,10 @@
 #include "string_utils.h"
 #include "url_parser.h"
 
+#define BMC_TRANSITION_FM_VERSION "6.36"
+#define BMC_TRANSITION_VERSION 639
+#define BMC_TRANSITION_MAJOR_VERSION 6
+#define BMC_TRANSITION_MINOR_VERSION 39
 #define TIME_LIMIT_SHUTDOWN 120
 #define TIME_LIMIT_POWER_ON 420
 #define REBOOT_CHECK_INTERVAL 3
@@ -37,11 +41,21 @@
 #define MAX_LOG_ENTRY_LEN 512
 #define LOG_ENTRY_FORMAT "\t{\n\t\t\"Time\": \"%s\",\n\t\t\"Stage\": \"%s\",\n\t\t\"State\": \"%s\",\n\t\t\"Note\": \"%s\"\n\t}, \n"
 
+#define UPGRADE_TRANSITION_FIRMWARE_PAYLOAD "{\"ImageURI\": \"/tmp/web/%s\"}"
+
+#define SERVER_NAME_2288HV5 "2288H V5"
+#define SERVER_NAME_2298V5 "2298 V5"
+#define TRANSITION_FM_2288HV5 "2288H_V5_2288C_V5_5288_V5-iBMC-V636.hpm"
+#define TRANSITION_FM_2298V5 "2298_V5-iBMC-V641.hpm"
+
 #define STAGE_CREATE_SESSION "Create session"
 #define STAGE_GET_PRODUCT_SN "Get product SN"
 #define STAGE_CREATE_LOG_FILE "Create log file"
+#define STAGE_GET_BMC_VERSION "Get BMC version"
 #define STAGE_UPLOAD_FILE "Upload firmware to BMC"
+#define STAGE_UPLOAD_TRANSITION_FILE "Upload transition firmware to BMC"
 #define STAGE_DOWNLOAD_FILE "Download remote firmware to BMC"
+#define STAGE_UPGRADE_TRANSITION_FIRMWARE "Upgrade transition firmware"
 #define STAGE_UPGRADE_FIRMWARE "Upgrade firmware"
 #define STAGE_UPGRADE_BACKUP_PLANE "Upgrade backup plane firmware"
 #define STAGE_ACTIVATE "Activate"
@@ -64,9 +78,12 @@
 #define DISPLAY_CREATE_SESSION_DONE "Create session successfully"
 #define DISPLAY_CREATE_SESSION_FAILED "Create session failed"
 
+#define DISPLAY_GET_FIRMWARE_INVENTORY_FAILED "Fetch bmc firmware inventory failed."
+
 #define DISPLAY_GET_PRODUCT_SN_DONE "Fetch bmc product serial number successfully."
 #define DISPLAY_GET_PRODUCT_SN_FAILED "Fetch bmc product serial number failed."
-#define DISPLAY_PRODUCT_SN_NULL "Failed to parse bmc product serial number, it's an empty value."
+#define DISPLAY_PRODUCT_SN_NULL "Failed to get bmc product serial number, it's an empty value."
+#define DISPLAY_PRODUCT_MODEL_NULL "Failed to get bmc product name, it's an empty value."
 
 #define DISPLAY_CREATE_LOG_FILE_DONE "Create log file successfully"
 #define DISPLAY_CREATE_LOG_FILE_FAILED "Create log file failed"
@@ -87,6 +104,7 @@
 #define DISPLAY_UPGRADE_START "Upgrade firmware start."
 #define DISPLAY_UPGRADE_DONE "Upgrade firmware successfully."
 #define DISPLAY_UPGRADE_FAILED "Upgrade firmware failed."
+#define DISPLAY_UPGRADE_TRANSITION_FAILED "Upgrade transition firmware failed."
 
 
 #define DISPLAY_ACTIVE_START "Activate firmware start."
@@ -145,10 +163,12 @@ typedef struct _UpdateFirmwareOption {
     char *dualImage;
 
     char *psn;
+    char *productName;
+    char *activeBmcVersion;
+    char *targetBmcVersion;
     bool isLocalFile;
     bool isRemoteFile;
     FILE *logFileFP;
-    char *uploadFilePath;
     cJSON *payload;
     time_t startTime;
     UtoolCommandOption *commandOption;
@@ -177,6 +197,7 @@ static const char *IMAGE_PROTOCOL_CHOICES[] = {"HTTPS", "SCP", "SFTP", "CIFS", "
 
 static const char *OPTION_IMAGE_URI_REQUIRED = "Error: option `image-uri` is required.";
 static const char *OPTION_IMAGE_URI_ILLEGAL = "Error: option `image-uri` is illegal.";
+static const char *OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI = "Error: failed to parse BMC version from option `image-uri`";
 static const char *OPTION_IMAGE_URI_NO_SCHEMA = "Error: URI is not a local file nor a remote network protocol file.";
 static const char *OPTION_IMAGE_URI_ILLEGAL_SCHEMA = "Error: Protocol `%s` is not supported.";
 
@@ -247,6 +268,15 @@ static int GetProductSn(UtoolRedfishServer *server, UpdateFirmwareOption *update
 static void CreateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
 /**
+ * Get Bakup BMC version
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ * @return
+ */
+static int GetBmcVersion(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
+
+/**
  * perform upload local file to BMC action
  * @param server
  * @param updateFirmwareOption
@@ -254,6 +284,22 @@ static void CreateLogFile(UtoolRedfishServer *server, UpdateFirmwareOption *upda
  */
 static void UploadLocalFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                             UtoolResult *result);
+
+/**
+ * get transition file name for product
+ * @param productName
+ * @return
+ */
+static char *GetTransitionFileName(char *productName);
+
+/**
+ * perform upload local transition firmware file to BMC action
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
+static void UploadTransitionFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                 UtoolResult *result);
 
 /**
  * perform download remote file to BMC action
@@ -275,19 +321,42 @@ static void
 UpgradeFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
 
 /**
+ * perform upgrade transition firmware action.
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
+static void
+UpgradeTransitionFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result);
+
+/**
  * start whole upgrade firmware workflow
  *
  * @param server
  * @param updateFirmwareOption
  * @param result
  */
-static void StartUpgradeFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
-                                         UtoolResult *result);
+static void StartUpgradeTargetFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                               UtoolResult *result);
+
+static void
+StartUpgradeTransitionFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                       UtoolResult *result);
 
 static void DisplayRunningProgress(int quiet, const char *progress);
 
 static void DisplayProgress(int quiet, const char *progress);
 
+static void freeUpdateFirmwareOption(UpdateFirmwareOption *updateFirmwareOption);
+
+static void parseTargetBmcVersionFromFilepath(UpdateFirmwareOption *pOption, char *path);
+
+static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                                UtoolResult *result);
+
+void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *server,
+                                          UtoolResult *result);
 
 static void DisplayRunningProgress(int quiet, const char *progress)
 {
@@ -420,15 +489,59 @@ static int GetProductSn(UtoolRedfishServer *server, UpdateFirmwareOption *update
     }
     getSystemRespJson = result->data;
 
+    if (updateFirmwareOption->psn != NULL) {
+        FREE_OBJ(updateFirmwareOption->psn)
+    }
     cJSON *sn = cJSONUtils_GetPointer(getSystemRespJson, "/SerialNumber");
-    if (sn == NULL || sn->valuestring == NULL) {
-        ZF_LOGE("Could not parse product SerialNumber from response.");
+    if (cJSON_IsNull(sn) || sn->valuestring == NULL) {
+        ZF_LOGE("Could not get product SerialNumber from /system/system-id.");
         DisplayProgress(server->quiet, DISPLAY_PRODUCT_SN_NULL);
         goto FAILURE;
     }
 
     ZF_LOGI("Parsing product SN, value is %s.", sn->valuestring);
     updateFirmwareOption->psn = UtoolStringNDup(sn->valuestring, strnlen(sn->valuestring, MAX_PSN_LEN));
+
+    if (updateFirmwareOption->productName != NULL) {
+        FREE_OBJ(updateFirmwareOption->productName)
+    }
+    cJSON *model = cJSONUtils_GetPointer(getSystemRespJson, "/Model");
+    if (cJSON_IsNull(model) || model->valuestring == NULL) {
+        ZF_LOGE("Could not get product model from /system/system-id.");
+        DisplayProgress(server->quiet, DISPLAY_PRODUCT_MODEL_NULL);
+        goto FAILURE;
+    }
+
+    ZF_LOGI("Parsing product name, value is %s.", model->valuestring);
+    updateFirmwareOption->productName = UtoolStringNDup(model->valuestring,
+                                                        strnlen(model->valuestring, MAX_PRODUCT_NAME_LEN));
+    goto DONE;
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+
+DONE:
+    FREE_CJSON(result->data)
+}
+
+static int GetBmcVersion(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
+{
+    UtoolRedfishGet(server, "/redfish/v1/UpdateService/FirmwareInventory/ActiveBMC", NULL, NULL, result);
+    if (result->broken) {
+        ZF_LOGE(DISPLAY_GET_FIRMWARE_INVENTORY_FAILED);
+        DisplayProgress(server->quiet, DISPLAY_GET_FIRMWARE_INVENTORY_FAILED);
+        goto FAILURE;
+    }
+
+    cJSON *version = cJSON_GetObjectItem(result->data, "Version");
+    if (!cJSON_IsString(version)) {
+        goto FAILURE;
+    }
+
+    ZF_LOGI("Current active bmc version is: %s.", version->valuestring);
+    updateFirmwareOption->activeBmcVersion = UtoolStringNDup(version->valuestring,
+                                                             strnlen(version->valuestring, MAX_FM_VERSION_LEN));
     goto DONE;
 
 FAILURE:
@@ -534,6 +647,43 @@ DONE:
     return;
 }
 
+static char *GetTransitionFileName(char *productName)
+{
+    if (UtoolStringEquals(productName, SERVER_NAME_2288HV5)) {
+        return TRANSITION_FM_2288HV5;
+    } else if (UtoolStringEquals(productName, SERVER_NAME_2298V5)) {
+        // TODO(turnbig): confirm with qianbiao
+        return TRANSITION_FM_2298V5;
+    }
+    return NULL;
+}
+
+static void UploadTransitionFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                 UtoolResult *result)
+{
+    ZF_LOGI("Try upload transition firmware file to BMC temp now...");
+    char transitionFirmwarePath[PATH_MAX] = {0};
+    char *transitionFileName = GetTransitionFileName(updateFirmwareOption->productName);
+    UtoolWrapSecFmt(transitionFirmwarePath, PATH_MAX, PATH_MAX - 1, "resources/%s", transitionFileName);
+    ZF_LOGI("Use transition firmware file: %s", transitionFirmwarePath);
+
+    UtoolUploadFileToBMC(server, transitionFirmwarePath, result);
+    if (result->broken) {
+        // WriteFailedLogEntry(updateFirmwareOption, STAGE_UPLOAD_TRANSITION_FILE, PROGRESS_FAILED, result);
+        goto FAILURE;
+    }
+
+    goto DONE;
+
+FAILURE:
+    result->reboot = 1;
+    result->broken = 1;
+    goto DONE;
+
+DONE:
+    return;
+}
+
 static void DownloadRemoteFile(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                UtoolResult *result)
 {
@@ -550,7 +700,6 @@ static void DownloadRemoteFile(UtoolRedfishServer *server, UpdateFirmwareOption 
             DisplayProgress(server->quiet, DISPLAY_DOWNLOAD_FILE_FAILED);
             WriteFailedLogEntry(updateFirmwareOption, STAGE_DOWNLOAD_FILE, PROGRESS_FAILED, result);
             ZF_LOGE(DISPLAY_DOWNLOAD_FILE_FAILED);
-            // TODO(turnbig): reboot directly?
             result->reboot = 1;
             goto FAILURE;
         }
@@ -623,8 +772,66 @@ DONE:
  * @param updateFirmwareOption
  * @param result
  */
-static void StartUpgradeFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
-                                         UtoolResult *result)
+void
+UpgradeTransitionFirmware(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
+{
+    cJSON *payloadJson = NULL;
+
+    ZF_LOGI("Start to upload transition firmware file to BMC temp.");
+    char *transitionFileName = GetTransitionFileName(updateFirmwareOption->productName);
+    char payload[MAX_FILE_PATH_LEN];
+    UtoolWrapSecFmt(payload, MAX_PAYLOAD_LEN, MAX_PAYLOAD_LEN - 1, UPGRADE_TRANSITION_FIRMWARE_PAYLOAD,
+                    transitionFileName);
+
+    // rebuild payload
+    payloadJson = cJSON_CreateRaw(payload);
+    result->code = UtoolAssetCreatedJsonNotNull(payloadJson);
+    if (result->code != UTOOLE_OK) {
+        goto FAILURE;
+    }
+
+    ZF_LOGI("Start to update transition firmware.");
+    char *upgradeUrl = "/UpdateService/Actions/UpdateService.SimpleUpdate";
+    UtoolRedfishPost(server, upgradeUrl, payloadJson, NULL, NULL, result);
+    if (result->broken) {
+        DisplayProgress(server->quiet, DISPLAY_UPGRADE_TRANSITION_FAILED);
+        WriteFailedLogEntry(updateFirmwareOption, STAGE_UPGRADE_TRANSITION_FIRMWARE, PROGRESS_FAILED, result);
+        ZF_LOGI("Upgrade transition firmware failed, reason: %s", result->desc);
+        goto FAILURE;
+    }
+
+    /* waiting util task complete or exception */
+    ZF_LOGI("Waiting util upgrade transition firmware task finished...");
+    WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_TRANSITION_FIRMWARE, PROGRESS_RUN,
+                  "Start execute update transition firmware task.");
+
+    UtoolRedfishWaitUtilTaskFinished(server, result->data, result);
+    if (result->broken) {
+        DisplayProgress(server->quiet, DISPLAY_UPGRADE_TRANSITION_FAILED);
+        WriteFailedLogEntry(updateFirmwareOption, STAGE_UPGRADE_TRANSITION_FIRMWARE, PROGRESS_FAILED, result);
+        ZF_LOGI("Upgrade transition firmware failed, reason: %s", result->desc);
+        goto FAILURE;
+    }
+
+    goto DONE;
+
+FAILURE:
+    goto DONE;
+
+DONE:
+    FREE_CJSON(payloadJson)
+    return;
+}
+
+/**
+ * be caution that result->data will carry last task cJSON object if whole progress success.
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
+static void StartUpgradeTargetFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                               UtoolResult *result)
 {
     // clean
     if (updateFirmwareOption->isLocalFile) {
@@ -644,6 +851,40 @@ static void StartUpgradeFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmw
 
     // upgrade firmware
     RetryFunc(STAGE_UPGRADE_FIRMWARE, UpgradeFirmware, server, updateFirmwareOption, result, true);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+    goto DONE;
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+
+DONE:
+    return;
+}
+
+/**
+ * be caution that result->data will carry last task cJSON object if whole progress success.
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ */
+static void
+StartUpgradeTransitionFirmwareWorkflow(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                       UtoolResult *result)
+{
+    // clean
+    RetryFunc(STAGE_UPLOAD_TRANSITION_FILE, UploadTransitionFile, server, updateFirmwareOption, result, false);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+    // upgrade firmware
+    RetryFunc(STAGE_UPGRADE_TRANSITION_FIRMWARE, UpgradeTransitionFirmware, server, updateFirmwareOption, result,
+              false);
     if (result->broken) {
         goto FAILURE;
     }
@@ -729,7 +970,9 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
 
     // clean
     RetryFunc(STAGE_GET_PRODUCT_SN, GetProductSn, server, updateFirmwareOption, result, false);
-    if (result->broken) {
+    if (result->broken && updateFirmwareOption->productName == NULL) {
+        goto FAILURE;
+    } else {
         // even we can not get product SN, we just create log file without sn, the upgrade progress should continue.
         result->broken = 0;
         result->code = UTOOLE_OK;
@@ -742,9 +985,16 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         goto FAILURE;
     }
 
+    // upgrade transition firmware if necessary.
+    UpgradeTransitionFirmwareIfNecessary(updateFirmwareOption, server, result);
+    if (result->broken) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
+    }
+
     // upgrade firmware workflow starts,
     // if workflow runs normally, result->data will carry the latest task instance.
-    StartUpgradeFirmwareWorkflow(server, updateFirmwareOption, result);
+    StartUpgradeTargetFirmwareWorkflow(server, updateFirmwareOption, result);
 
     // if it still fails when reaching the maximum retries
     if (result->broken) {
@@ -773,12 +1023,13 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         }
 
         // update bakup plane now
-        StartUpgradeFirmwareWorkflow(server, updateFirmwareOption, result);
+        StartUpgradeTargetFirmwareWorkflow(server, updateFirmwareOption, result);
 
         if (result->broken) {
             FREE_CJSON(result->data)
             DisplayProgress(server->quiet, DISPLAY_UPGRADE_BACKUP_PLANE_FAILED);
-            WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_FIRMWARE, PROGRESS_FAILED, DISPLAY_UPGRADE_BACKUP_PLANE_FAILED);
+            WriteLogEntry(updateFirmwareOption, STAGE_UPGRADE_FIRMWARE, PROGRESS_FAILED,
+                          DISPLAY_UPGRADE_BACKUP_PLANE_FAILED);
             ZF_LOGI(DISPLAY_UPGRADE_BACKUP_PLANE_FAILED);
             goto FAILURE;
         }
@@ -820,28 +1071,133 @@ DONE:
     FREE_CJSON(payload)
     UtoolFreeRedfishServer(server);
     UtoolFreeCurlResponse(response);
-
-    if (updateFirmwareOption->psn != "") {
-        FREE_OBJ(updateFirmwareOption->psn)
-    }
-
-    if (updateFirmwareOption->logFileFP != NULL) {
-        fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
-        _off_t position = ftello(updateFirmwareOption->logFileFP);
-        if (position != -1) {
-            int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
-            if (ret != 0) {
-                ZF_LOGE("Failed to truncate update firmware log file");
-            }
-        } else {
-            ZF_LOGE("Failed to run ftello method against update firmware log file");
-        }
-        fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
-        fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
-    }
-
+    freeUpdateFirmwareOption(updateFirmwareOption);
     *outputStr = result->desc;
     return result->code;
+}
+
+void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *server,
+                                          UtoolResult *result)
+{
+    int quiet = server->quiet;
+
+    // check whether transition firmware upgrade
+    bool shouldUpgradeTransition = isTransitionFirmwareUpgradeRequired(server, updateFirmwareOption, result);
+    if (result->broken) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
+    }
+
+    server->quiet = true;   // disable output when upgrade transition firmware.
+
+    if (shouldUpgradeTransition) {
+        ZF_LOGI("Transition firmware upgrade is required, start now.");
+        // upgrade transition firmware required.
+        StartUpgradeTransitionFirmwareWorkflow(server, updateFirmwareOption, result);
+        FREE_CJSON(result->data)
+        if (result->broken) {
+            goto FAILURE;
+        }
+        ZF_LOGI("Transition firmware upgrade finished.");
+
+        // TODO(turnbig): confirm with qianbiao that whether we need to force reboot here
+        ZF_LOGI("Reboot BMC to active transition firmware now.");
+        RebootBMC(STAGE_UPGRADE_TRANSITION_FIRMWARE, server, updateFirmwareOption, result);
+        if (result->broken) {
+            goto FAILURE;
+        }
+        ZF_LOGI("Reboot BMC succeed.");
+    }
+
+    goto DONE;
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+DONE:
+    server->quiet = quiet;
+    return;
+}
+
+static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
+                                                UtoolResult *result)
+{
+    if (UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2288HV5) || UtoolStringEquals
+            (updateFirmwareOption->productName, SERVER_NAME_2298V5)) {
+        // TODO: validate
+        RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
+        if (result->broken) {
+            result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
+            goto FAILURE;
+        }
+
+        // 需求：如果iBMC版本号或文件名为4段式版本（如：1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm），则不需要升级过渡包；
+        // new 4 segments bmc version format does not need transition firmware
+        // example: 1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm
+        int targetBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->targetBmcVersion, '.');
+        if (targetBmcVersionDotCount != 4) { // old version format
+            int targetBmcVersion = atoi(updateFirmwareOption->targetBmcVersion);
+            // 需求：判断待升级包是否需要升级过渡版本，
+            // 通过文件名（如：2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm）获取版本号，判断条件：版本号>=6.39
+            if (targetBmcVersion < BMC_TRANSITION_VERSION) {
+                return false;
+            }
+        }
+
+        // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
+        int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
+        if (activeBmcVersionDotCount != 4) { // new bmc version format does not need transition firmware
+            if (UtoolStringEquals(updateFirmwareOption->activeBmcVersion, BMC_TRANSITION_FM_VERSION)) {
+                return false;
+            }
+
+            char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
+            if (version == NULL) {
+                result->code = UTOOLE_INTERNAL;
+                goto FAILURE;
+            }
+            int major = version[0] != NULL ? atoi(version[0]) : 0;
+            int minor = version[1] != NULL ? atoi(version[1]) : 0;
+            UtoolStringFreeArrays(version);
+
+            if (major < BMC_TRANSITION_MAJOR_VERSION ||
+                (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+FAILURE:
+    result->broken = 1;
+    return false;
+}
+
+void freeUpdateFirmwareOption(UpdateFirmwareOption *updateFirmwareOption)
+{
+    if (updateFirmwareOption) {
+        if (updateFirmwareOption->psn != "") {
+            FREE_OBJ(updateFirmwareOption->psn)
+        }
+        FREE_OBJ(updateFirmwareOption->productName)
+        FREE_OBJ(updateFirmwareOption->activeBmcVersion)
+        FREE_OBJ(updateFirmwareOption->targetBmcVersion)
+
+        if (updateFirmwareOption->logFileFP != NULL) {
+            fseeko(updateFirmwareOption->logFileFP, -3, SEEK_END);
+            _off_t position = ftello(updateFirmwareOption->logFileFP);
+            if (position != -1) {
+                int ret = ftruncate(fileno(updateFirmwareOption->logFileFP), position); /* delete last dot */
+                if (ret != 0) {
+                    ZF_LOGE("Failed to truncate update firmware log file");
+                }
+            } else {
+                ZF_LOGE("Failed to run ftello method against update firmware log file");
+            }
+            fprintf(updateFirmwareOption->logFileFP, LOG_TAIL); /* write log file head content*/
+            fclose(updateFirmwareOption->logFileFP);            /* close log file FP */
+        }
+    }
 }
 
 
@@ -1352,7 +1708,7 @@ FAILURE:
 static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                            UtoolResult *result)
 {
-
+    char *filename = NULL;
     cJSON *payload = NULL;
     UtoolParsedUrl *parsedUrl = NULL;
     char *imageUri = updateFirmwareOption->imageURI;
@@ -1373,7 +1729,7 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     }
 
     if (updateFirmwareOption->isLocalFile) {
-        char *filename = basename(imageUri);
+        filename = basename(imageUri);
         char uploadFilePath[MAX_FILE_PATH_LEN];
         UtoolWrapSecFmt(uploadFilePath, MAX_FILE_PATH_LEN, MAX_FILE_PATH_LEN - 1, "/tmp/web/%s", filename);
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", uploadFilePath);
@@ -1381,14 +1737,13 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
-        goto DONE;
     } else if (UtoolStringStartsWith(imageUri, "/tmp/")) { /** handle BMC tmp file */
+        filename = basename(imageUri);
         cJSON *imageUriNode = cJSON_AddStringToObject(payload, "ImageURI", imageUri);
         result->code = UtoolAssetCreatedJsonNotNull(imageUriNode);
         if (result->code != UTOOLE_OK) {
             goto FAILURE;
         }
-        goto DONE;
     } else { /** handle remote file */
         ZF_LOGI("Firmware image uri is not local file, will start update firmware directly now.");
 
@@ -1424,15 +1779,16 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
             goto FAILURE;
         }
 
-        // TODO(qianbiao.ng): 需要和华为方确认，为何新版本文档里多了这个字段。
-        /**
-        cJSON *activeMode = cJSON_AddStringToObject(payload, "ActiveMode", "Immediately");
-        result->code = UtoolAssetCreatedJsonNotNull(activeMode);
-        if (result->code != UTOOLE_OK) {
-            goto FAILURE;
-        } */
-
+        filename = parsedUrl->path;
         updateFirmwareOption->isRemoteFile = true;
+    }
+
+    parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
+    if (updateFirmwareOption->targetBmcVersion == NULL) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE,
+                                              cJSON_CreateString(OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI),
+                                              &(result->desc));
+        goto FAILURE;
     }
 
     goto DONE;
@@ -1446,6 +1802,34 @@ FAILURE:
 DONE:
     UtoolFreeParsedURL(parsedUrl);
     return payload;
+}
+
+static void parseTargetBmcVersionFromFilepath(UpdateFirmwareOption *option, char *path)
+{
+    // old format: 2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm
+    // new format: 1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm
+    char *split = UtoolStringLastSplit(path, '-');
+    char *split2 = UtoolStringLastSplit(split, '_'); // V643.hpm or 3.03.10.15.hpm
+
+    // old format
+    if (UtoolStringStartsWith(split2, "V") && UtoolStringEndsWith(split2, ".hpm")) {
+        int len = strnlen(split2, MAX_FM_VERSION_LEN + 4);
+        char *versionString = UtoolStringNDup(split2 + 1, len - 5);
+        option->targetBmcVersion = versionString;
+        return;
+    } else { // new format
+        char *findDotCount = split2;
+        size_t count = 0;
+        while (*findDotCount) if (*findDotCount++ == '.') ++count;
+        if (count == 4) { // new format
+            int len = strnlen(split2, MAX_FM_VERSION_LEN + 4);
+            char *versionString = UtoolStringNDup(split2, len - 4);
+            option->targetBmcVersion = versionString;
+            return;
+        }
+    }
+
+    ZF_LOGW("Failed to parse target BMC version from file path: %s", path);
 }
 
 

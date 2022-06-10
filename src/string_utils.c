@@ -467,3 +467,10 @@ char *UtoolStringTokens(char *source, const char *delimiters, char **nextToken)
 
     return token;
 }
+
+int UtoolStringCountOccurrencesOf(char *source, const char occurrence)
+{
+    int dotCount = 0;
+    while (*source) if (*source++ == occurrence) ++dotCount;
+    return dotCount;
+}

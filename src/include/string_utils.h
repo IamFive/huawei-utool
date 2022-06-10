@@ -176,6 +176,15 @@ char *UtoolStringReplace(const char *orig, const char *rep, const char *with);
  */
 char *UtoolStringTokens(char *source, const char *delimiter, char **nextToken);
 
+/**
+ * count the occurrences of target char
+ *
+ * @param source
+ * @param occurrence
+ * @return
+ */
+int UtoolStringCountOccurrencesOf(char *source, const char occurrence);
+
 #ifdef __cplusplus
 }
 #endif //UTOOL_STRING_UTILS_H
