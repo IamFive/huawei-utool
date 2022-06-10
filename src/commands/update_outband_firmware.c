@@ -490,19 +490,6 @@ static int GetProductSn(UtoolRedfishServer *server, UpdateFirmwareOption *update
     }
     getSystemRespJson = result->data;
 
-    if (updateFirmwareOption->psn != NULL) {
-        FREE_OBJ(updateFirmwareOption->psn)
-    }
-    cJSON *sn = cJSONUtils_GetPointer(getSystemRespJson, "/SerialNumber");
-    if (cJSON_IsNull(sn) || sn->valuestring == NULL) {
-        ZF_LOGE("Could not get product SerialNumber from /system/system-id.");
-        DisplayProgress(server->quiet, DISPLAY_PRODUCT_SN_NULL);
-        goto FAILURE;
-    }
-
-    ZF_LOGI("Parsing product SN, value is %s.", sn->valuestring);
-    updateFirmwareOption->psn = UtoolStringNDup(sn->valuestring, strnlen(sn->valuestring, MAX_PSN_LEN));
-
     if (updateFirmwareOption->productName != NULL) {
         FREE_OBJ(updateFirmwareOption->productName)
     }
@@ -516,6 +503,20 @@ static int GetProductSn(UtoolRedfishServer *server, UpdateFirmwareOption *update
     ZF_LOGI("Parsing product name, value is %s.", model->valuestring);
     updateFirmwareOption->productName = UtoolStringNDup(model->valuestring,
                                                         strnlen(model->valuestring, MAX_PRODUCT_NAME_LEN));
+
+    if (updateFirmwareOption->psn != NULL) {
+        FREE_OBJ(updateFirmwareOption->psn)
+    }
+    cJSON *sn = cJSONUtils_GetPointer(getSystemRespJson, "/SerialNumber");
+    if (cJSON_IsNull(sn) || sn->valuestring == NULL) {
+        ZF_LOGE("Could not get product SerialNumber from /system/system-id.");
+        DisplayProgress(server->quiet, DISPLAY_PRODUCT_SN_NULL);
+        goto FAILURE;
+    }
+
+    ZF_LOGI("Parsing product SN, value is %s.", sn->valuestring);
+    updateFirmwareOption->psn = UtoolStringNDup(sn->valuestring, strnlen(sn->valuestring, MAX_PSN_LEN));
+
     goto DONE;
 
 FAILURE:
