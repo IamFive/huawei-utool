@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: ipmi utilities
 * Author:
 * Create: 2019-06-16
@@ -7,6 +7,7 @@
 */
 #include <ipmi.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <zf_log.h>
 #include <commons.h>
 #include <securec.h>
@@ -17,11 +18,12 @@
 #if defined(__MINGW32__)
 #define IPMITOOL_CMD "ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #else
-#define IPMITOOL_CMD "chmod +x ./ipmitool && ./ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
+#define IPMITOOL_CMD "chmod +x %s/ipmitool && %s/ipmitool -I lanplus -H %s -U %s -P %s -p %d %s 2>&1"
 #endif
 
 #define ESCAPE_CHARS "|;&$><`\\!\n"
 
+static bool changeVendorId = false;
 
 char *
 UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result)
@@ -29,6 +31,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     FILE *fp = NULL;
     char *cmdOutput = NULL;
     char buffer[512] = {0};
+    char path[MAX_IPMI_CMD_LEN] = {0};
 
     /* build dynamic command part */
 
@@ -64,14 +67,20 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
                                strnlen(ipmiRawCmdOption->data, MAX_IPMI_CMD_LEN - 1));
     }
 
+    int res = readlink("/proc/self/exe", path, MAX_IPMI_CMD_LEN - 1);
+    if (res < 0 || (res >= MAX_IPMI_CMD_LEN - 1)) {
+        ZF_LOGI("Get utool path error");
+        return NULL;
+    }
+    path[res - 6] = '\0';
 
     const char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, option->host, option->username,
-                    option->password, option->ipmiPort, ipmiRawCmd);
+    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, path, path, option->host,
+                    option->username, option->password, option->ipmiPort, ipmiRawCmd);
 
 
     char secureIpmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(secureIpmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, option->host,
+    UtoolWrapSecFmt(secureIpmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, IPMITOOL_CMD, path, path, option->host,
                     option->username, "******", option->ipmiPort, ipmiRawCmd);
     ZF_LOGI("execute IPMI command: %s", secureIpmiCmd);
 
@@ -168,7 +177,7 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result)
     UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
             .netfun = IPMI_GET_HTTPS_PORT_NETFUN,
             .command = IPMI_GET_HTTPS_PORT_CMD,
-            .data = IPMI_GET_HTTPS_PORT_DATA,
+            .data = changeVendorId ? IPMI_GET_HTTPS_PORT_DATA_XFUSION : IPMI_GET_HTTPS_PORT_DATA,
     };
 
     ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
@@ -193,4 +202,25 @@ int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result)
 
     FREE_OBJ(ipmiCmdOutput)
     return port;
+}
+
+bool UtoolIPMIGetVendorId(UtoolCommandOption *option, UtoolResult *result)
+{
+    bool res = false;
+    char *ipmiCmdOutput = NULL;
+    UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
+        .command = IPMI_GET_VENDOR_ID,
+    };
+    ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
+    if (!result->broken && ipmiCmdOutput != NULL) {
+        if (strstr(ipmiCmdOutput, "14 e3 00")) {
+            res = true;
+            changeVendorId = true;
+        }
+    } else {
+        FREE_OBJ(ipmiCmdOutput)
+        return NULL;
+    }
+    FREE_OBJ(ipmiCmdOutput)
+    return res;
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: constants define
 * Author:
 * Create: 2019-06-16
@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #define ENABLE_DEBUG 1
-#define UTOOL_VENDOR "Huawei"
+#define UTOOL_VENDOR "XFUSION"
 #define LOG_FILE_NAME "utool.log.txt"
 #define BAK_LOG_FILE_NAME "utool.log.txt."
 #define EXIT_SECURITY_ERROR 1
@@ -47,7 +47,7 @@ extern "C" {
 #define CURL_CONN_TIMEOUT 60
 
 #define CONTENT_TYPE_JSON "Content-Type: application/json"
-#define USER_AGENT "UTOOL based on libcurl - HUAWEI server management command line tool"
+#define USER_AGENT "UTOOL based on libcurl - XFUSION server management command line tool"
 #define HEADER_ETAG "ETag: "
 #define HEADER_CONTENT_LENGTH "CONTENT-LENGTH: "
 #define HEADER_CONTENT_TYPE "CONTENT-TYPE: "
@@ -148,7 +148,7 @@ extern "C" {
 /**
  * Argument parse help messages
  */
-#define TOOL_DESC "\nCommand-line interface to the HUAWEI server management APIs."
+#define TOOL_DESC "\nCommand-line interface to the XFUSION server management APIs."
 #define TOOL_EPI_LOG "\nUsing `utool getcapabilities` to get more information about sub-commands."
 #define CMD_EPI_LOG "\nPlease reading user guide document to get more information about this sub-command."
 #define HELP_DESC "Show help message."
@@ -172,6 +172,8 @@ extern "C" {
 #define OPT_ILLEGAL(OPT_NAME) "Error: option `"OPT_NAME"` is illegal."
 #define OPT_NOT_IN_CHOICE(OPT_NAME, CHOICES) "Error: option `"OPT_NAME"` is illegal, available choices: "CHOICES"."
 #define OPT_NOT_IN_RANGE(OPT_NAME, RANGE) "Error: option `"OPT_NAME"` is illegal, available value range: "RANGE"."
+
+#define DEFAULT_OEM "Huawei"
 
 typedef enum _Code
 {

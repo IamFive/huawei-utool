@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: command handler for `setadaptiveport`
 * Author:
 * Create: 2019-06-14
@@ -157,7 +157,7 @@ static void ValidateSubcommandOptions(UtoolSetAdaptivePortOption *option, UtoolR
         goto FAILURE;
     }
 
-    /* because glibc is forbidden by Huawei, so regex.h is forbidden too. */
+    /* because glibc is forbidden by XFUSION, so regex.h is forbidden too. */
     /* try to validate user input format
     regex_t regex;
     int invalid = regcomp(&regex, "^((Dedicated|Aggregation|LOM|ExternalPCIe|LOM2),[0-9]+;)+$", REG_EXTENDED);

@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: command argument parsing helper
 * Author:
 * Create: 2019-06-16
@@ -89,7 +89,7 @@ int UtoolValidateIPMIConnectOptions(UtoolCommandOption *commandOption, char **re
 {
     // only output if not command help action is requested.
     ZF_LOGI("Try to parse arguments now...");
-    ZF_LOGI("HUAWEI server connect authentication options");
+    ZF_LOGI("XFUSION server connect authentication options");
     ZF_LOGI(" ");
     ZF_LOGI("\t\thost\t\t : %s", commandOption->host);
     ZF_LOGI("\t\tport\t\t : %d", commandOption->port);

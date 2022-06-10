@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: common utilities header
 * Author:
 * Create: 2019-06-16
@@ -249,7 +249,7 @@ void UtoolBuildDefaultSuccessResult(char **result);
 
 
 /**
-* wrap a cJSON object with Huawei Oem structure
+* wrap a cJSON object with XFUSION Oem structure
 *
 * @param oemName
 * @param source
@@ -281,7 +281,7 @@ const char *UtoolGetStringError(UtoolCode code);
  *  a wrap of realpath.
  *
  *  realpath has no meaning in utool project.
- *  But Huawei codex will report ERROR if fopen filepath directly.
+ *  But XFUSION codex will report ERROR if fopen filepath directly.
  *
  * @param path
  * @param resolved
@@ -321,7 +321,7 @@ int UtoolPrintf(int quiet, FILE * stream, const char * format, ...);
 
 
 /**
- * a wrap of HUAWEI snprintf_s function.
+ * a wrap of XFUSION snprintf_s function.
  *
  * @param strDest
  * @param destMax
@@ -332,7 +332,7 @@ int UtoolPrintf(int quiet, FILE * stream, const char * format, ...);
 void UtoolWrapSecFmt(char *strDest, size_t destMax, size_t count, const char *format, ...);
 
 /**
- * a wrap of HUAWEI strcat_s function.
+ * a wrap of XFUSION strcat_s function.
  *
  * @param strDest
  * @param destMax
@@ -342,7 +342,7 @@ void UtoolWrapStringAppend(char *strDest, size_t destMax, const char *strSrc);
 
 
 /**
- * a wrap of HUAWEI strncat_s function.
+ * a wrap of XFUSION strncat_s function.
  * @param strDest
  * @param destMax
  * @param strSrc

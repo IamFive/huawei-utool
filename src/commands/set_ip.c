@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: command handler for `setip`
 * Author:
 * Create: 2019-06-14

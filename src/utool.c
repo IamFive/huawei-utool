@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: utool API implementation
 * Author:
 * Create: 2019-06-16
@@ -172,16 +172,10 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
     commandOption->commandArgc = argc;
     commandOption->commandArgv = argv;
 
-    /**
-     * TODO Qianbiao.NG
-     *  - searching a lib support sub-parser ?
-     *  - validating user input
-     */
-
     if (commandOption->flag == FEAT_VERSION) {
         char buff[MAX_FAILURE_MSG_LEN] = {0};
         UtoolWrapSecFmt(buff, MAX_FAILURE_MSG_LEN, MAX_FAILURE_MSG_LEN - 1,
-                        "HUAWEI server management command-line tool version v%s", UTOOL_VERSION);
+                        "XFUSION server management command-line tool version v%s", UTOOL_VERSION);
         return UtoolBuildOutputResult(STATE_SUCCESS, cJSON_CreateString(buff), result);
     } else if (commandOption->flag == FEAT_SHOW_VENDOR) {
         *result = (char *) malloc(MAX_OUTPUT_LEN);

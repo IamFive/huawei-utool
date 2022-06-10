@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: redfish API abstract
 * Author:
 * Create: 2019-06-16
@@ -17,6 +17,7 @@
 #include <securec.h>
 #include <libgen.h>
 #include "commons.h"
+#include "constants.h"
 #include "redfish.h"
 #include "zf_log.h"
 #include "string_utils.h"
@@ -71,17 +72,12 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     UtoolHttpUploadFileToBMC(server, uploadFilePath, result);
-
-    /**
-     *  do not need to support scp now.
-
-        if (result->notfound && result->broken) {
-            ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
-            result->broken = 0;
-            result->code = UTOOLE_OK;
-            UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
-        }
-     */
+    if (result->notfound && result->broken) {
+        ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
+        result->broken = 0;
+        result->code = UTOOLE_OK;
+        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
+    }
 }
 
 
@@ -869,9 +865,21 @@ void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *serv
 
     getRedfishJson = result->data;
     cJSON *oemNode = cJSONUtils_GetPointer(getRedfishJson, "/Oem");
-    if (!cJSON_IsObject(oemNode->child)) {
+    char* oem = NULL;
+    bool isOemMalloc = false;
+    if (oemNode == NULL || oemNode->valuestring == NULL) {
+        oem = (char *) malloc(strlen(DEFAULT_OEM) + 1);
+        if (oem == NULL) {
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
+        isOemMalloc = true;
+        strncpy_s(oem, strlen(DEFAULT_OEM) + 1, DEFAULT_OEM, strlen(DEFAULT_OEM) + 1);
+    } else if (!cJSON_IsObject(oemNode->child)) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
+    } else {
+        oem = oemNode->child->string;
     }
 
     server->oemName = (char *) malloc(MAX_OEM_NAME_LEN);
@@ -879,7 +887,7 @@ void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *serv
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
-    ok = strncpy_s(server->oemName, MAX_OEM_NAME_LEN, oemNode->child->string, strlen(oemNode->child->string));
+    ok = strncpy_s(server->oemName, MAX_OEM_NAME_LEN, oem, strlen(oem));
     if (ok != EOK) {
         result->code = UTOOLE_INTERNAL;
         goto FAILURE;
@@ -894,6 +902,10 @@ DONE:
     FREE_CJSON(getSystemJson)
     FREE_CJSON(getRedfishJson)
     UtoolFreeCurlResponse(response);
+    if (isOemMalloc) {
+        free(oem);
+    }
+    oem = NULL;
 }
 
 
@@ -994,7 +1006,7 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
 
 static int UtoolCurlGetRespCallback(const void *buffer, size_t size, size_t nmemb, UtoolCurlResponse *response)
 {
-    // realloc method is forbidden in HUAWEI developing documents.
+    // realloc method is forbidden in XFUSION developing documents.
     // because CURL may response multiple times to write response content
     // so we malloc enough memory according to content length header directly
     unsigned long fullSize = size * nmemb;

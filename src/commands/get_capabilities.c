@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: get capabilities command handler
 * Author:
 * Create: 2019-06-14

@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: common utilities
 * Author:
 * Create: 2019-06-16
@@ -438,7 +438,7 @@ const char *UtoolGetStringError(UtoolCode code)
         case UTOOLE_PARSE_JSON_FAILED:
             return "Internal error, failed to parse JSON content.";
         case UTOOLE_UNKNOWN_JSON_FORMAT:
-            return "Internal error, unexpect JSON format response by HUAWEI server API.";
+            return "Internal error, unexpect JSON format response by XFUSION server API.";
         case UTOOLE_CREATE_JSON_NULL:
             return "Internal error, failed to create a JSON object.";
         case UTOOLE_PRINT_JSON_FAILED:
@@ -465,7 +465,7 @@ const char *UtoolGetStringError(UtoolCode code)
 /**
  *  a wrap of realpath.
  *
- *  Huawei codex will report ERROR if fopen filepath directly.
+ *  XFUSION codex will report ERROR if fopen filepath directly.
  *
  * @param path
  * @param resolved
@@ -561,7 +561,7 @@ int UtoolPrintf(int quiet, FILE *stream, const char *format, ...)
 }
 
 /**
- * a wrap of HUAWEI snprintf_s function.
+ * a wrap of XFUSION snprintf_s function.
  *
  * @param strDest
  * @param destMax
@@ -586,7 +586,7 @@ void UtoolWrapSecFmt(char *strDest, size_t destMax, size_t count, const char *fo
 }
 
 /**
- * a wrap of HUAWEI strcat_s function.
+ * a wrap of XFUSION strcat_s function.
  *
  * @param strDest
  * @param destMax
@@ -602,7 +602,7 @@ void UtoolWrapStringAppend(char *strDest, size_t destMax, const char *strSrc)
 }
 
 /**
- * a wrap of HUAWEI strncat_s function.
+ * a wrap of XFUSION strncat_s function.
  * @param strDest
  * @param destMax
  * @param strSrc

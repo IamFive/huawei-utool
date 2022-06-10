@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: command handler for `setipmiwhitelist`
 * Author:
 * Create: 2019-06-16
@@ -25,11 +25,14 @@
 #define DFT_SUB_FUNC "0xff"
 #define OEM_NETFUNC "0x30"
 #define OEM_SUB_FUNC_PREFIX "0xdb 0x07 0x00"
+#define OEM_SUB_FUNC_PREFIX_XFUSION "0x14 0xe3 0x00"
 #define OPERATION_ADD "Add"
 #define OPERATION_REMOVE "Remove"
 
 static const char *const ENABLE_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x0 0x4a 0x01 0x01 0x00";
+static const char *const ENABLE_IPMI_WHITELIST_XFUSION = "0x30 0x93 0x14 0xe3 0x0 0x4a 0x01 0x01 0x00";
 static const char *const DISABLE_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x0 0x4a 0x00 0xff";
+static const char *const DISABLE_IPMI_WHITELIST_XFUSION = "0x30 0x93 0x14 0xe3 0x0 0x4a 0x00 0xff";
 
 /**
  * 0x30 0x93 0xdb 0x07 0x00 0x3f 0x01 0x00 0x01 0x0c 0x02 0x08 0x01 0x10 0x00 0x00
@@ -41,6 +44,7 @@ static const char *const DISABLE_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x0 0x4a 
  *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
  */
 static const char *const OP_WHITELIST = "0x30 0x93 0xdb 0x07 0x00 0x3f 0x01 %s 0x01 %s %s 0x08 %s";
+static const char *const OP_WHITELIST_XFUSION = "0x30 0x93 0x14 0xe3 0x00 0x3f 0x01 %s 0x01 %s %s 0x08 %s";
 
 
 static const char *OPERATION_CHOICES[] = {
@@ -74,6 +78,7 @@ static const char *const usage[] = {
         NULL,
 };
 
+static bool vendorIdXFUSION = false;
 
 typedef struct _SetIpmiWhitelistOption {
     char *enabled;
@@ -125,7 +130,7 @@ static bool cJSON_IsNullOrEmptyArray(cJSON *node)
 
 
 /**
-* get IPMI command white list for server internal channel (LPC/USB etc.), command handler for `getipmiwhitelist`
+* set IPMI command white list for server internal channel (LPC/USB etc.), command handler for `setipmiwhitelist`
 *
 * @param commandOption
 * @param result
@@ -138,6 +143,7 @@ int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
     UtoolResult *result = &(UtoolResult) {0};
     UtoolRedfishServer *server = &(UtoolRedfishServer) {0};
     UtoolSetIpmiWhitelistOption *option = &(UtoolSetIpmiWhitelistOption) {0};
+    UtoolResult *vendorIdResult = &(UtoolResult) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -164,6 +170,11 @@ int UtoolCmdSetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
+    }
+
+    vendorIdXFUSION = UtoolIPMIGetVendorId(commandOption, vendorIdResult);
+    if (vendorIdResult->broken) {
+        goto FAILURE;
     }
 
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
@@ -428,8 +439,8 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
     } else {
         /** if netfun is '0x30', and sun-func is not empty, we need to add oem prefix for sub-func */
         if (UtoolStringCaseEquals(netFunc, OEM_NETFUNC)) {
-            UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s %s", OEM_SUB_FUNC_PREFIX,
-                            option->subFunc);
+            UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s %s",
+                            vendorIdXFUSION ? OEM_SUB_FUNC_PREFIX_XFUSION : OEM_SUB_FUNC_PREFIX, option->subFunc);
         } else {
             UtoolWrapSecFmt(subFunc, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, "%s", option->subFunc);
         }
@@ -447,8 +458,8 @@ void HandleWhitelistAction(UtoolCommandOption *commandOption, const UtoolSetIpmi
      *   Net: 0x01; BT: 0x08; whitelist only support BT  <------|
      */
     char ipmiCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, OP_WHITELIST, operation, netFunc,
-                    command, subFunc);
+    UtoolWrapSecFmt(ipmiCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1,
+                    vendorIdXFUSION ? OP_WHITELIST_XFUSION : OP_WHITELIST, operation, netFunc, command, subFunc);
     sendIpmiCommandOption->data = ipmiCmd;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
     ZF_LOGI("ipmi raw command resp: %s", ipmiCmdOutput);
@@ -472,12 +483,12 @@ ToggleIpmiWhitelist(UtoolCommandOption *commandOption, const UtoolSetIpmiWhiteli
         // enable/disable whitelist feature
         if (UtoolStringEquals(option->enabled, DISABLED)) {
             ZF_LOGI("Disable IPMI whitelist feature now.");
-            sendIpmiCommandOption->data = DISABLE_IPMI_WHITELIST;
+            sendIpmiCommandOption->data = vendorIdXFUSION ? DISABLE_IPMI_WHITELIST_XFUSION : DISABLE_IPMI_WHITELIST;
             ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
             ZF_LOGI("Disable IPMI whitelist action resp: %s", ipmiCmdOutput);
         } else if (UtoolStringEquals(option->enabled, ENABLED)) {
             ZF_LOGI("Enable IPMI whitelist feature now.");
-            sendIpmiCommandOption->data = ENABLE_IPMI_WHITELIST;
+            sendIpmiCommandOption->data = vendorIdXFUSION ? ENABLE_IPMI_WHITELIST_XFUSION : ENABLE_IPMI_WHITELIST;
             ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
             ZF_LOGI("Enable IPMI whitelist action resp: %s", ipmiCmdOutput);
         }

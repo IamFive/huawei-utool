@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: utool header
 * Author:
 * Create: 2019-06-16
@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#define UTOOL_VERSION "1.35.0"
+#define UTOOL_VERSION "1.40.2"
 
 
 int utool_main(int argc, char *argv[], char **result);

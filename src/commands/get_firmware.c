@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: command handler for `getfw`
 * Author:
 * Create: 2019-06-14
@@ -79,27 +79,8 @@ static int VersionHandler(UtoolRedfishServer *server, cJSON *target, const char 
         return UTOOLE_OK;
     }
 
-    char *first = NULL, *second = NULL, *third = NULL;
-    char **segments = UtoolStringSplit(version, '.');
-    if (segments != NULL) {
-        first = *segments == NULL ? "00" : *segments;
-        second = *(segments + 1) == NULL ? "00" : *(segments + 1);
-        third = *(segments + 2) == NULL ? "00" : *(segments + 2);
-    } else {
-        first = "00";
-        second = "00";
-        third = "00";
-    }
-
     char output[32] = {0};
-    UtoolWrapSecFmt(output, 32, 32 - 1, "%s.%s.%s", first, second, third);
-
-    if (segments) {
-        for (int idx = 0; *(segments + idx); idx++) {
-            free(*(segments + idx));
-        }
-        free(segments);
-    }
+    UtoolWrapSecFmt(output, 32, 32 - 1, "%s", version);
 
     cJSON *newNode = cJSON_AddStringToObject(target, key, output);
     FREE_CJSON(node)

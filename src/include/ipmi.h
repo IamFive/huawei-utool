@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: ipmi header file
 * Author:
 * Create: 2019-06-16
@@ -20,6 +20,8 @@ extern "C" {
 #define IPMI_GET_HTTPS_PORT_NETFUN "0x30"
 #define IPMI_GET_HTTPS_PORT_CMD "0x93"
 #define IPMI_GET_HTTPS_PORT_DATA "0xdb 0x07 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00"
+#define IPMI_GET_HTTPS_PORT_DATA_XFUSION "0x14 0xe3 0x00 0x38 0x06 0x00 0x03 0xff 0x00 0x00 0x1 0x00 0x02 0x00 0x03 0x00"
+#define IPMI_GET_VENDOR_ID "0x06 0x01"
 
 /**
 * execute a ipmi command
@@ -41,6 +43,15 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 * @return
 */
 int UtoolIPMIGetHttpsPort(UtoolCommandOption *option, UtoolResult *result);
+
+/**
+* get vendor id through ipmi
+*
+* @param option
+* @param result
+* @return
+*/
+bool UtoolIPMIGetVendorId(UtoolCommandOption *option, UtoolResult *result);
 
 #ifdef __cplusplus
 }

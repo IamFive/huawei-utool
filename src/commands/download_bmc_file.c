@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: download BMC file command handler
 * Author:
 * Create: 2019-06-14
@@ -55,7 +55,7 @@ int UtoolCmdDownloadBMCFile(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char *bmcFileUri = "/tmp/web/9.xml";
-    char *filepath = "/home/qianbiao/9-download.xml";
+    char *filepath = "/home/9-download.xml";
     UtoolDownloadFileFromBMC(server, bmcFileUri, filepath, result);
     if (result->broken) {
         goto FAILURE;

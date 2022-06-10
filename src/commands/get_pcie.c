@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2018-2019. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2018-2019. All rights reserved.
 * Description: command handler of `getpcie`
 * Author:
 * Create: 2019-06-14
@@ -52,7 +52,7 @@ static int TypeHandler(UtoolRedfishServer *server, cJSON *target, const char *ke
     cJSON *funcTypeNode = cJSONUtils_GetPointer(root, funcTypePath);
     cJSON *cardTypeNode = cJSONUtils_GetPointer(root, cardTypePath);
 
-    if (cJSON_IsNull(funcTypeNode) || funcTypeNode->valuestring == NULL) {
+    if (funcTypeNode == NULL || cJSON_IsNull(funcTypeNode) || funcTypeNode->valuestring == NULL) {
         cJSON_AddItemToObjectCS(target, key, cJSON_CreateNull());
         FREE_CJSON(root)
         return UTOOLE_OK;

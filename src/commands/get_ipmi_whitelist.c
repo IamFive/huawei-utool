@@ -1,5 +1,5 @@
 /*
-* Copyright © Huawei Technologies Co., Ltd. 2012-2018. All rights reserved.
+* Copyright © xFusion Digital Technologies Co., Ltd. 2012-2018. All rights reserved.
 * Description: command handler for `getipmiwhitelist`
 * Author:
 * Create: 2019-06-16
@@ -32,14 +32,16 @@ static const char *const usage[] = {
 };
 
 static const char *const GET_IPMI_WHITELIST_CONF = "0x30 0x93 0xdb 0x07 0x00 0x4c";
+static const char *const GET_IPMI_WHITELIST_CONF_XFUSION = "0x30 0x93 0x14 0xe3 0x00 0x4c";
 static const int SINGLE_BYTE_LEN = 3;
 static const int DATA_PART_POS = 9;
 
 // %x stands for the index of white list ipmi command to query
 static const char *const GET_IPMI_WHITELIST = "0x30 0x93 0xdb 0x07 0x00 0x4b 0x01 0x%02x";
+static const char *const GET_IPMI_WHITELIST_XFUSION = "0x30 0x93 0x14 0xe3 0x00 0x4b 0x01 0x%02x";
 
 static UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int index, UtoolResult *result);
-
+static bool vendorIdXFUSION = false;
 
 void FreeIpmiCommand(UtoolIPMICommand *command);
 
@@ -80,7 +82,8 @@ UtoolIPMICommand *getIpmiWhitelistCommand(UtoolCommandOption *commandOption, int
     command->data = NULL;
 
     char getIpmiWhitelistCmd[MAX_IPMI_CMD_LEN] = {0};
-    UtoolWrapSecFmt(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1, GET_IPMI_WHITELIST, index);
+    UtoolWrapSecFmt(getIpmiWhitelistCmd, MAX_IPMI_CMD_LEN, MAX_IPMI_CMD_LEN - 1,
+        (vendorIdXFUSION ? GET_IPMI_WHITELIST_XFUSION : GET_IPMI_WHITELIST), index);
     sendIpmiCommandOption->data = getIpmiWhitelistCmd;
 
     /**
@@ -188,6 +191,7 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
     bool whitelistEnabled = false;
     UtoolIPMICommand *first = NULL;
     UtoolIPMICommand **whitelists = NULL;
+    UtoolResult *vendorIdResult = &(UtoolResult) {0};
 
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag), HELP_SUB_COMMAND_DESC, UtoolGetHelpOptionCallback, 0, 0),
@@ -205,13 +209,18 @@ int UtoolCmdGetIpmiWhitelist(UtoolCommandOption *commandOption, char **outputStr
         goto DONE;
     }
 
+    vendorIdXFUSION = UtoolIPMIGetVendorId(commandOption, vendorIdResult);
+    if (vendorIdResult->broken) {
+        goto FAILURE;
+    }
+
     result->code = UtoolValidateConnectOptions(commandOption, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
 
     // get ipmi white list feature status
-    sendIpmiCommandOption->data = GET_IPMI_WHITELIST_CONF;
+    sendIpmiCommandOption->data = vendorIdXFUSION ? GET_IPMI_WHITELIST_CONF_XFUSION : GET_IPMI_WHITELIST_CONF;
     ipmiCmdOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
     ZF_LOGI("query IPMI whitelist status resp: %s", ipmiCmdOutput);
     if (result->broken) {
