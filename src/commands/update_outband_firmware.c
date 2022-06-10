@@ -1122,52 +1122,56 @@ DONE:
 static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption,
                                                 UtoolResult *result)
 {
-    if (UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2288HV5) || UtoolStringEquals
+    //NOTE(qianbiao): only 2288HV5 & 2298 V5 requires transition firmware upgrade
+    if (!UtoolStringEquals(updateFirmwareOption->productName, SERVER_NAME_2288HV5) && !UtoolStringEquals
             (updateFirmwareOption->productName, SERVER_NAME_2298V5)) {
-        // TODO: validate
-        RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
-        if (result->broken) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
-            goto FAILURE;
-        }
-
-        // 需求：如果iBMC版本号或文件名为4段式版本（如：1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm），则不需要升级过渡包；
-        // new 4 segments bmc version format does not need transition firmware
-        // example: 1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm
-        int targetBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->targetBmcVersion, '.');
-        if (targetBmcVersionDotCount != 4) { // old version format
-            int targetBmcVersion = atoi(updateFirmwareOption->targetBmcVersion);
-            // 需求：判断待升级包是否需要升级过渡版本，
-            // 通过文件名（如：2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm）获取版本号，判断条件：版本号>=6.39
-            if (targetBmcVersion < BMC_TRANSITION_VERSION) {
-                return false;
-            }
-        }
-
-        // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
-        int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
-        if (activeBmcVersionDotCount != 4) { // new bmc version format does not need transition firmware
-            if (UtoolStringEquals(updateFirmwareOption->activeBmcVersion, BMC_TRANSITION_FM_VERSION)) {
-                return false;
-            }
-
-            char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
-            if (version == NULL) {
-                result->code = UTOOLE_INTERNAL;
-                goto FAILURE;
-            }
-            int major = version[0] != NULL ? atoi(version[0]) : 0;
-            int minor = version[1] != NULL ? atoi(version[1]) : 0;
-            UtoolStringFreeArrays(version);
-
-            if (major < BMC_TRANSITION_MAJOR_VERSION ||
-                (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
-                return true;
-            }
-        }
-
         return false;
     }
+
+    // TODO: validate
+    RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
+    if (result->broken) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
+        goto FAILURE;
+    }
+
+    // 需求：如果iBMC版本号或文件名为4段式版本（如：1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm），则不需要升级过渡包；
+    // new 4 segments bmc version format does not need transition firmware
+    // example: 1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm
+    int targetBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->targetBmcVersion, '.');
+    if (targetBmcVersionDotCount != 4) { // old version format
+        int targetBmcVersion = atoi(updateFirmwareOption->targetBmcVersion);
+        // 需求：判断待升级包是否需要升级过渡版本，
+        // 通过文件名（如：2288H_V5_2288C_V5_5288_V5-iBMC-V643.hpm）获取版本号，判断条件：版本号>=6.39
+        if (targetBmcVersion < BMC_TRANSITION_VERSION) {
+            return false;
+        }
+    }
+
+    // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
+    int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
+    if (activeBmcVersionDotCount != 4) { // new bmc version format does not need transition firmware
+        if (UtoolStringEquals(updateFirmwareOption->activeBmcVersion, BMC_TRANSITION_FM_VERSION)) {
+            return false;
+        }
+
+        char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
+        if (version == NULL) {
+            result->code = UTOOLE_INTERNAL;
+            goto FAILURE;
+        }
+        int major = version[0] != NULL ? atoi(version[0]) : 0;
+        int minor = version[1] != NULL ? atoi(version[1]) : 0;
+        UtoolStringFreeArrays(version);
+
+        if (major < BMC_TRANSITION_MAJOR_VERSION ||
+            (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
+            return true;
+        }
+    }
+
+    return false;
+
 FAILURE:
     result->broken = 1;
     return false;
