@@ -1135,10 +1135,9 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
-    RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
-    if (result->broken) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
-        goto FAILURE;
+    // NOTE(qianbiao.ng): if we can not detect target bmc version from filename, just continue upgrade as normal.
+    if (updateFirmwareOption->targetBmcVersion == NULL) {
+        return false;
     }
 
     // 需求：如果iBMC版本号或文件名为4段式版本（如：1288HV6-2288HV6-5288V6-32DIMM-iBMC_3.03.10.15.hpm），则不需要升级过渡包；
@@ -1159,11 +1158,17 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
+    RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
+    if (result->broken) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
+        goto FAILURE;
+    }
+
     // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
     int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
     if (activeBmcVersionDotCount == 3) { // new format
         ZF_LOGI("Active BMC version(%s) is 4 segments, no transition upgrade required.",
-                updateFirmwareOption->targetBmcVersion);
+                updateFirmwareOption->activeBmcVersion);
         return false;
     }
 
@@ -1813,12 +1818,13 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
     if (updateFirmwareOption->firmwareType != NULL &&
         UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
         parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
-        if (updateFirmwareOption->targetBmcVersion == NULL) {
-            result->code = UtoolBuildOutputResult(STATE_FAILURE,
-                                                  cJSON_CreateString(OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI),
-                                                  &(result->desc));
-            goto FAILURE;
-        }
+        // NOTE(qianbiao.ng): if we can not detect target bmc version from filename, just continue upgrade as normal.
+        // if (updateFirmwareOption->targetBmcVersion == NULL) {
+        //     result->code = UtoolBuildOutputResult(STATE_FAILURE,
+        //                                           cJSON_CreateString(OPTION_CANNOT_PARSE_BMC_VERSION_FROM_IMAGE_URI),
+        //                                           &(result->desc));
+        //     goto FAILURE;
+        // }
     }
 
     goto DONE;
