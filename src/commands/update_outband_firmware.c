@@ -167,6 +167,7 @@ typedef struct _UpdateFirmwareOption {
     char *productName;
     char *activeBmcVersion;
     char *targetBmcVersion;
+    bool disableLogEntry;
     bool isLocalFile;
     bool isRemoteFile;
     FILE *logFileFP;
@@ -1082,6 +1083,7 @@ void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOp
                                           UtoolResult *result)
 {
     int quiet = server->quiet;
+    updateFirmwareOption->disableLogEntry = true;
 
     // check whether transition firmware upgrade
     bool shouldUpgradeTransition = isTransitionFirmwareUpgradeRequired(server, updateFirmwareOption, result);
@@ -1118,6 +1120,7 @@ FAILURE:
     goto DONE;
 DONE:
     server->quiet = quiet;
+    updateFirmwareOption->disableLogEntry = false;
     return;
 }
 
@@ -1807,17 +1810,17 @@ static cJSON *BuildPayload(UtoolRedfishServer *server, UpdateFirmwareOption *upd
         updateFirmwareOption->isRemoteFile = true;
     }
 
-    if (updateFirmwareOption->firmwareType == NULL) {
-        // detect whether firmware type is BMC from filename
+    if (updateFirmwareOption->firmwareType == NULL ||
+        UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
         char *index = strstr(filename, FM_TYPE_BMC);
         if (index != NULL) {
-            updateFirmwareOption->firmwareType = FM_TYPE_BMC;
+            // detect whether firmware type is BMC from filename
+            if (updateFirmwareOption->firmwareType == NULL) {
+                updateFirmwareOption->firmwareType = FM_TYPE_BMC;
+            }
+            parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
         }
-    }
 
-    if (updateFirmwareOption->firmwareType != NULL &&
-        UtoolStringEquals(updateFirmwareOption->firmwareType, FM_TYPE_BMC)) {
-        parseTargetBmcVersionFromFilepath(updateFirmwareOption, filename);
         // NOTE(qianbiao.ng): if we can not detect target bmc version from filename, just continue upgrade as normal.
         // if (updateFirmwareOption->targetBmcVersion == NULL) {
         //     result->code = UtoolBuildOutputResult(STATE_FAILURE,
@@ -1872,33 +1875,37 @@ static void parseTargetBmcVersionFromFilepath(UpdateFirmwareOption *option, char
 static void
 WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result)
 {
-    if (result->code != UTOOLE_OK) {
-        const char *errorString = (result->code > UTOOLE_OK && result->code < CURL_LAST) ?
-                                  curl_easy_strerror(result->code) : UtoolGetStringError(result->code);
-        WriteLogEntry(option, stage, state, errorString);
-        return;
-    } else {
-        cJSON *output = cJSON_Parse(result->desc);
-        if (output != NULL) {
-            cJSON *message = cJSONUtils_GetPointer(output, "/Message/0");
-            WriteLogEntry(option, stage, state, message == NULL ? "" : message->valuestring);
+    if (option->disableLogEntry == true) {
+        if (result->code != UTOOLE_OK) {
+            const char *errorString = (result->code > UTOOLE_OK && result->code < CURL_LAST) ?
+                                      curl_easy_strerror(result->code) : UtoolGetStringError(result->code);
+            WriteLogEntry(option, stage, state, errorString);
+            return;
+        } else {
+            cJSON *output = cJSON_Parse(result->desc);
+            if (output != NULL) {
+                cJSON *message = cJSONUtils_GetPointer(output, "/Message/0");
+                WriteLogEntry(option, stage, state, message == NULL ? "" : message->valuestring);
+            }
+            FREE_CJSON(output)
         }
-        FREE_CJSON(output)
     }
 }
 
 
 static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, const char *note)
 {
-    /* get current timestamp */
-    char nowStr[100] = {0};
-    time_t now = time(NULL);
-    struct tm *tm_now = localtime(&now);
-    if (tm_now != NULL) {
-        strftime(nowStr, sizeof(nowStr), "%Y-%m-%dT%H%M%S%z", tm_now);
-    }
+    if (option->disableLogEntry == true) {
+        /* get current timestamp */
+        char nowStr[100] = {0};
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        if (tm_now != NULL) {
+            strftime(nowStr, sizeof(nowStr), "%Y-%m-%dT%H%M%S%z", tm_now);
+        }
 
-    /* write log file head content*/
-    fprintf(option->logFileFP, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
-    fflush(option->logFileFP);
+        /* write log file head content*/
+        fprintf(option->logFileFP, LOG_ENTRY_FORMAT, nowStr, stage, state, note);
+        fflush(option->logFileFP);
+    }
 }
