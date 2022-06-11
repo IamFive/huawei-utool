@@ -184,7 +184,9 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
 
 
 FAILURE:
-    fprintf(stdout, "\n");
+    if (!server->quiet) {
+        fprintf(stdout, "\n");
+    }
     result->broken = 1;
     goto DONE;
 
@@ -758,14 +760,15 @@ DONE:
     return ret;
 }
 
-int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result) {
+int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server, char **result)
+{
     UtoolResult *utoolResult = &(UtoolResult) {0};
     UtoolGetRedfishServer2(option, server, utoolResult);
     *result = utoolResult->desc;
     return utoolResult->code;
 }
 
-void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *server, UtoolResult* result)
+void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *server, UtoolResult *result)
 {
     ZF_LOGI("Try to fetch redfish system id now.");
 
@@ -785,36 +788,36 @@ void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *serv
     size_t sizeHostUrl = strnlen(option->host, MAX_URL_LEN);
     server->host = (char *) malloc(sizeHostUrl + 1);
     if (server->host == NULL) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
     ok = strncpy_s(server->host, sizeHostUrl + 1, option->host, sizeHostUrl);
     if (ok != EOK) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
 
     size_t sizeUsername = strnlen(option->username, MAX_PAYLOAD_LEN);
     server->username = (char *) malloc(sizeUsername + 1);
     if (server->username == NULL) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
     ok = strncpy_s(server->username, sizeUsername + 1, option->username, sizeUsername);
     if (ok != EOK) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
 
     size_t sizePassword = strnlen(option->password, MAX_PAYLOAD_LEN);
     server->password = (char *) malloc(sizePassword + 1);
     if (server->password == NULL) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
     ok = strncpy_s(server->password, sizePassword + 1, option->password, sizePassword);
     if (ok != EOK) {
-        result->code =  UTOOLE_INTERNAL;
+        result->code = UTOOLE_INTERNAL;
         goto FAILURE;
     }
 
@@ -853,7 +856,8 @@ void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *serv
             goto FAILURE;
         }
     } else {
-        ZF_LOGE("Failed to get redfish system id, CURL request result is %s", curl_easy_strerror((CURLcode) result->code));
+        ZF_LOGE("Failed to get redfish system id, CURL request result is %s",
+                curl_easy_strerror((CURLcode) result->code));
         result->code = UtoolResolveFailureResponse(response, &(result->desc));
         goto FAILURE;
     }
@@ -865,7 +869,7 @@ void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *serv
 
     getRedfishJson = result->data;
     cJSON *oemNode = cJSONUtils_GetPointer(getRedfishJson, "/Oem");
-    char* oem = NULL;
+    char *oem = NULL;
     bool isOemMalloc = false;
     if (oemNode == NULL || oemNode->valuestring == NULL) {
         oem = (char *) malloc(strlen(DEFAULT_OEM) + 1);
@@ -1425,13 +1429,12 @@ void UtoolRedfishWaitUtilTaskFinished(UtoolRedfishServer *server, cJSON *cJSONTa
         if (result->broken) {
             FREE_OBJ(result->desc)
             maxRetryTimes--;
-            if(maxRetryTimes < 0){
+            if (maxRetryTimes < 0) {
                 goto FAILURE;
             }
 
             result->broken = 0;
-        }
-        else {
+        } else {
             FREE_CJSON(jsonTask)        /** free last json TASK */
             jsonTask = result->data;
         }
