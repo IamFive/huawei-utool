@@ -39,7 +39,8 @@ int BuildOutputResult(const char *ipmiCmdOutput, char **result);
 * @param result
 * @return
 * */
-int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputStr) {
+int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputStr)
+{
 
     char *commandOutput = NULL;
     UtoolResult *result = &(UtoolResult) {0};
@@ -73,7 +74,7 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
 
     ValidateSubCommandOptions(sendIpmiCommandOption, result);
     if (result->broken) {
-        goto DONE;
+        goto FAILURE;
     }
 
     commandOutput = UtoolIPMIExecRawCommand(commandOption, sendIpmiCommandOption, result);
@@ -85,16 +86,19 @@ int UtoolCmdSendIPMIRawCommand(UtoolCommandOption *commandOption, char **outputS
     goto DONE;
 
 FAILURE:
+    // data is malloced in ${ValidateSubCommandOptions} method,
+    // if program returns before that, will raise 'free(): invalid pointer' if free option->data in DONE.
+    FREE_OBJ(sendIpmiCommandOption->data);
     goto DONE;
 
 DONE:
     FREE_OBJ(commandOutput);
-    FREE_OBJ(sendIpmiCommandOption->data);
     *outputStr = result->desc;
     return result->code;
 }
 
-void ReplaceChar(const char *str, char find, char replace) {
+void ReplaceChar(const char *str, char find, char replace)
+{
     char *currentPos = strchr(str, find);
     while (currentPos) {
         *currentPos = replace;
@@ -110,14 +114,14 @@ void ReplaceChar(const char *str, char find, char replace) {
 * @param result
 * @return
 */
-static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult *result) {
+static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult *result)
+{
 
     if (UtoolStringIsEmpty(option->netfun)) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("netfun")),
                                               &(result->desc));
         goto FAILURE;
-    }
-    else if (strnlen(option->netfun, 33) > 32) {
+    } else if (strnlen(option->netfun, 33) > 32) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ILLEGAL("netfun")),
                                               &(result->desc));
         goto FAILURE;
@@ -127,8 +131,7 @@ static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_REQUIRED("command")),
                                               &(result->desc));
         goto FAILURE;
-    }
-    else if (strnlen(option->command, 33) > 32) {
+    } else if (strnlen(option->command, 33) > 32) {
         result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(OPT_ILLEGAL("command")),
                                               &(result->desc));
         goto FAILURE;
@@ -141,8 +144,7 @@ static void ValidateSubCommandOptions(UtoolIPMIRawCmdOption *option, UtoolResult
         if (data != NULL) {
             ReplaceChar(data, ',', ' ');
             option->data = data;
-        }
-        else {
+        } else {
             result->code = UTOOLE_INTERNAL;
             goto FAILURE;
         }

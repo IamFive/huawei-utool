@@ -125,7 +125,8 @@ static const char *const usage[] = {
  * @param argv
  * @return OK if succeed else failed
  */
-static int utool_parse_command_option(UtoolCommandOption *commandOption, int argc, const char **argv, char **result) {
+static int utool_parse_command_option(UtoolCommandOption *commandOption, int argc, const char **argv, char **result)
+{
     struct argparse_option options[] = {
             OPT_BOOLEAN('h', "help", &(commandOption->flag),
                         "show this help message.",
@@ -203,7 +204,8 @@ static int utool_parse_command_option(UtoolCommandOption *commandOption, int arg
  * @param result
  * @return
  */
-static int initialize(char **result) {
+static int initialize(char **result)
+{
     int ret = 0;
     if (!initialized) {
         // get mutex
@@ -255,7 +257,7 @@ static int initialize(char **result) {
 
         // release mutex
         ret = pthread_mutex_unlock(&mutex);
-        if(ret) {
+        if (ret) {
             ZF_LOGE("Failed to unlock thread");
             return UTOOLE_INTERNAL; /* pthread_mutex_unlock failed */
         }
@@ -268,7 +270,8 @@ static int initialize(char **result) {
     return CURLE_OK;
 }
 
-int utool_main(int argc, char *argv[], char **result) {
+int utool_main(int argc, char *argv[], char **result)
+{
     int ret;
     const char *errorString = NULL;
 
@@ -292,10 +295,12 @@ int utool_main(int argc, char *argv[], char **result) {
         goto FAILURE;
     }
 
+    ZF_LOGI("Start parse command option.");
     ret = utool_parse_command_option(commandOption, argc, convert, result);
     if (ret != UTOOLE_OK || commandOption->flag != EXECUTABLE) {
         goto DONE;
     }
+    ZF_LOGI("Parse command option done.");
 
     /**
      * 2. try to find command function
