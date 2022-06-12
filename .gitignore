@@ -14,3 +14,4 @@ resources/*.hpm
 cmake-build-debug/
 TODO.md
 src/main-debug.c
+unittests

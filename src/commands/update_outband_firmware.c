@@ -937,6 +937,8 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
             OPT_END(),
     };
 
+    updateFirmwareOption->disableLogEntry = false;
+
     // validation sub command options
     result->code = UtoolValidateSubCommandBasicOptions(commandOption, options, usage, &(result->desc));
     if (commandOption->flag != EXECUTABLE) {
@@ -1083,7 +1085,7 @@ void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOp
                                           UtoolResult *result)
 {
     int quiet = server->quiet;
-    updateFirmwareOption->disableLogEntry = true;
+    int disableLogEntry = updateFirmwareOption->disableLogEntry;
 
     // check whether transition firmware upgrade
     bool shouldUpgradeTransition = isTransitionFirmwareUpgradeRequired(server, updateFirmwareOption, result);
@@ -1093,6 +1095,7 @@ void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOp
     }
 
     server->quiet = true;   // disable output when upgrade transition firmware.
+    updateFirmwareOption->disableLogEntry = true;   // disable log entry when upgrade transition firmware.
 
     if (shouldUpgradeTransition) {
         ZF_LOGI("Transition firmware upgrade is required, start now.");
@@ -1120,7 +1123,7 @@ FAILURE:
     goto DONE;
 DONE:
     server->quiet = quiet;
-    updateFirmwareOption->disableLogEntry = false;
+    updateFirmwareOption->disableLogEntry = disableLogEntry;
     return;
 }
 
@@ -1875,7 +1878,7 @@ static void parseTargetBmcVersionFromFilepath(UpdateFirmwareOption *option, char
 static void
 WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, UtoolResult *result)
 {
-    if (option->disableLogEntry == true) {
+    if (option->disableLogEntry != true) {
         if (result->code != UTOOLE_OK) {
             const char *errorString = (result->code > UTOOLE_OK && result->code < CURL_LAST) ?
                                       curl_easy_strerror(result->code) : UtoolGetStringError(result->code);
@@ -1895,7 +1898,7 @@ WriteFailedLogEntry(UpdateFirmwareOption *option, const char *stage, const char 
 
 static void WriteLogEntry(UpdateFirmwareOption *option, const char *stage, const char *state, const char *note)
 {
-    if (option->disableLogEntry == true) {
+    if (option->disableLogEntry != true) {
         /* get current timestamp */
         char nowStr[100] = {0};
         time_t now = time(NULL);
