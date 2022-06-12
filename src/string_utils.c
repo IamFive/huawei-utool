@@ -159,6 +159,14 @@ bool UtoolStringEquals(const char *str, const char *literal)
 */
 bool UtoolStringCaseEquals(const char *str, const char *literal)
 {
+    if (str == NULL || literal == NULL) {
+        return false;
+    }
+
+    if (strlen(str) != strlen(literal)) {
+        return false;
+    }
+    
     return strncasecmp(str, literal, strlen(literal) + 1) == 0;
 }
 
