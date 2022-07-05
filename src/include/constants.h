@@ -199,6 +199,7 @@ typedef enum _Code
     UTOOLE_FAILED_TO_WRITE_FILE = 145,          /** Failed to write local file */
     UTOOLE_UNEXPECT_IPMITOOL_RESULT = 146,
     UTOOLE_INSECURE_INPUT_CHARS = 147,
+    UTOOLE_CURL_SCP_UPLOAD_FILE = 148,
 } UtoolCode;
 
 #ifdef __cplusplus

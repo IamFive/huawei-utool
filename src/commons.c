@@ -457,6 +457,8 @@ const char *UtoolGetStringError(UtoolCode code)
             return "ipmitool returns unexpect format result, failed to parse the result.";
         case UTOOLE_INSECURE_INPUT_CHARS:
             return "Your input contains insecure chars like ""|;&$><`\\!\\n""";
+        case UTOOLE_CURL_SCP_UPLOAD_FILE:
+            return "Failed to upload local file with curl command.";
         default:
             return "Unknown error";
     }

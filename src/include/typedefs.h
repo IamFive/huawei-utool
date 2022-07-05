@@ -35,7 +35,7 @@ typedef struct _Result
     int broken;          /** whether the program is broken, default no(0) otherwise yes */
     int retryable;
     int reboot;         /** whether reboot can fix the issue. default no(0) otherwise yes */
-    int notfound;
+    int not_support;
 } UtoolResult;
 
 

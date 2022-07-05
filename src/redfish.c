@@ -72,11 +72,11 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     UtoolHttpUploadFileToBMC(server, uploadFilePath, result);
-    if (result->notfound && result->broken) {
-        ZF_LOGI("HTTP upload file is not supported by this iBMC, will try sftp now.");
+    if (result->not_support && result->broken) {
+        ZF_LOGI("HTTP upload file is not supported by this iBMC, will try scp now.");
         result->broken = 0;
         result->code = UTOOLE_OK;
-        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
+        UtoolCurlCmdUploadFileToBMC(server, uploadFilePath, result);
     }
 }
 
@@ -163,8 +163,8 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
     result->code = curl_easy_perform(curl);
     if (result->code == CURLE_OK) { /* Check for errors */
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->httpStatusCode);
-        if (response->httpStatusCode == 404) {
-            result->notfound = 1;
+        if (response->httpStatusCode == 404 || response->httpStatusCode == 413) {
+            result->not_support = 1;
         }
 
         if (response->httpStatusCode >= 400) {
@@ -424,6 +424,94 @@ void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, 
 
     goto DONE;
 
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+
+DONE:
+    if (uploadFileFp) {         /* close FP */
+        fclose(uploadFileFp);
+    }
+    curl_easy_cleanup(curl);    /* cleanup the curl */
+    UtoolFreeCurlResponse(response);
+}
+
+/**
+ * Upload file to BMC temp storage through OS curl command.
+ *
+ * @param server            redfish server meta information
+ * @param uploadFilePath    local file path to upload
+ * @param result            customer function execution result for utool
+ */
+void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result)
+{
+    ZF_LOGI("Try to scp local-file `%s` to BMC /tmp/web folder now", uploadFilePath);
+
+    FILE *uploadFileFp = NULL;
+    char curlScpUploadCmd[MAX_URL_LEN] = {0};
+    cJSON *getNetworkProtocolRespJson = NULL;
+    UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
+
+    CURL *curl = NULL;
+    struct stat fileInfo;
+
+    char path[PATH_MAX] = {0};
+    char *ok = UtoolFileRealpath(uploadFilePath, path, PATH_MAX);
+    if (ok == NULL) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
+    }
+
+    uploadFileFp = fopen(path, "rb"); /* open file to upload */
+    if (!uploadFileFp) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_PATH;
+        goto FAILURE;
+    } /* can't continue */
+
+    /* get the file size */
+    if (fstat(fileno(uploadFileFp), &fileInfo) != 0) {
+        result->code = UTOOLE_ILLEGAL_LOCAL_FILE_SIZE;
+        goto FAILURE;
+    } /* can't continue */
+
+
+    UtoolRedfishGet(server, "/Managers/%s/NetworkProtocol", NULL, NULL, result);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+    getNetworkProtocolRespJson = result->data;
+    cJSON *isSshEnabledNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/ProtocolEnabled");
+    // we can scp file to bmc only when ssh protocol is enabled
+    if (isSshEnabledNode != NULL && cJSON_IsTrue(isSshEnabledNode)) {
+        cJSON *sshPortNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/Port");
+        int sshPort = sshPortNode->valueint;
+        // sftp://user:pwd@example.com:port/path/filename
+        char *CURL_SCP_UPLOAD_CMD = "curl -k -s -T %s -u %s:%s sftp://%s:%d/tmp/web/%s > /dev/null";
+        UtoolWrapSecFmt(curlScpUploadCmd, MAX_URL_LEN, MAX_URL_LEN - 1, CURL_SCP_UPLOAD_CMD,
+                        path, server->username, server->password, server->host, sshPort, basename(uploadFilePath));
+
+        char nowStr[100] = {0};
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        if (tm_now != NULL) {
+            strftime(nowStr, sizeof(nowStr), "%Y-%m-%d %H:%M:%S", tm_now);
+        }
+        fprintf(stdout, "%s Upload file now...\n", nowStr);
+        fflush(stdout);
+
+        int ret = system(curlScpUploadCmd);
+        if (ret != 0) {
+            result->code = UTOOLE_CURL_SCP_UPLOAD_FILE;
+            goto FAILURE;
+        }
+    } else {
+        result->code = UTOOLE_SSH_PROTOCOL_DISABLED;
+        goto FAILURE;
+    }
+
+    goto DONE;
 
 FAILURE:
     result->broken = 1;
