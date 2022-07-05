@@ -25,6 +25,13 @@
 
 static bool changeVendorId = false;
 
+/**
+ * caller should ba caution that result->desc has carry the error reason.
+ * @param option
+ * @param ipmiRawCmdOption
+ * @param result
+ * @return
+ */
 char *
 UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiRawCmdOption, UtoolResult *result)
 {
@@ -39,25 +46,29 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     char ipmiRawCmd[MAX_IPMI_CMD_LEN] = {0};
     if (ipmiRawCmdOption->bridge != NULL) {
         UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -b ");
-        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->bridge, strnlen(ipmiRawCmdOption->bridge, 128));
+        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->bridge,
+                               strnlen(ipmiRawCmdOption->bridge, 128));
         UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     if (ipmiRawCmdOption->target != NULL) {
         UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " -t ");
-        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->target, strnlen(ipmiRawCmdOption->target, 128));
+        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->target,
+                               strnlen(ipmiRawCmdOption->target, 128));
         UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
     }
 
     /* RAW Commands: raw <netfn> <cmd> [data] */
     UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " raw ");
     if (ipmiRawCmdOption->netfun != NULL) {
-        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun, strnlen(ipmiRawCmdOption->netfun, 32));
+        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->netfun,
+                               strnlen(ipmiRawCmdOption->netfun, 32));
     }
 
     if (ipmiRawCmdOption->command != NULL) {
         UtoolWrapStringAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, " ");
-        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command, strnlen(ipmiRawCmdOption->command, 128));
+        UtoolWrapStringNAppend(ipmiRawCmd, MAX_IPMI_CMD_LEN, ipmiRawCmdOption->command,
+                               strnlen(ipmiRawCmdOption->command, 128));
     }
 
 
@@ -103,8 +114,8 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
     if ((fp = popen(ipmiCmd, "r")) == NULL) {
         ZF_LOGI("Failed to execute IPMI command, command is: %s", ipmiCmd);
-        result->desc = IPMITOOL_CMD_RUN_FAILED;
         result->broken = 1;
+        result->code = UtoolBuildStringOutputResult(STATE_FAILURE, IPMITOOL_CMD_RUN_FAILED, &(result->desc));
         free(cmdOutput);
         return NULL;
     }
@@ -125,7 +136,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
     // remove ending \n if exists
     int len = strnlen(cmdOutput, MAX_IPMI_CMD_OUTPUT_LEN);
     if (len > 0) {
-        cmdOutput[len-1] = '\0';
+        cmdOutput[len - 1] = '\0';
     }
 
     char *escaped = UtoolStringReplace(cmdOutput, ESCAPE_CHARS, " ");
@@ -213,7 +224,7 @@ bool UtoolIPMIGetVendorId(UtoolCommandOption *option, UtoolResult *result)
     bool res = false;
     char *ipmiCmdOutput = NULL;
     UtoolIPMIRawCmdOption *rawCmdOption = &(UtoolIPMIRawCmdOption) {
-        .command = IPMI_GET_VENDOR_ID,
+            .command = IPMI_GET_VENDOR_ID,
     };
     ipmiCmdOutput = UtoolIPMIExecRawCommand(option, rawCmdOption, result);
     if (!result->broken && ipmiCmdOutput != NULL) {
