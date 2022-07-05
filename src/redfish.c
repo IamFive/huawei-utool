@@ -93,6 +93,7 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
 {
     ZF_LOGI("Try to upload file `%s` to BMC now", uploadFilePath);
 
+    int progress = PROGRESS_NOT_START; // 0 => not start; 1 => finished; 2 => progressing;
     FILE *uploadFileFp = NULL;
     UtoolCurlResponse *response = &(UtoolCurlResponse) {0};
 
@@ -149,10 +150,9 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
 
     // setup progress callback
     if (!server->quiet) {
-        bool finished = false;
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, UtoolCurlPrintUploadProgressCallback);
-        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &finished);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &progress);
     }
 
     /* enable verbose for easier tracing
@@ -184,7 +184,7 @@ void UtoolHttpUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFile
 
 
 FAILURE:
-    if (!server->quiet) {
+    if (!server->quiet && progress == PROGRESS_PROCESSING) {
         fprintf(stdout, "\n");
     }
     result->broken = 1;
@@ -987,8 +987,8 @@ static int
 UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow, double ultotal, double ulnow)
 {
     if (ultotal > 0 && ulnow > 0) {
-        bool *finished = (bool *) output;
-        if (!*finished) {
+        int *finished = (int *) output;
+        if (*finished != PROGRESS_FINISHED) {
             char nowStr[100] = {0};
             time_t now = time(NULL);
             struct tm *tm_now = localtime(&now);
@@ -998,8 +998,10 @@ UtoolCurlPrintUploadProgressCallback(void *output, double dltotal, double dlnow,
 
             fprintf(stdout, "\r%s Upload file inprogress, process: %.0f%%.", nowStr, (ulnow * 100) / ultotal);
             if (ultotal == ulnow) {
-                *((bool *) output) = true;
+                *((int *) output) = PROGRESS_FINISHED;
                 fprintf(stdout, "\n");
+            } else {
+                *((int *) output) = PROGRESS_PROCESSING;
             }
         }
         fflush(stdout);

@@ -48,6 +48,10 @@ extern "C" {
 #define CURL_UPLOAD_TIMEOUT 300
 #define CURL_CONN_TIMEOUT 60
 
+#define PROGRESS_NOT_START 0
+#define PROGRESS_FINISHED 1
+#define PROGRESS_PROCESSING 2
+
 #define CONTENT_TYPE_JSON "Content-Type: application/json"
 #define USER_AGENT "UTOOL based on libcurl - XFUSION server management command line tool"
 #define HEADER_ETAG "ETag: "
