@@ -29,6 +29,9 @@
 #include "string_utils.h"
 #include "url_parser.h"
 
+#define BMC_USE_IPMI_VERSION "2.58"
+#define BMC_USE_IPMI_MAJOR_VERSION 2
+#define BMC_USE_IPMI_MINOR_VERSION 58
 #define BMC_TRANSITION_FM_VERSION "6.36"
 #define BMC_TRANSITION_VERSION 639
 #define BMC_TRANSITION_MAJOR_VERSION 6
@@ -166,6 +169,10 @@ typedef struct _UpdateFirmwareOption {
     char *psn;
     char *productName;
     char *activeBmcVersion;
+    int activeBmcVersionDotCount;
+    int activeBmcVersionMajor;
+    int activeBmcVersionMinor;
+    bool activeBmcVersionEq258;
     char *targetBmcVersion;
     bool disableLogEntry;
     bool isLocalFile;
@@ -360,6 +367,9 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
 void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *server,
                                           UtoolResult *result);
 
+void
+ParseActiveBmcVersion(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *pServer, UtoolResult *pResult);
+
 static void DisplayRunningProgress(int quiet, const char *progress)
 {
     if (!quiet) {
@@ -528,6 +538,14 @@ DONE:
     FREE_CJSON(result->data)
 }
 
+/**
+ * result->data has been freed in func
+ *
+ * @param server
+ * @param updateFirmwareOption
+ * @param result
+ * @return
+ */
 static int GetBmcVersion(UtoolRedfishServer *server, UpdateFirmwareOption *updateFirmwareOption, UtoolResult *result)
 {
     UtoolRedfishGet(server, "/redfish/v1/UpdateService/FirmwareInventory/ActiveBMC", NULL, NULL, result);
@@ -990,6 +1008,13 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         goto FAILURE;
     }
 
+    // parse current BMC version.
+    ParseActiveBmcVersion(updateFirmwareOption, server, result);
+    if (result->broken) {
+        goto FAILURE;
+    }
+
+
     // upgrade transition firmware if necessary.
     UpgradeTransitionFirmwareIfNecessary(updateFirmwareOption, server, result);
     if (result->broken) {
@@ -1081,6 +1106,44 @@ DONE:
     return result->code;
 }
 
+void
+ParseActiveBmcVersion(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *server, UtoolResult *result)
+{
+    char *activeBmcVersion = NULL;
+    RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, true);
+    if (result->broken) {
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
+        goto FAILURE;
+    }
+
+    updateFirmwareOption->activeBmcVersionDotCount = UtoolStringCountOccurrencesOf
+            (updateFirmwareOption->activeBmcVersion, '.');
+
+    activeBmcVersion = UtoolStringNDup(updateFirmwareOption->activeBmcVersion,
+                                       strnlen(updateFirmwareOption->activeBmcVersion, MAX_FM_VERSION_LEN));
+    char **version = UtoolStringSplit(activeBmcVersion, '.');
+    if (version == NULL) {
+        result->code = UTOOLE_INTERNAL;
+        goto FAILURE;
+    }
+
+    // 只需要获取前两段版本号
+    updateFirmwareOption->activeBmcVersionMajor = version[0] != NULL ? atoi(version[0]) : 0;
+    updateFirmwareOption->activeBmcVersionMinor = version[1] != NULL ? atoi(version[1]) : 0;
+    UtoolStringFreeArrays(version);
+
+    updateFirmwareOption->activeBmcVersionEq258 = UtoolStringEquals(updateFirmwareOption->activeBmcVersion,
+                                                                    BMC_USE_IPMI_VERSION);
+    goto DONE;
+
+FAILURE:
+    result->broken = 1;
+    goto DONE;
+DONE:
+    FREE_OBJ(activeBmcVersion)
+    return;
+}
+
 void UpgradeTransitionFirmwareIfNecessary(UpdateFirmwareOption *updateFirmwareOption, UtoolRedfishServer *server,
                                           UtoolResult *result)
 {
@@ -1164,15 +1227,8 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
-    RetryFunc(STAGE_GET_BMC_VERSION, GetBmcVersion, server, updateFirmwareOption, result, false);
-    if (result->broken) {
-        result->code = UtoolBuildOutputResult(STATE_FAILURE, result->data, &(result->desc));
-        goto FAILURE;
-    }
-
     // 判断iBMC是否需要升级过渡版本，判断条件：当前BMC版本号 <6.39；
-    int activeBmcVersionDotCount = UtoolStringCountOccurrencesOf(updateFirmwareOption->activeBmcVersion, '.');
-    if (activeBmcVersionDotCount == 3) { // new format
+    if (updateFirmwareOption->activeBmcVersionDotCount == 3) { // new format
         ZF_LOGI("Active BMC version(%s) is 4 segments, no transition upgrade required.",
                 updateFirmwareOption->activeBmcVersion);
         return false;
@@ -1182,15 +1238,8 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
-    char **version = UtoolStringSplit(updateFirmwareOption->activeBmcVersion, '.');
-    if (version == NULL) {
-        result->code = UTOOLE_INTERNAL;
-        goto FAILURE;
-    }
-    int major = version[0] != NULL ? atoi(version[0]) : 0;
-    int minor = version[1] != NULL ? atoi(version[1]) : 0;
-    UtoolStringFreeArrays(version);
-
+    int major = updateFirmwareOption->activeBmcVersionMajor;
+    int minor = updateFirmwareOption->activeBmcVersionMinor;
     if (major < BMC_TRANSITION_MAJOR_VERSION ||
         (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
         return true;
