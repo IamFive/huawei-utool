@@ -39,7 +39,7 @@ int UtoolGetRedfishServer(UtoolCommandOption *option, UtoolRedfishServer *server
  * @param server
  * @return
  */
-void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *server, UtoolResult* result);
+void UtoolGetRedfishServer2(UtoolCommandOption *option, UtoolRedfishServer *server, UtoolResult *result);
 
 
 /**
@@ -85,13 +85,15 @@ void UtoolDownloadFileFromBMC(UtoolRedfishServer *server, const char *bmcFileUri
 void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result);
 
 /**
- * Upload file to BMC temp storage through OS curl command.
+ * Upload file to BMC temp storage (/tmp/) through OS curl command.
  *
  * @param server            redfish server meta information
  * @param uploadFilePath    local file path to upload
+ * @param targetFileName    target filename to upload as
  * @param result            customer function execution result for utool
  */
-void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result);
+void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, char *targetFileName,
+                                 UtoolResult *result);
 
 /**
  * Make a new redfish request through CURL lib

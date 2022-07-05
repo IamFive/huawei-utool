@@ -72,11 +72,12 @@ static CURL *UtoolSetupCurlRequest(const UtoolRedfishServer *server,
 void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath, UtoolResult *result)
 {
     UtoolHttpUploadFileToBMC(server, uploadFilePath, result);
+    /** TODO(turnbig): confirm with qianbiao: should we remove sftp upload support?*/
     if (result->not_support && result->broken) {
         ZF_LOGI("HTTP upload file is not supported by this iBMC, will try scp now.");
         result->broken = 0;
         result->code = UTOOLE_OK;
-        UtoolCurlCmdUploadFileToBMC(server, uploadFilePath, result);
+        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
     }
 }
 
@@ -433,20 +434,22 @@ DONE:
     if (uploadFileFp) {         /* close FP */
         fclose(uploadFileFp);
     }
+    FREE_CJSON(result->data);
     curl_easy_cleanup(curl);    /* cleanup the curl */
     UtoolFreeCurlResponse(response);
 }
 
 /**
- * Upload file to BMC temp storage through OS curl command.
+ * Upload file to BMC temp storage(/tmp) through OS curl command.
  *
  * @param server            redfish server meta information
  * @param uploadFilePath    local file path to upload
  * @param result            customer function execution result for utool
  */
-void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result)
+void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, char *targetFileName,
+                                 UtoolResult *result)
 {
-    ZF_LOGI("Try to scp local-file `%s` to BMC /tmp/web folder now", uploadFilePath);
+    ZF_LOGI("Try to scp local-file `%s` to BMC /tmp folder now", uploadFilePath);
 
     FILE *uploadFileFp = NULL;
     char curlScpUploadCmd[MAX_URL_LEN] = {0};
@@ -488,9 +491,10 @@ void UtoolCurlCmdUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePat
         cJSON *sshPortNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/Port");
         int sshPort = sshPortNode->valueint;
         // sftp://user:pwd@example.com:port/path/filename
-        char *CURL_SCP_UPLOAD_CMD = "curl -k -s -T %s -u %s:%s sftp://%s:%d/tmp/web/%s > /dev/null";
+        char *CURL_SCP_UPLOAD_CMD = "curl -k -s -T %s -u %s:%s sftp://%s:%d/tmp/%s > /dev/null";
+        char *filename = targetFileName == NULL ? basename(uploadFilePath) : targetFileName;
         UtoolWrapSecFmt(curlScpUploadCmd, MAX_URL_LEN, MAX_URL_LEN - 1, CURL_SCP_UPLOAD_CMD,
-                        path, server->username, server->password, server->host, sshPort, basename(uploadFilePath));
+                        path, server->username, server->password, server->host, sshPort, filename);
 
         char nowStr[100] = {0};
         time_t now = time(NULL);
@@ -521,6 +525,7 @@ DONE:
     if (uploadFileFp) {         /* close FP */
         fclose(uploadFileFp);
     }
+    FREE_CJSON(result->data);
     curl_easy_cleanup(curl);    /* cleanup the curl */
     UtoolFreeCurlResponse(response);
 }
