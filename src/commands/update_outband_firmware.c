@@ -227,7 +227,7 @@ static const IpmiUpgradeErrorMapping ipmiUpgradeErrorMapping[] = {
         NULL
 };
 
-
+static const char *ALLOW_UPGRADE_TO_GE_639[] = {"6.32", "6.38", NULL};
 static const char *MODE_CHOICES[] = {UPGRADE_ACTIVATE_MODE_AUTO, UPGRADE_ACTIVATE_MODE_MANUAL, NULL};
 static const char *DUAL_CHOICES[] = {"Single", "Dual", NULL};
 static const char *TYPE_CHOICES[] = {"BMC", "BIOS", "CPLD", "PSUFW", NULL};
@@ -255,6 +255,9 @@ static const char *PRODUCT_SN_IS_NOT_SET = "Error: product SN is not correct.";
 static const char *FAILED_TO_CREATE_FOLDER = "Error: failed to create log folder.";
 static const char *FAILED_TO_CREATE_FILE = "Error: failed to create log file.";
 static const char *LOG_FILE_PATH_ILLEGAL = "Error: log file path is illegal, Please make sure the path exists.";
+
+static const char *BMC_UPGRADE_TO_GE_639_NOT_ALLOWED = "Error: BMC version after 6.39 only can be upgraded from 6.32 "
+                                                       "and 6.38.";
 
 static const char *const usage[] = {
         "fwupdate -u image-uri -e activate-mode [-t firmware-type] [-d dual-image]",
@@ -1713,11 +1716,28 @@ static bool isTransitionFirmwareUpgradeRequired(UtoolRedfishServer *server, Upda
         return false;
     }
 
+    // 原需求：小于6.39版本的需要升级过渡版本
+    // int major = updateFirmwareOption->activeBmcVersionMajor;
+    // int minor = updateFirmwareOption->activeBmcVersionMinor;
+    // if (major < BMC_TRANSITION_MAJOR_VERSION ||
+    //     (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
+    //     return true;
+    // }
+
+    // 新需求：只有6.32和6.38才允许升级过渡版本，其他的直接报错。
+    if (UtoolStringInArray(updateFirmwareOption->activeBmcVersion, ALLOW_UPGRADE_TO_GE_639)) {
+        return true;
+    }
+
+    // if active bmc version less than 6.39, break.
     int major = updateFirmwareOption->activeBmcVersionMajor;
     int minor = updateFirmwareOption->activeBmcVersionMinor;
     if (major < BMC_TRANSITION_MAJOR_VERSION ||
         (major == BMC_TRANSITION_MAJOR_VERSION && minor < BMC_TRANSITION_MINOR_VERSION)) {
-        return true;
+        result->broken = 1;
+        result->code = UtoolBuildOutputResult(STATE_FAILURE, cJSON_CreateString(BMC_UPGRADE_TO_GE_639_NOT_ALLOWED),
+                                              &(result->desc));
+        return false;
     }
 
     return false;
