@@ -2171,9 +2171,11 @@ static int RebootBMC(char *stage, UtoolRedfishServer *server, UpdateFirmwareOpti
         if (ret == UTOOLE_OK && getRedfishResp->httpStatusCode < 300) {
             UtoolFreeCurlResponse(getRedfishResp);
             isAlive = true;
+            // sleep 15s to make sure BMC has startup completely.
+            sleep(15);
+
             // power on progress finished
             UtoolPrintf(server->quiet, stdout, "\n");
-
             // reboot progress finished
             DisplayProgress(server->quiet, DISPLAY_BMC_REBOOT_DONE);
             WriteLogEntry(updateFirmwareOption, stage, PROGRESS_REBOOT_DONE, "");
