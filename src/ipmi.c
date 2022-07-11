@@ -127,6 +127,7 @@ UtoolIPMIExecRawCommand(UtoolCommandOption *option, UtoolIPMIRawCmdOption *ipmiR
 
     int ret = pclose(fp);
     if (ret != 0) {
+        ZF_LOGE("IPMI command's return code is not zero, output: %s", cmdOutput);
         result->broken = 1;
         result->code = UtoolBuildStringOutputResult(STATE_FAILURE, cmdOutput, &(result->desc));
         free(cmdOutput);

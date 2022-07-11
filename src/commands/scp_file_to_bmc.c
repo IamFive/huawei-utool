@@ -56,7 +56,7 @@ int UtoolCmdScpFileToBMC(UtoolCommandOption *commandOption, char **outputStr)
     }
 
     char *filepath = "/data/workspace.xml";
-    UtoolSftpUploadFileToBMC(server, filepath, result);
+    UtoolSftpUploadFileToBMC(server, filepath, NULL, result);
 
     UtoolBuildDefaultSuccessResult(outputStr);
     goto DONE;

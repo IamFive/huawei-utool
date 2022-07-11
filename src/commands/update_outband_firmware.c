@@ -744,7 +744,9 @@ static void UploadLocalFile(UtoolRedfishServer *server, UtoolCommandOption *comm
 
     // ipmi upgrading support for BMC 2.58
     if (updateFirmwareOption->activeBmcVersionEq258 && updateFirmwareOption->isLocalFile) {
-        UtoolCurlCmdUploadFileToBMC(server, imageUri, "image.hpm", result);
+        // UtoolCurlCmdUploadFileToBMC(server, imageUri, "image.hpm", result);
+        // use curl innate sftp uploading method.
+        UtoolSftpUploadFileToBMC(server, imageUri, "image.hpm", result);
     } else {
         // upload file to bmc through HTTPS protocol
         UtoolUploadFileToBMC(server, imageUri, result);
@@ -2167,7 +2169,8 @@ static int RebootBMC(char *stage, UtoolRedfishServer *server, UpdateFirmwareOpti
     while (difftime(now, begin) <= TIME_LIMIT_POWER_ON) {
         UtoolPrintf(server->quiet, stdout, ".");
         UtoolCurlResponse *getRedfishResp = &(UtoolCurlResponse) {0};
-        ret = UtoolMakeCurlRequest(server, "/", HTTP_GET, NULL, NULL, getRedfishResp);
+        ret = UtoolMakeCurlRequest(server, "/redfish/v1/UpdateService/FirmwareInventory/ActiveBMC", HTTP_GET, NULL,
+                                   NULL, getRedfishResp);
         if (ret == UTOOLE_OK && getRedfishResp->httpStatusCode < 300) {
             UtoolFreeCurlResponse(getRedfishResp);
             isAlive = true;

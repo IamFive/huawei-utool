@@ -77,7 +77,7 @@ void UtoolUploadFileToBMC(UtoolRedfishServer *server, const char *uploadFilePath
         ZF_LOGI("HTTP upload file is not supported by this iBMC, will try scp now.");
         result->broken = 0;
         result->code = UTOOLE_OK;
-        UtoolSftpUploadFileToBMC(server, uploadFilePath, result);
+        UtoolSftpUploadFileToBMC(server, uploadFilePath, NULL, result);
     }
 }
 
@@ -334,9 +334,11 @@ static size_t CURLReadLocalFileToStream(void *ptr, size_t size, size_t nmemb, vo
  *
  * @param server            redfish server meta information
  * @param uploadFilePath    local file path to upload
+ * @param targetFileName    target filename to upload as, if NULL, use local file name
  * @param result            customer function execution result for utool
  */
-void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, UtoolResult *result)
+void
+UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, char *targetFileName, UtoolResult *result)
 {
     ZF_LOGI("Try to sftp put local file `%s` to BMC /tmp/web folder now", uploadFilePath);
 
@@ -380,9 +382,12 @@ void UtoolSftpUploadFileToBMC(UtoolRedfishServer *server, char *uploadFilePath, 
         cJSON *sshPortNode = cJSONUtils_GetPointer(getNetworkProtocolRespJson, "/SSH/Port");
         int sshPort = sshPortNode->valueint;
         // sftp://user:pwd@example.com:port/path/filename
+        char *filename = targetFileName == NULL ? basename(uploadFilePath) : targetFileName;
+        char *sftpUrl = targetFileName == NULL ? "sftp://%s:%s@%s:%d/tmp/web/%s" : "sftp://%s:%s@%s:%d/tmp/%s";
         char *encodedPassword = curl_easy_escape(NULL, server->password, strnlen(server->password, 64));
-        UtoolWrapSecFmt(sftpRemoteFileUrl, MAX_URL_LEN, MAX_URL_LEN - 1, "sftp://%s:%s@%s:%d/tmp/web/%s",
-                        server->username, encodedPassword, server->host, sshPort, basename(uploadFilePath));
+        UtoolWrapSecFmt(sftpRemoteFileUrl, MAX_URL_LEN, MAX_URL_LEN - 1, sftpUrl,
+                        server->username, encodedPassword, server->host, sshPort, filename);
+        FREE_OBJ(encodedPassword);
     } else {
         result->code = UTOOLE_SSH_PROTOCOL_DISABLED;
         goto FAILURE;
