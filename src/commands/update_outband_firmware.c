@@ -1451,14 +1451,13 @@ int UtoolCmdUpdateOutbandFirmware(UtoolCommandOption *commandOption, char **outp
         goto FAILURE;
     }
 
-    // BMC 2.58 should never require transition firmware upgrade
-    if (!updateFirmwareOption->activeBmcVersionEq258) {
-        // upgrade transition firmware if necessary.
-        UpgradeTransitionFirmwareIfNecessary(server, commandOption, updateFirmwareOption, result);
-        if (result->broken) {
-            FREE_CJSON(result->data)
-            goto FAILURE;
-        }
+    // BMC 2.58 will be filter out in transition firmware upgrade condition check.
+    // because only 6.32, 6.38 is allowed to upgraded to version after 6.39
+    // upgrade transition firmware if necessary.
+    UpgradeTransitionFirmwareIfNecessary(server, commandOption, updateFirmwareOption, result);
+    if (result->broken) {
+        FREE_CJSON(result->data)
+        goto FAILURE;
     }
 
     // upgrade firmware workflow starts,
