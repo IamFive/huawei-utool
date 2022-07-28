@@ -29,7 +29,7 @@ cd utool
 
 ### Build curl
 The CURL version required is >=7.56.0, the `third-party/curl` provide along with source code is `curl-7_65_0`.
-Please make sure `libssl-dev` is ready before making CURL (the dev package name maybe different in
+Please make sure `libssl-dev` and `libssh2-dev` is ready before making CURL (the dev package name maybe different in
 your ENV).
 
 1. To install libssl-dev
@@ -37,13 +37,19 @@ your ENV).
 - ubuntu: `sudo apt install libssl-dev`
 - RedHat: `sudo yum install openssl-devel`
 
+1. To install libssh2-dev
+
+- ubuntu: `sudo apt install libssh2-*-dev`
+- RedHat: `sudo yum install libssh2-devel`
+
+
 1. Build CURL
 
 ```bash
 cd ${your-workspace}/utool
 cd third-party/curl
 ./buildconf
-./configure --with-ssl
+./configure --with-ssl --with-libssh2
 make
 ```
 
@@ -69,13 +75,13 @@ cd ${workspace}/utool/build
 sudo make install
 ```
 
-Remember, before using `utool`, you should make sure libcurl>=7.56.0 has been installed. 
+Remember, before using `utool`, you should make sure libcurl>=7.56.0 has been installed.
 You can install libcurl through package manager like `apt-get`, `yum` or through:
 
 ```bash
 cd ${your-workspace}/utool/third-party/curl
 ./buildconf
-./configure --with-ssl
+./configure --with-ssl --with-libssh2
 make 
 sudo make install
 ```
@@ -109,27 +115,27 @@ $ ./utool-bin --version
 
 int main(int argc, char **argv)
 {
-    char *result = NULL;
-    char *argv2[] = {
-            "utool",
-            "-H", "your-ibmc-host",
-            "-U", "your-ibmc-username",
-            "-P", "your-ibmc-password",
-            "getproduct",
-            NULL
-    };
+char *result = NULL;
+char *argv2[] = {
+"utool",
+"-H", "your-ibmc-host",
+"-U", "your-ibmc-username",
+"-P", "your-ibmc-password",
+"getproduct",
+NULL
+};
 
-    int argc2 = sizeof(argv2) / sizeof(char *);
-    int ret = utool_main(argc2 - 1, (void *) argv2, &result);
-    if (result != NULL) {
-        fprintf(ret == 0 ? stdout : stderr, "%s", result);
-        free(result);
-    }
-    return ret;
+int argc2 = sizeof(argv2) / sizeof(char *);
+int ret = utool_main(argc2 - 1, (void *) argv2, &result);
+if (result != NULL) {
+fprintf(ret == 0 ? stdout : stderr, "%s", result);
+free(result);
+}
+return ret;
 }
 ```
 
-or 
+or
 
 ```C
 #include <stdio.h>
@@ -138,29 +144,29 @@ extern int utool_main(int argc, char *argv[], char **result);
 
 int main(int argc, char **argv)
 {
-    char *result = NULL;
-    char *argv2[] = {
-            "utool",
-            "-H", "your-ibmc-host",
-            "-U", "your-ibmc-username",
-            "-P", "your-ibmc-password",
-            "getproduct",
-            NULL
-    };
+char *result = NULL;
+char *argv2[] = {
+"utool",
+"-H", "your-ibmc-host",
+"-U", "your-ibmc-username",
+"-P", "your-ibmc-password",
+"getproduct",
+NULL
+};
 
-    int argc2 = sizeof(argv2) / sizeof(char *);
-    int ret = utool_main(argc2 - 1, (void *) argv2, &result);
-    if (result != NULL) {
-        fprintf(ret == 0 ? stdout : stderr, "%s", result);
-        free(result);
-    }
-    return ret;
+int argc2 = sizeof(argv2) / sizeof(char *);
+int ret = utool_main(argc2 - 1, (void *) argv2, &result);
+if (result != NULL) {
+fprintf(ret == 0 ? stdout : stderr, "%s", result);
+free(result);
+}
+return ret;
 }
 ```
 
 ## reference
-   
-- {permissive} curl: [curl](https://github.com/curl/curl) 
-- {MIT} cJSON: [cJSON](https://github.com/DaveGamble/cJSON) 
-- {MIT} zf_log: [zf_log](https://github.com/wonder-mice/zf_log) 
+
+- {permissive} curl: [curl](https://github.com/curl/curl)
+- {MIT} cJSON: [cJSON](https://github.com/DaveGamble/cJSON)
+- {MIT} zf_log: [zf_log](https://github.com/wonder-mice/zf_log)
 - {MIT} argparse: [argparse](https://github.com/cofyc/argparse.git) 
